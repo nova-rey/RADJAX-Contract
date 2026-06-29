@@ -5,6 +5,7 @@ from enum import StrEnum
 from typing import Any
 
 from radjax_contract.artifacts.manifest import CONTRACT_PACKAGE, CONTRACT_VERSION
+from radjax_contract.tome.compression import TomeCompression
 from radjax_contract.tome.payloads import TomePayloadFormat
 from radjax_contract.tome.shards import TomeShard
 from radjax_contract.vocab import VocabContract
@@ -28,6 +29,7 @@ class TomeManifest:
     artifact_id: str | None = None
     role: TomeRole = TomeRole.TRAINING
     payload_format: TomePayloadFormat = TomePayloadFormat.DENSE_LOGITS_V0
+    compression: TomeCompression = field(default_factory=TomeCompression)
     vocab_contract: VocabContract | None = None
     record_count: int | None = None
     sequence_length: int | None = None
@@ -54,6 +56,7 @@ class TomeManifest:
             "artifact_id": self.artifact_id,
             "role": self.role.value,
             "payload_format": self.payload_format.value,
+            "compression": self.compression.to_dict(),
             "vocab_contract": (
                 None if self.vocab_contract is None else self.vocab_contract.to_dict()
             ),
@@ -73,6 +76,7 @@ class TomeManifest:
         metadata = dict(payload.get("metadata", {}))
         payload_format = _payload_format_from_payload(payload, metadata)
         role = _role_from_payload(payload, metadata)
+        compression_payload = payload.get("compression", metadata.get("compression"))
         vocab_payload = payload.get("vocab_contract") or metadata.get("vocab_contract")
         record_count = payload.get("record_count", metadata.get("num_examples"))
         sequence_length = payload.get(
@@ -93,6 +97,11 @@ class TomeManifest:
             ),
             role=role,
             payload_format=payload_format,
+            compression=(
+                TomeCompression()
+                if compression_payload is None
+                else TomeCompression.from_dict(dict(compression_payload))
+            ),
             vocab_contract=(
                 None
                 if vocab_payload is None

@@ -23,6 +23,7 @@ A minimal Tome is a portable teacher-output artifact directory:
 
 ```text
 tome_dir/
+  cover_page.json
   manifest.json
   records.jsonl
   logits.npy
@@ -30,6 +31,17 @@ tome_dir/
 
 The current implemented payload format is `dense_logits_v0`, represented by a
 finite floating NumPy array shaped `[records, sequence, vocab]`.
+
+## Tome Cover Page
+
+`manifest.json` is the strict machine contract. `cover_page.json` is the
+readable summary and routing index. `records.jsonl` and payload files such as
+`logits.npy` are the actual Tome contents.
+
+The Cover Page summarizes the teacher, corpus, contents, explicit compression,
+behavioral fingerprint status, split role, and expected student consumption
+adapter. Validation requires the Cover Page to agree with the manifest and, for
+implemented dense logits Tomes, with the records and payload shape.
 
 The primary public surface is:
 
