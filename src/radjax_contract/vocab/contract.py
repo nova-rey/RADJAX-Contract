@@ -10,6 +10,34 @@ class TokenizerFingerprint:
     vocab_size: int | None = None
     special_tokens: dict[str, int] = field(default_factory=dict)
 
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "tokenizer_id": self.tokenizer_id,
+            "tokenizer_hash": self.tokenizer_hash,
+            "vocab_size": self.vocab_size,
+            "special_tokens": dict(self.special_tokens),
+        }
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, object]) -> TokenizerFingerprint:
+        return cls(
+            tokenizer_id=str(payload["tokenizer_id"]),
+            tokenizer_hash=(
+                None
+                if payload.get("tokenizer_hash") is None
+                else str(payload["tokenizer_hash"])
+            ),
+            vocab_size=(
+                None
+                if payload.get("vocab_size") is None
+                else int(payload["vocab_size"])
+            ),
+            special_tokens={
+                str(key): int(value)
+                for key, value in dict(payload.get("special_tokens", {})).items()
+            },
+        )
+
 
 @dataclass(frozen=True)
 class VocabContract:
@@ -23,6 +51,40 @@ class VocabContract:
     def __post_init__(self) -> None:
         if self.vocab_size <= 0:
             raise ValueError("vocab_size must be > 0")
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "tokenizer_id": self.tokenizer_id,
+            "vocab_size": self.vocab_size,
+            "tokenizer_hash": self.tokenizer_hash,
+            "model_id": self.model_id,
+            "model_family": self.model_family,
+            "special_tokens": dict(self.special_tokens),
+        }
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, object]) -> VocabContract:
+        return cls(
+            tokenizer_id=str(payload["tokenizer_id"]),
+            vocab_size=int(payload["vocab_size"]),
+            tokenizer_hash=(
+                None
+                if payload.get("tokenizer_hash") is None
+                else str(payload["tokenizer_hash"])
+            ),
+            model_id=(
+                None if payload.get("model_id") is None else str(payload["model_id"])
+            ),
+            model_family=(
+                None
+                if payload.get("model_family") is None
+                else str(payload["model_family"])
+            ),
+            special_tokens={
+                str(key): int(value)
+                for key, value in dict(payload.get("special_tokens", {})).items()
+            },
+        )
 
 
 @dataclass(frozen=True)

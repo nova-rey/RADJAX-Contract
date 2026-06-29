@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-from pathlib import Path
-
-from radjax_contract.validation._result import ValidationResult
+from radjax_contract.tome import validate_tome
 
 
-def validate_teacher_tome(path: str | Path) -> ValidationResult:
-    return ValidationResult(ok=Path(path).exists())
+def validate_teacher_tome(path: object) -> object:
+    return validate_tome(path)

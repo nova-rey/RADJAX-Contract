@@ -1,5 +1,6 @@
 """Validation entrypoints for RADJAX artifacts."""
 
+from radjax_contract.tome import validate_tome
 from radjax_contract.validation.validate_fingerprint_artifact import (
     validate_fingerprint_artifact,
 )
@@ -16,4 +17,5 @@ __all__ = [
     "validate_student_artifact",
     "validate_target_store",
     "validate_teacher_tome",
+    "validate_tome",
 ]
