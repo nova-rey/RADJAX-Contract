@@ -22,6 +22,9 @@ executing a schedule. See
 The canonical tiny production fixture is installed as package data and exposed
 by `radjax_contract.testing.production_tome_fixture_path()`.
 
+The completed cross-repository gate is recorded in the
+[`P1.5 acceptance receipt`](docs/acceptance/production_tome_alignment_receipt.md).
+
 This package does not load teacher models, train students, run JAX kernels, or
 depend on PyTorch/Transformers. Teacher execution details are RADJAX-Tome
 internals unless written into Tome provenance. Student training configs,

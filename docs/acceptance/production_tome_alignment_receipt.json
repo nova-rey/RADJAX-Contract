@@ -1,0 +1,74 @@
+{
+  "blockers": [],
+  "claims_not_made": [
+    "no_model_quality_claim",
+    "no_network_verification_claim",
+    "no_student_training_claim",
+    "no_student_p1_1_or_p1_2_correction_claim",
+    "no_corridor_or_exemplar_loader_claim",
+    "no_delivery_path_quality_parity_claim"
+  ],
+  "contract_implementation_commit": "cbce741f7c4c14f6716207e5838bf152cce73e49",
+  "contract_repo": "nova-rey/RADJAX-Contract",
+  "fixture": {
+    "fixture_id": "production_multi_surface_v1",
+    "fixture_schema_version": "production_tome_fixture_v1",
+    "tree_digest": "468a259d518a28a6f60af8c339b124b65fd52da0640544d186eb9609933608d1"
+  },
+  "handoff_version": "1.1",
+  "phase_status": {
+    "P1.5": "complete",
+    "P1.6": "unblocked",
+    "P1.7": "blocked_on_P1.6"
+  },
+  "receipt_version": 1,
+  "schema_versions": {
+    "behavioral_surface": "behavioral_surface_v1",
+    "cover_page": 2,
+    "recommended_training_plan": "recommended_training_plan_v1",
+    "tome": 1
+  },
+  "status": "pass",
+  "student_baseline_commit": "7709e5e6dbba569046addaec625a707278441d5f",
+  "student_repo": "nova-rey/RADJAX-Student",
+  "test_results": [
+    {
+      "command": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q",
+      "repository": "nova-rey/RADJAX-Tome",
+      "result": "425 passed, 22 skipped"
+    },
+    {
+      "command": "python3 -m ruff check .",
+      "repository": "nova-rey/RADJAX-Tome",
+      "result": "pass"
+    },
+    {
+      "command": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q",
+      "repository": "nova-rey/RADJAX-Contract",
+      "result": "83 passed"
+    },
+    {
+      "command": "python3 -m ruff check .",
+      "repository": "nova-rey/RADJAX-Contract",
+      "result": "pass"
+    },
+    {
+      "command": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q",
+      "repository": "nova-rey/RADJAX-Student",
+      "result": "18 passed"
+    },
+    {
+      "command": "fresh fixture generation plus diff -qr against packaged fixture",
+      "repository": "cross-repository",
+      "result": "byte-identical artifact; provenance differs only by recorded implementation commits"
+    },
+    {
+      "command": "python3 -m pip wheel --no-deps .",
+      "repository": "nova-rey/RADJAX-Contract",
+      "result": "pass; all 23 canonical fixture files packaged"
+    }
+  ],
+  "tome_commit": "fe5d51e769627cd89124fbb51dbdad2f80ad2fab",
+  "tome_repo": "nova-rey/RADJAX-Tome",
+  "warnings": []
+}

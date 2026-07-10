@@ -30,3 +30,13 @@ This file is append-only institutional memory for shared Contract decisions.
   negotiation.
 - Contract packages the one canonical deterministic production fixture;
   downstream Student CI must consume it rather than maintaining a private copy.
+
+## 2026-07-10 - P1.5 acceptance receipt
+
+- Recorded immutable Tome, Contract implementation, and Student baseline commits
+  alongside the canonical fixture digest and exact verification results.
+- The shared production fixture gate passes with no blockers or warnings, so
+  P1.5 is complete and Student P1.6 is unblocked. P1.7 remains ordered behind
+  P1.6.
+- The receipt explicitly avoids claims about model quality, Student training,
+  payload loaders, or delivery-path quality parity.

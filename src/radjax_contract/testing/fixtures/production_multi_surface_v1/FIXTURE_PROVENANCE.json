@@ -5,7 +5,7 @@
     "no_student_training_claim",
     "no_delivery_path_quality_parity_claim"
   ],
-  "contract_commit": null,
+  "contract_commit": "cbce741f7c4c14f6716207e5838bf152cce73e49",
   "created_at": "2000-01-01T00:00:00Z",
   "fixture_id": "production_multi_surface_v1",
   "fixture_schema_version": "production_tome_fixture_v1",
