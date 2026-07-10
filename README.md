@@ -7,6 +7,21 @@ RADJAX-Tome emits Tomes. RADJAX-Student consumes Tomes. RADJAX-Contract defines
 and validates what a valid Tome is. Artifact files are the API between Tome and
 Student; Python imports between those producer and consumer repos are not.
 
+The canonical production consumer handoff is
+[`docs/reference/RADJAX_TOME_STUDENT_CONSUMER_HANDOFF.md`](docs/reference/RADJAX_TOME_STUDENT_CONSUMER_HANDOFF.md).
+
+## Production Tome Contract
+
+Production cover-page v2 artifacts use a complete role index, generic
+behavioral surfaces, and a surface-referenced pass plan. Contract provides
+typed corridor and selected-exemplar projections, packed-assignment and payload
+validation, and capability inspection without loading training batches or
+executing a schedule. See
+[`docs/PRODUCTION_TOME_CONTRACT.md`](docs/PRODUCTION_TOME_CONTRACT.md).
+
+The canonical tiny production fixture is installed as package data and exposed
+by `radjax_contract.testing.production_tome_fixture_path()`.
+
 This package does not load teacher models, train students, run JAX kernels, or
 depend on PyTorch/Transformers. Teacher execution details are RADJAX-Tome
 internals unless written into Tome provenance. Student training configs,
@@ -17,9 +32,9 @@ boundary data.
 The original `qrwkv-xla` repository is historical source material for the split
 and is not modified by this Contract hardening phase.
 
-## Current Tome Contract
+## Legacy Tome Contract
 
-A minimal Tome is a portable teacher-output artifact directory:
+A legacy v0 Tome is a portable teacher-output artifact directory:
 
 ```text
 tome_dir/

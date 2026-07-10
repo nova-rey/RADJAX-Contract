@@ -1,0 +1,52 @@
+{
+  "created_at": "2000-01-01T00:00:00Z",
+  "delivery_path": "two_pass_rerun_selected",
+  "schema_version": "selected_exemplars_v1",
+  "score_policy": "entropy_top_n_v1",
+  "selected_exemplars": [
+    {
+      "corridor_assignment_status": "linked",
+      "corridor_fingerprint_id": "fp_000000",
+      "corridor_mode_id": 0,
+      "rank": 1,
+      "selected_example_id": "fixture-00",
+      "selected_policy": "entropy_top_n_v1",
+      "selected_position": 0,
+      "selected_score": 9.0,
+      "source_delivery_path": "two_pass_rerun_selected"
+    },
+    {
+      "corridor_assignment_status": "linked",
+      "corridor_fingerprint_id": "fp_000005",
+      "corridor_mode_id": 0,
+      "rank": 2,
+      "selected_example_id": "fixture-01",
+      "selected_policy": "entropy_top_n_v1",
+      "selected_position": 1,
+      "selected_score": 8.0,
+      "source_delivery_path": "two_pass_rerun_selected"
+    },
+    {
+      "corridor_assignment_status": "linked",
+      "corridor_fingerprint_id": "fp_000010",
+      "corridor_mode_id": 0,
+      "rank": 3,
+      "selected_example_id": "fixture-02",
+      "selected_policy": "entropy_top_n_v1",
+      "selected_position": 2,
+      "selected_score": 7.0,
+      "source_delivery_path": "two_pass_rerun_selected"
+    },
+    {
+      "corridor_assignment_status": "linked",
+      "corridor_fingerprint_id": "fp_000015",
+      "corridor_mode_id": 0,
+      "rank": 4,
+      "selected_example_id": "fixture-03",
+      "selected_policy": "entropy_top_n_v1",
+      "selected_position": 3,
+      "selected_score": 6.0,
+      "source_delivery_path": "two_pass_rerun_selected"
+    }
+  ]
+}

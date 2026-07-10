@@ -1,0 +1,11 @@
+{
+  "contract_repo": "nova-rey/RADJAX-Contract",
+  "handoff_path": "docs/reference/RADJAX_TOME_STUDENT_CONSUMER_HANDOFF.md",
+  "handoff_source_sha256": "efdd9878b70d2cbfdb4d033ba8d6a69ae8edc1104e1d0db52f743a40179a333f",
+  "handoff_version": "1.1",
+  "producer_commit": "c8fb9ac4d92a33d8342c2249bae939e21221125a",
+  "producer_repo": "nova-rey/RADJAX-Tome",
+  "review_status": "accepted_with_versioned_p1_5_clarifications",
+  "student_baseline_commit": "7709e5e6dbba569046addaec625a707278441d5f",
+  "student_repo": "nova-rey/RADJAX-Student"
+}

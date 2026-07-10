@@ -1,0 +1,16 @@
+{
+  "claims_not_made": [
+    "no_model_quality_claim",
+    "no_network_verification_claim",
+    "no_student_training_claim",
+    "no_delivery_path_quality_parity_claim"
+  ],
+  "contract_commit": null,
+  "created_at": "2000-01-01T00:00:00Z",
+  "fixture_id": "production_multi_surface_v1",
+  "fixture_schema_version": "production_tome_fixture_v1",
+  "generator": "radjax_tome.tome.golden_fixture",
+  "producer_commit": "fe5d51e769627cd89124fbb51dbdad2f80ad2fab",
+  "source_examples": 8,
+  "tree_digest": "468a259d518a28a6f60af8c339b124b65fd52da0640544d186eb9609933608d1"
+}

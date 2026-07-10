@@ -24,6 +24,16 @@ from radjax_contract.tome.inspection import (
 )
 from radjax_contract.tome.manifest import TomeManifest, TomeRole
 from radjax_contract.tome.payloads import TomePayloadFormat
+from radjax_contract.tome.production import (
+    ArtifactLocalFingerprintId,
+    ArtifactLocalModeId,
+    ProductionTomeArtifact,
+    ProductionTomeInspection,
+    ProductionTomeValidationResult,
+    inspect_production_tome,
+    load_production_tome,
+    validate_production_tome,
+)
 from radjax_contract.tome.records import (
     TomeRecord,
     TomeRecordLoadResult,
@@ -37,6 +47,11 @@ from radjax_contract.tome.validation import (
 )
 
 __all__ = [
+    "ArtifactLocalFingerprintId",
+    "ArtifactLocalModeId",
+    "ProductionTomeArtifact",
+    "ProductionTomeInspection",
+    "ProductionTomeValidationResult",
     "TomeBehavioralSummary",
     "TomeCompression",
     "TomeCompressionFamily",
@@ -58,9 +73,12 @@ __all__ = [
     "TomeTeacherSummary",
     "TomeValidationResult",
     "inspect_tome_for_consumption",
+    "inspect_production_tome",
     "load_tome_cover_page",
     "load_tome_records",
+    "load_production_tome",
     "valid_compression_for_payload",
     "validate_tome",
     "validate_tome_split_disjointness",
+    "validate_production_tome",
 ]

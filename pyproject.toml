@@ -26,7 +26,11 @@ package-dir = { "" = "src" }
 where = ["src"]
 
 [tool.setuptools.package-data]
-radjax_contract = ["schemas/*.json"]
+radjax_contract = [
+  "schemas/*.json",
+  "testing/fixtures/production_multi_surface_v1/FIXTURE_PROVENANCE.json",
+  "testing/fixtures/production_multi_surface_v1/artifact/**/*",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -42,4 +46,3 @@ select = ["E", "F", "I", "B", "UP"]
 quote-style = "double"
 indent-style = "space"
 line-ending = "lf"
-
