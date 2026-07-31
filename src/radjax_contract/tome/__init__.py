@@ -53,6 +53,10 @@ from radjax_contract.tome.streaming_validation import (
     Result as StreamingTomeValidationResult,
 )
 from radjax_contract.tome.streaming_validation import (
+    StreamingTomeDescriptor,
+    StreamingTomeReader,
+    open_streaming_tome,
+    read_extracted_payload_record,
     validate_streaming_tome,
 )
 from radjax_contract.tome.validation import (
@@ -91,10 +95,14 @@ __all__ = [
     "TomeTeacherSummary",
     "TomeValidationResult",
     "StreamingTomeValidationResult",
+    "StreamingTomeDescriptor",
+    "StreamingTomeReader",
     "inspect_tome_for_consumption",
     "inspect_production_tome",
     "load_tome_cover_page",
     "load_tome_records",
+    "open_streaming_tome",
+    "read_extracted_payload_record",
     "tome_contract_asset_path",
     "tome_contract_root",
     "tome_streaming_contract_asset_path",

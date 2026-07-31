@@ -33,10 +33,14 @@ offline-capable package resources with
 `radjax_contract.tome.tome_streaming_contract_root()` and
 `tome_streaming_contract_asset_path()`. The assets define the v4 cover,
 acyclic manifest graph, JSONL payload/shard indexes, digest recipes, and
-fail-closed compatibility rules. `validate_streaming_tome()` is the shared,
-stdlib-only portable validator; consumers should use it rather than importing
-RADJAX-Tome internals. The v1 discovery API and v2 production contract APIs
-remain unchanged.
+fail-closed compatibility rules. `validate_streaming_tome(path, strict=False)`
+is the shared, stdlib-only portable validator; `open_streaming_tome()` exposes
+a direct sequential archive reader with explicit completed/early/failed
+verification state. Safe noncanonical transport metadata is reported in
+permissive mode and rejected in strict mode; a declared/container transport
+mismatch always fails as `transport_mismatch`. Consumers should use these APIs
+rather than importing RADJAX-Tome internals. The v1 discovery API and v2
+production contract APIs remain unchanged.
 
 This package does not load teacher models, train students, run JAX kernels, or
 depend on PyTorch/Transformers. Teacher execution details are RADJAX-Tome

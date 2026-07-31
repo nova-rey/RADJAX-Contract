@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import hashlib
+import io
 import json
+import tarfile
 from pathlib import Path
 
 import pytest
@@ -10,6 +12,7 @@ from radjax_contract.tome import (
     TOME_CONTRACT_ID,
     TOME_CONTRACT_PUBLICATION_VERSION,
     TOME_STREAMING_CONTRACT_PUBLICATION_VERSION,
+    open_streaming_tome,
     tome_contract_asset_path,
     tome_contract_root,
     tome_streaming_contract_asset_path,
@@ -78,3 +81,36 @@ def test_m7_streaming_validator_is_a_portable_contract_primitive(
     report = validate_streaming_tome(tmp_path)
     assert report.ok is False
     assert report.errors == ("shape_invalid",)
+
+
+def test_m7_archive_transport_declaration_mismatch_fails_explicitly(
+    tmp_path: Path,
+) -> None:
+    """A .tgz cannot silently claim to be a directory package."""
+
+    archive_path = tmp_path / "mismatch.tgz"
+    cover = {
+        "schema_version": "radjax_tome_cover_v4",
+        "identity": {},
+        "training": {},
+        "package": {"profile": "student", "transport": "directory"},
+        "manifests": {},
+        "authority": {},
+        "provenance": {},
+        "validation": {},
+    }
+    with tarfile.open(archive_path, "w:gz") as archive:
+        content = json.dumps(cover).encode("utf-8")
+        member = tarfile.TarInfo("cover_page.json")
+        member.size = len(content)
+        member.mtime = 0
+        member.uid = member.gid = 0
+        member.uname = member.gname = ""
+        member.mode = 0o644
+        archive.addfile(member, io.BytesIO(content))
+
+    report = validate_streaming_tome(archive_path)
+    assert report.ok is False
+    assert report.errors == ("transport_mismatch",)
+    with pytest.raises(ValueError, match="transport_mismatch"):
+        open_streaming_tome(archive_path)
