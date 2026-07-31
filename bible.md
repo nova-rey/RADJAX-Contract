@@ -80,3 +80,9 @@ This file is append-only institutional memory for shared Contract decisions.
   directory/tgz/rtome container now fails explicitly as `transport_mismatch`.
 - This is a corrective branch candidate only: v0.3.1 and its published assets
   remain immutable, and no release or tag was created.
+
+## 2026-07-31 - M7 direct-stream index linkage hardening
+
+- The direct shard stream additionally checks each payload-index row's
+  `shard_sha256` against the streamed shard-index authority, preserving the
+  native validator's address/linkage obligation without retaining records.

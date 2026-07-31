@@ -1221,6 +1221,7 @@ class _ArchivePayloadValidator:
                         or _nonnegative_int(index.get("row")) != row_count
                         or _sha(index.get("payload_sha256")) != _canonical(payload)
                         or _sha(index.get("payload_semantic_digest")) != semantic_digest
+                        or _sha(index.get("shard_sha256")) != _sha(shard["sha256"])
                     ):
                         raise ContractError("payload_index_address_invalid")
                     try:
