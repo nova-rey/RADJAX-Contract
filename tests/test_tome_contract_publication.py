@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from pathlib import Path
 
 import pytest
 
@@ -13,6 +14,7 @@ from radjax_contract.tome import (
     tome_contract_root,
     tome_streaming_contract_asset_path,
     tome_streaming_contract_root,
+    validate_streaming_tome,
 )
 
 
@@ -68,3 +70,11 @@ def test_m7_streaming_resource_lookup_rejects_unsafe_or_unknown_paths() -> None:
         tome_streaming_contract_asset_path("../contract.json")
     with pytest.raises(ValueError, match="unknown"):
         tome_streaming_contract_asset_path("missing.json")
+
+
+def test_m7_streaming_validator_is_a_portable_contract_primitive(
+    tmp_path: Path,
+) -> None:
+    report = validate_streaming_tome(tmp_path)
+    assert report.ok is False
+    assert report.errors == ("shape_invalid",)

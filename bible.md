@@ -60,3 +60,11 @@ This file is append-only institutional memory for shared Contract decisions.
   Contract v2 production APIs and fixtures are unchanged. Contract remains a
   static contract owner and never imports Tome.
 - Package-data and checksum tests pin source and installed asset integrity.
+
+## 2026-07-31 - M7E Portable Validator Ownership Correction
+
+- Contract 0.3.1 owns the reusable, stdlib-only M7 streaming validator beside
+  the published v2 schemas and resources. Tome retains only a command-line
+  forwarding shim, so producer and consumer conformance have one implementation.
+- The validator supports safe sequential archive spooling and bounded-memory
+  directory validation without importing RADJAX-Tome.

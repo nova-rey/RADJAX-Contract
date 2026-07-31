@@ -49,6 +49,12 @@ from radjax_contract.tome.records import (
     load_tome_records,
 )
 from radjax_contract.tome.shards import TomeShard
+from radjax_contract.tome.streaming_validation import (
+    Result as StreamingTomeValidationResult,
+)
+from radjax_contract.tome.streaming_validation import (
+    validate_streaming_tome,
+)
 from radjax_contract.tome.validation import (
     TomeValidationResult,
     validate_tome,
@@ -84,6 +90,7 @@ __all__ = [
     "TomeStudentConsumptionSummary",
     "TomeTeacherSummary",
     "TomeValidationResult",
+    "StreamingTomeValidationResult",
     "inspect_tome_for_consumption",
     "inspect_production_tome",
     "load_tome_cover_page",
@@ -95,6 +102,7 @@ __all__ = [
     "load_production_tome",
     "valid_compression_for_payload",
     "validate_tome",
+    "validate_streaming_tome",
     "validate_tome_split_disjointness",
     "validate_production_tome",
 ]
