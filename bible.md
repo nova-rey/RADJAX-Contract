@@ -40,3 +40,12 @@ This file is append-only institutional memory for shared Contract decisions.
   P1.6.
 - The receipt explicitly avoids claims about model quality, Student training,
   payload loaders, or delivery-path quality parity.
+
+## 2026-07-31 - M6E RADJAX-Tome v3 Contract Publication
+
+- RADJAX-Contract 0.2.0 packages a byte-identical copy of the approved
+  RADJAX-Tome portable v3 contract source and conformance corpus.
+- The new resource-discovery API exposes static assets only; Contract does not
+  import Tome, and existing v2 APIs and fixtures remain unchanged.
+- The package checksum inventory pins every portable asset. Tome verifies this
+  release before demoting its local source tree to an offline checked mirror.

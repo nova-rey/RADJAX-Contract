@@ -5,6 +5,12 @@ from radjax_contract.tome.compression import (
     TomeCompressionFamily,
     valid_compression_for_payload,
 )
+from radjax_contract.tome.contract_publication import (
+    TOME_CONTRACT_ID,
+    TOME_CONTRACT_PUBLICATION_VERSION,
+    tome_contract_asset_path,
+    tome_contract_root,
+)
 from radjax_contract.tome.cover_page import (
     TomeBehavioralSummary,
     TomeContentsSummary,
@@ -49,6 +55,8 @@ from radjax_contract.tome.validation import (
 __all__ = [
     "ArtifactLocalFingerprintId",
     "ArtifactLocalModeId",
+    "TOME_CONTRACT_ID",
+    "TOME_CONTRACT_PUBLICATION_VERSION",
     "ProductionTomeArtifact",
     "ProductionTomeInspection",
     "ProductionTomeValidationResult",
@@ -76,6 +84,8 @@ __all__ = [
     "inspect_production_tome",
     "load_tome_cover_page",
     "load_tome_records",
+    "tome_contract_asset_path",
+    "tome_contract_root",
     "load_production_tome",
     "valid_compression_for_payload",
     "validate_tome",
