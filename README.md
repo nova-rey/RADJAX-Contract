@@ -25,6 +25,18 @@ by `radjax_contract.testing.production_tome_fixture_path()`.
 The completed cross-repository gate is recorded in the
 [`P1.5 acceptance receipt`](docs/acceptance/production_tome_alignment_receipt.md).
 
+## M7 Streaming Tome Contract
+
+Versioned M7 streaming assets are installed under
+`radjax_contract/contracts/radjax_tome/v2`. Consumers discover the checked-in,
+offline-capable package resources with
+`radjax_contract.tome.tome_streaming_contract_root()` and
+`tome_streaming_contract_asset_path()`. The assets define the v4 cover,
+acyclic manifest graph, JSONL payload/shard indexes, digest recipes, and
+fail-closed compatibility rules; consumers should validate those assets rather
+than importing RADJAX-Tome internals. The v1 discovery API and v2 production
+contract APIs remain unchanged.
+
 This package does not load teacher models, train students, run JAX kernels, or
 depend on PyTorch/Transformers. Teacher execution details are RADJAX-Tome
 internals unless written into Tome provenance. Student training configs,

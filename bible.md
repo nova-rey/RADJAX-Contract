@@ -49,3 +49,14 @@ This file is append-only institutional memory for shared Contract decisions.
   import Tome, and existing v2 APIs and fixtures remain unchanged.
 - The package checksum inventory pins every portable asset. Tome verifies this
   release before demoting its local source tree to an offline checked mirror.
+
+## 2026-07-31 - M7E RADJAX-Tome Streaming Contract Publication
+
+- RADJAX-Contract 0.3.0 packages a byte-identical copy of Tome's approved v2
+  streaming-contract assets, including the v4 cover, acyclic manifests, JSONL
+  indexes, semantic identity, recipes, vectors, compatibility descriptors, and
+  conformance catalog.
+- New v2 resource discovery is additive beside the established v1 API; existing
+  Contract v2 production APIs and fixtures are unchanged. Contract remains a
+  static contract owner and never imports Tome.
+- Package-data and checksum tests pin source and installed asset integrity.
