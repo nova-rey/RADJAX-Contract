@@ -585,3 +585,16 @@ next minor publication is planned as `v0.5.0` after complete verification.
   are explicitly outside the Contract binding.
 - V1--v4 source assets and behavior were not modified. This is a candidate
   checkpoint only: no release, tag, merge, or publication has occurred.
+
+## 2026-08-01 - Phase 5 C2 generic language/tokenizer resolver candidate
+
+- The public v5 resolver accepts only an explicit v5 binding or fixed v5
+  package manifest, computes the normative inventory and binding digests, and
+  rechecks every opened resource. There is no v5-to-v4 fallback.
+- Vocabulary JSONL is verified as canonical UTF-8/base64 records in exact
+  `[0, vocabulary_size)` order. Bounds are enforced only for declared token-ID
+  fields; sequence length is absent from this generic contract.
+- The resolved descriptor exposes generic tokenizer semantics and verified
+  behavior-content resources only. It intentionally contains no architecture
+  or plugin projection. Package metadata is the unreleased `0.7.0` candidate;
+  no release, tag, merge, or publication has occurred.

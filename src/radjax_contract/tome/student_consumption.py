@@ -188,6 +188,12 @@ def validate_and_resolve_student_consumption(
         )
 
         return validate_and_resolve_student_consumption_v4(artifact, strict=strict)
+    if profile_id == "native_v3_student_v5":
+        from radjax_contract.tome.language_tokenizer_binding_v1 import (
+            validate_and_resolve_language_tokenizer_binding,
+        )
+
+        return validate_and_resolve_language_tokenizer_binding(artifact, strict=strict)
     issues: list[StudentConsumptionIssue] = []
     warnings: list[StudentConsumptionIssue] = []
     if profile_id != PROFILE_ID:
@@ -348,6 +354,16 @@ def open_verified_student_resource(
         )
 
         with open_verified_student_resource_v4(
+            artifact, resource_id, strict=strict
+        ) as handle:
+            yield handle
+        return
+    if profile_id == "native_v3_student_v5":
+        from radjax_contract.tome.language_tokenizer_binding_v1 import (
+            open_verified_language_tokenizer_resource,
+        )
+
+        with open_verified_language_tokenizer_resource(
             artifact, resource_id, strict=strict
         ) as handle:
             yield handle

@@ -14,6 +14,7 @@ from radjax_contract.tome.contract_publication import (
     TOME_STUDENT_CONSUMPTION_V2_CONTRACT_PUBLICATION_VERSION,
     TOME_STUDENT_CONSUMPTION_V3_CONTRACT_PUBLICATION_VERSION,
     TOME_STUDENT_CONSUMPTION_V4_CONTRACT_PUBLICATION_VERSION,
+    TOME_STUDENT_CONSUMPTION_V5_CONTRACT_PUBLICATION_VERSION,
     tome_contract_asset_path,
     tome_contract_root,
     tome_streaming_contract_asset_path,
@@ -26,6 +27,8 @@ from radjax_contract.tome.contract_publication import (
     tome_student_consumption_v3_contract_root,
     tome_student_consumption_v4_contract_asset_path,
     tome_student_consumption_v4_contract_root,
+    tome_student_consumption_v5_contract_asset_path,
+    tome_student_consumption_v5_contract_root,
 )
 from radjax_contract.tome.cover_page import (
     TomeBehavioralSummary,
@@ -43,6 +46,17 @@ from radjax_contract.tome.cover_page import (
 from radjax_contract.tome.inspection import (
     TomeConsumptionPlan,
     inspect_tome_for_consumption,
+)
+from radjax_contract.tome.language_tokenizer_binding_v1 import (
+    LanguageTokenizerBindingDescriptor,
+    LanguageTokenizerBindingIssue,
+    LanguageTokenizerBindingValidationResult,
+    ResolvedLanguageTokenizerResource,
+    canonical_inventory_digest,
+    canonical_json_bytes,
+    canonical_language_tokenizer_binding_digest,
+    open_verified_language_tokenizer_resource,
+    validate_and_resolve_language_tokenizer_binding,
 )
 from radjax_contract.tome.manifest import TomeManifest, TomeRole
 from radjax_contract.tome.payloads import TomePayloadFormat
@@ -116,6 +130,7 @@ __all__ = [
     "TOME_STUDENT_CONSUMPTION_V2_CONTRACT_PUBLICATION_VERSION",
     "TOME_STUDENT_CONSUMPTION_V3_CONTRACT_PUBLICATION_VERSION",
     "TOME_STUDENT_CONSUMPTION_V4_CONTRACT_PUBLICATION_VERSION",
+    "TOME_STUDENT_CONSUMPTION_V5_CONTRACT_PUBLICATION_VERSION",
     "ProductionTomeArtifact",
     "ProductionTomeInspection",
     "ProductionTomeValidationResult",
@@ -130,10 +145,18 @@ __all__ = [
     "StudentConsumptionV3ValidationResult",
     "StudentConsumptionV4Descriptor",
     "StudentConsumptionV4ValidationResult",
+    "LanguageTokenizerBindingDescriptor",
+    "LanguageTokenizerBindingIssue",
+    "LanguageTokenizerBindingValidationResult",
+    "ResolvedLanguageTokenizerResource",
+    "canonical_inventory_digest",
+    "canonical_json_bytes",
+    "canonical_language_tokenizer_binding_digest",
     "open_verified_student_resource",
     "open_verified_student_resource_v2",
     "open_verified_student_resource_v3",
     "open_verified_student_resource_v4",
+    "open_verified_language_tokenizer_resource",
     "TomeBehavioralSummary",
     "TomeCompression",
     "TomeCompressionFamily",
@@ -175,6 +198,8 @@ __all__ = [
     "tome_student_consumption_v3_contract_root",
     "tome_student_consumption_v4_contract_asset_path",
     "tome_student_consumption_v4_contract_root",
+    "tome_student_consumption_v5_contract_asset_path",
+    "tome_student_consumption_v5_contract_root",
     "load_production_tome",
     "valid_compression_for_payload",
     "validate_tome",
@@ -185,4 +210,5 @@ __all__ = [
     "validate_and_resolve_student_consumption_v2",
     "validate_and_resolve_student_consumption_v3",
     "validate_and_resolve_student_consumption_v4",
+    "validate_and_resolve_language_tokenizer_binding",
 ]
