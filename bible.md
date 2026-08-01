@@ -456,3 +456,17 @@ This file is append-only institutional memory for shared Contract decisions.
   and conformance-contract release, preserving all existing v1/v2 and M7
   assets. The final tag, release, and package digests are recorded only after
   verification and exact-main publication.
+
+## 2026-08-01 - C3 v0.4.0 immutable publication receipt
+
+- `main` fast-forwarded from `e97e0593ba727855fa1a62bc5ca97d12d189a5e3`
+  to the C3 candidate `77b6e9f12e6f20f0bdfc9121b062b1bd21661889`. Annotated
+  tag `v0.4.0` dereferences to that exact commit; no prior tag was moved.
+- GitHub release `v0.4.0` publishes the source distribution
+  `radjax_contract-0.4.0.tar.gz` with
+  `sha256:905eac5a1ad0864e2d84050c88a53d6d53bab656749a4fa2a272379ed8713d59`
+  and the wheel `radjax_contract-0.4.0-py3-none-any.whl` with
+  `sha256:196d69fb694fd1ac4735438451fe555568db5fb4950536e4e23ae1f54a0baf4f`.
+  The release API reports those same digests. Tome may pin only this tag,
+  commit, and verified publication assets; it must not pin the former untagged
+  `0.3.2` candidate.
