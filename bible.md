@@ -502,3 +502,15 @@ This file is append-only institutional memory for shared Contract decisions.
   and `radjax_contract-0.4.1-py3-none-any.whl`
   (`sha256:4edb26ae027d8c6c81e8dffd30130eba9be091bebd5b5bdda2671558d20640dd`).
   Tome may now pin only this immutable tag, commit, and verified asset tree.
+
+## 2026-08-01 - C5 native-v3 Student-consumption v3 candidate
+
+`native_v3_student_v2` remains an immutable released profile.  It did not
+semantically bind the row-range, delivery-receipt, and authority-reference
+sidecars strongly enough to correct safely under the same public profile ID.
+The new `native_v3_student_v3` profile is therefore an explicit, opt-in
+compatibility boundary: it preserves the base native-v3 semantic root and the
+separate derived consumption identity while requiring closed evidence bodies
+and cross-checking their counts, delivery semantics, and authority reference.
+There is no v3-to-v2 fallback.  This candidate has not been released; the
+next minor publication is planned as `v0.5.0` after complete verification.
