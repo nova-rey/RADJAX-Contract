@@ -613,6 +613,36 @@ def test_student_consumption_strict_accepts_canonical_archive_and_rejects_order(
     assert {issue.code for issue in strict.issues} == {"TSC020_TRANSPORT_NONCANONICAL"}
 
 
+def test_student_consumption_noncanonical_warnings_have_stable_order(
+    tmp_path: Path,
+) -> None:
+    artifact = _student_artifact(tmp_path / "directory")
+    cover_path = artifact / "cover_page.json"
+    cover = json.loads(cover_path.read_text(encoding="utf-8"))
+    cover["package"]["transport"] = "tgz"
+    cover_path.write_text(json.dumps(cover), encoding="utf-8")
+    expected: list[tuple[str | None, str | None]] | None = None
+    for attempt in range(2):
+        archive_path = tmp_path / f"warnings-{attempt}.tgz"
+        paths = sorted(item for item in artifact.rglob("*") if item.is_file())
+        with tarfile.open(archive_path, "w:gz") as archive:
+            for path in paths:
+                archive.add(path, arcname=path.relative_to(artifact).as_posix())
+        result = validate_and_resolve_student_consumption(archive_path)
+        observed = [
+            (warning.context.get("locator"), warning.context.get("reason"))
+            for warning in result.warnings
+        ]
+        assert observed == sorted(
+            observed, key=lambda item: (item[0] or "", item[1] or "")
+        )
+        if expected is None:
+            expected = observed
+        else:
+            # Both inputs are noncanonical, but warning reporting is stable.
+            assert observed == expected
+
+
 def test_student_consumption_resolver_accepts_transport_neutral_rtome(
     tmp_path: Path,
 ) -> None:

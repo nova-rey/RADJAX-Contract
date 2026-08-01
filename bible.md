@@ -347,3 +347,10 @@ This file is append-only institutional memory for shared Contract decisions.
   hard-link, truncated gzip, and configured member-limit cases.  Truncated
   gzip EOF is normalized to the documented unsafe-transport outcome rather
   than escaping the portable validation result.
+
+## 2026-08-01 - C2 deterministic warning evidence
+
+- A repeated material noncanonical archive proof now asserts the complete
+  warning tuple is locator-ordered and stable.  This covers the public warning
+  API separately from issue ordering and prevents tar iteration order from
+  becoming externally observable behavior.
