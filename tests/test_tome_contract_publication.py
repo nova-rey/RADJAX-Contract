@@ -722,6 +722,97 @@ def test_student_consumption_rejects_closed_cover_shape_violation(tmp_path: Path
     assert [issue.code for issue in result.issues] == ["TSC002_COVER_VERSION_UNSUPPORTED"]
 
 
+@pytest.mark.parametrize(
+    ("mutation", "code"),
+    [
+        ("missing_role", "TSC010_ROLE_MISSING"),
+        ("ambiguous_inventory", "TSC014_BINDING_AMBIGUOUS"),
+        ("inconsistent_binding", "TSC015_BINDING_INCONSISTENT"),
+        ("invalid_inventory_reference", "TSC016_INVENTORY_REFERENCE_INVALID"),
+    ],
+)
+def test_student_consumption_rejects_role_and_inventory_binding_mutations(
+    tmp_path: Path, mutation: str, code: str
+) -> None:
+    artifact = _student_artifact(tmp_path)
+    manifest_path = artifact / "manifests/student_consumption_v1.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    cover_path = artifact / "cover_page.json"
+    cover = json.loads(cover_path.read_text(encoding="utf-8"))
+    if mutation == "missing_role":
+        manifest["resources"] = [
+            row for row in manifest["resources"] if row["role"] != "authority_reference"
+        ]
+        _write_manifest_then_refresh(artifact, manifest)
+        _refresh_semantic_projection(artifact)
+    elif mutation == "ambiguous_inventory":
+        cover["manifests"]["content"]["inventory"].append(
+            dict(cover["manifests"]["content"]["inventory"][-1])
+        )
+        cover_path.write_text(json.dumps(cover), encoding="utf-8")
+    elif mutation == "inconsistent_binding":
+        manifest["resources"][0]["semantic_digest"] = "sha256:" + "c" * 64
+        _write_manifest_then_refresh(artifact, manifest)
+    else:
+        manifest["resources"][0]["inventory_binding"] = "missing/resource.npz"
+        manifest_path.write_text(json.dumps(manifest, sort_keys=True), encoding="utf-8")
+        entry = next(
+            item
+            for item in cover["manifests"]["content"]["inventory"]
+            if item["path"] == "manifests/student_consumption_v1.json"
+        )
+        entry["sha256"] = _sha256(manifest_path)
+        entry["size_bytes"] = manifest_path.stat().st_size
+        cover["student_consumption"]["manifest_sha256"] = entry["sha256"]
+        cover_path.write_text(json.dumps(cover), encoding="utf-8")
+    result = validate_and_resolve_student_consumption(artifact)
+    assert [issue.code for issue in result.issues] == [code]
+
+
+def _write_manifest_then_refresh(root: Path, manifest: dict[str, object]) -> None:
+    path = root / "manifests/student_consumption_v1.json"
+    path.write_text(json.dumps(manifest, sort_keys=True), encoding="utf-8")
+    _refresh_sidecar_inventory(root)
+
+
+def test_student_consumption_rejects_missing_manifest_and_corrupt_resource(
+    tmp_path: Path,
+) -> None:
+    missing = _student_artifact(tmp_path / "missing")
+    (missing / "manifests/student_consumption_v1.json").unlink()
+    assert [
+        issue.code for issue in validate_and_resolve_student_consumption(missing).issues
+    ] == ["TSC022_RESOURCE_UNAVAILABLE"]
+
+    corrupt = _student_artifact(tmp_path / "corrupt")
+    (corrupt / "resources/00.npz").write_bytes(b"not-an-npz")
+    assert [
+        issue.code for issue in validate_and_resolve_student_consumption(corrupt).issues
+    ] == ["TSC023_RESOURCE_INTEGRITY_MISMATCH"]
+
+
+def test_student_consumption_rejects_stale_semantic_and_base_identity_digests(
+    tmp_path: Path,
+) -> None:
+    stale = _student_artifact(tmp_path / "stale")
+    manifest_path = stale / "manifests/student_consumption_v1.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["semantic_identity"]["vocabulary"]["vocab_size"] = 9
+    _write_manifest_then_refresh(stale, manifest)
+    assert [
+        issue.code for issue in validate_and_resolve_student_consumption(stale).issues
+    ] == ["TSC061_CONSUMPTION_DIGEST_MISMATCH"]
+
+    base = _student_artifact(tmp_path / "base")
+    cover_path = base / "cover_page.json"
+    cover = json.loads(cover_path.read_text(encoding="utf-8"))
+    cover["identity"]["semantic_digest"] = "sha256:" + "d" * 64
+    cover_path.write_text(json.dumps(cover), encoding="utf-8")
+    assert [
+        issue.code for issue in validate_and_resolve_student_consumption(base).issues
+    ] == ["TSC062_BASE_IDENTITY_MISMATCH"]
+
+
 def test_verified_student_resource_uses_stable_resource_id(tmp_path: Path) -> None:
     artifact = _student_artifact(tmp_path)
     with open_verified_student_resource(artifact, "target_shard/default") as handle:

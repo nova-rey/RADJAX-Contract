@@ -260,6 +260,18 @@ def validate_and_resolve_student_consumption(
         manifest = _read_object(manifest_file, issues, "binding")
         if manifest is None:
             return _result(profile_id, issues, warnings)
+        resource_rows = manifest.get("resources")
+        if (
+            not isinstance(resource_rows, list)
+            or {
+                row.get("role")
+                for row in resource_rows
+                if isinstance(row, dict)
+            }
+            < _REQUIRED_ROLES
+        ):
+            issues.append(_issue("TSC010_ROLE_MISSING", "binding"))
+            return _result(profile_id, issues, warnings)
         if not _validate_manifest_schema(manifest):
             issues.append(_issue("TSC013_BINDING_ABSENT", "binding"))
             return _result(profile_id, issues, warnings)

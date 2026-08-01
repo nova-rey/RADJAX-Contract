@@ -305,3 +305,12 @@ This file is append-only institutional memory for shared Contract decisions.
 - A failed target prerequisite suppresses dependent corridor/exemplar checks,
   preserving the documented deterministic issue policy rather than producing
   a cascade of coordinates derived from an invalid target shard.
+
+## 2026-08-01 - C2 binding and identity mutation proof
+
+- The public resolver now has material adversarial proofs for missing required
+  roles, ambiguous inventory, inconsistent semantic bindings, invalid inventory
+  references, unavailable manifest, resource corruption, stale consumption
+  digest, and base semantic-root disagreement.  Required-role absence is
+  classified before schema-dependent resolution while the published schema
+  remains independently strict.
