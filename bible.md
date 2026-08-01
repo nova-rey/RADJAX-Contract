@@ -86,3 +86,13 @@ This file is append-only institutional memory for shared Contract decisions.
 - The direct shard stream additionally checks each payload-index row's
   `shard_sha256` against the streamed shard-index authority, preserving the
   native validator's address/linkage obligation without retaining records.
+
+## 2026-08-01 - Restore accepted M7 production boundary
+
+- Reverted only the unauthorized native-v3 Student-consumption publication and
+  its receipt-pin follow-up from `main` using ordinary additive revert commits.
+- The published accidental state and its source branch remain reachable through
+  dedicated `reference/unauthorized-student-consumption-contract*` branches.
+- M7 v2 streaming assets, direct validation behavior, and historical v1/v2/v3
+  production contract surfaces remain in place. No replacement consumption
+  design is introduced by this restoration.
