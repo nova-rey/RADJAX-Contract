@@ -384,3 +384,10 @@ This file is append-only institutional memory for shared Contract decisions.
   negotiation, required capabilities, digest methods, transport declaration,
   stale consumption identity, and base native-v3 identity disagreement through
   the public Contract API.
+
+## 2026-08-01 - C2 material coordinate and mode-bound mutations
+
+- Public material validation now proves invalid extra assignment coordinates
+  and inverted mode bounds.  Mode-table structural failure suppresses derived
+  unknown-mode and statistics cascades, retaining its deterministic primary
+  `TSC044` outcome.

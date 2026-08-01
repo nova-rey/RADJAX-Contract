@@ -57,6 +57,7 @@ def test_material_corpus_validates_directory_rtome_and_canonical_tgz(
         ("assignment_duplicate", "TSC042_ASSIGNMENT_DUPLICATE"),
         ("mode_unknown", "TSC043_MODE_UNKNOWN"),
         ("negative_weight", "TSC045_WEIGHT_INVALID"),
+        ("assignment_coordinate", "TSC040_ASSIGNMENT_COORDINATE"),
     ],
 )
 def test_material_corpus_executes_corridor_mutations(
@@ -84,6 +85,14 @@ def test_material_corpus_executes_corridor_mutations(
     elif mutation == "mode_unknown":
         arrays["mode_id"] = np.array([99, 0], dtype=np.int32)
         count = 2
+    elif mutation == "assignment_coordinate":
+        arrays = {
+            "position_example_index": np.array([0, 0, 0], dtype=np.int32),
+            "position": np.array([0, 1, 2], dtype=np.int32),
+            "mode_id": np.array([0, 0, 0], dtype=np.int32),
+            "weight": np.array([1.0, 1.0, 1.0], dtype=np.float32),
+        }
+        count = 3
     else:
         arrays["weight"] = np.array([-1.0, 1.0], dtype=np.float32)
         count = 2
@@ -105,6 +114,17 @@ def test_material_corpus_executes_corridor_mutations(
     _refresh_sidecar_inventory(artifact)
     result = validate_and_resolve_student_consumption(artifact)
     assert [issue.code for issue in result.issues] == [code]
+
+
+def test_material_corpus_executes_mode_bounds_mutation(tmp_path: Path) -> None:
+    artifact = _student_artifact(tmp_path)
+    path = artifact / "resources/02.json"
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload["modes"][0]["bounds"]["entropy"] = {"min": 1.0, "max": 0.0}
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    _refresh_sidecar_inventory(artifact)
+    result = validate_and_resolve_student_consumption(artifact)
+    assert [issue.code for issue in result.issues] == ["TSC044_MODE_BOUNDS_INVALID"]
 
 
 @pytest.mark.parametrize(

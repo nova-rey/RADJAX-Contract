@@ -67,6 +67,8 @@ def validate_corridor_resources(
         )
     if modes is None or arrays is None or observed is None or target_lengths is None:
         return tuple(_ordered(issues))
+    if issues:
+        return tuple(_ordered(issues))
 
     example_indexes, positions, mode_ids, weights = arrays
     count = len(example_indexes)
