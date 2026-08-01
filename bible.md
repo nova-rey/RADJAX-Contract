@@ -377,3 +377,10 @@ This file is append-only institutional memory for shared Contract decisions.
   provenance through the public resolver.  Invalid passport joins suppress
   dependent linkage and missing-passport cascades, preserving the documented
   primary complete issue tuple.
+
+## 2026-08-01 - C2 material admission and identity mutations
+
+- The material corpus now exercises legacy/profile and cover-version
+  negotiation, required capabilities, digest methods, transport declaration,
+  stale consumption identity, and base native-v3 identity disagreement through
+  the public Contract API.

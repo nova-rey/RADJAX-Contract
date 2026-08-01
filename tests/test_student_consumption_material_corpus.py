@@ -17,6 +17,7 @@ from test_tome_contract_publication import (
     _canonical_tgz,
     _refresh_sidecar_inventory,
     _student_artifact,
+    _write_manifest_then_refresh,
 )
 
 from radjax_contract.tome import validate_and_resolve_student_consumption
@@ -138,5 +139,48 @@ def test_material_corpus_executes_exemplar_mutations(
         row["source_delivery_path"] = "not-a-path"
     exemplar_path.write_text(json.dumps(exemplar), encoding="utf-8")
     _refresh_sidecar_inventory(artifact)
+    result = validate_and_resolve_student_consumption(artifact)
+    assert [issue.code for issue in result.issues] == [code]
+
+
+@pytest.mark.parametrize(
+    ("mutation", "code"),
+    [
+        ("legacy", "TSC001_PROFILE_UNSUPPORTED"),
+        ("cover", "TSC002_COVER_VERSION_UNSUPPORTED"),
+        ("capability", "TSC003_REQUIRED_CAPABILITY_UNKNOWN"),
+        ("digest_method", "TSC004_DIGEST_METHOD_UNSUPPORTED"),
+        ("transport", "TSC020_TRANSPORT_UNSUPPORTED"),
+        ("stale_identity", "TSC061_CONSUMPTION_DIGEST_MISMATCH"),
+        ("base_identity", "TSC062_BASE_IDENTITY_MISMATCH"),
+    ],
+)
+def test_material_corpus_executes_admission_and_identity_mutations(
+    tmp_path: Path, mutation: str, code: str
+) -> None:
+    artifact = _student_artifact(tmp_path)
+    cover_path = artifact / "cover_page.json"
+    cover = json.loads(cover_path.read_text(encoding="utf-8"))
+    if mutation == "legacy":
+        cover["schema_version"] = "radjax_tome_cover_v3"
+    elif mutation == "cover":
+        cover["schema_version"] = "unsupported"
+    elif mutation == "capability":
+        cover["student_consumption"]["required_capabilities"] = ["unknown"]
+    elif mutation == "digest_method":
+        cover["student_consumption"]["digest_method"] = "sha512"
+    elif mutation == "transport":
+        cover["package"]["transport"] = "tgz"
+    elif mutation == "stale_identity":
+        manifest_path = artifact / "manifests/student_consumption_v1.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest["semantic_identity"]["vocabulary"]["vocab_size"] = 9
+        _write_manifest_then_refresh(artifact, manifest)
+        result = validate_and_resolve_student_consumption(artifact)
+        assert [issue.code for issue in result.issues] == [code]
+        return
+    else:
+        cover["identity"]["semantic_digest"] = "sha256:" + "d" * 64
+    cover_path.write_text(json.dumps(cover), encoding="utf-8")
     result = validate_and_resolve_student_consumption(artifact)
     assert [issue.code for issue in result.issues] == [code]
