@@ -406,3 +406,10 @@ This file is append-only institutional memory for shared Contract decisions.
   repository's established temporary-fixture policy.  This avoids a second
   binary-fixture authority while preserving portable directory, rtome, and
   canonical tgz execution evidence.
+
+## 2026-08-01 - C2 current-head validation evidence
+
+- Cache-cleared Contract validation at `eea03ba` passed with 168 passed and
+  1 environment-skipped test.  Ruff lint, formatting, compilation, and
+  `git diff --check` also passed; the only working-tree item was the preserved
+  unrelated `.DS_Store`.
