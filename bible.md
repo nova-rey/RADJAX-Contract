@@ -538,3 +538,15 @@ next minor publication is planned as `v0.5.0` after complete verification.
 - This is an additive patch to v3 delivery resolution: profile IDs, schemas,
   semantic identity, published `v0.5.0`, and historical v1/v2 validation are
   unchanged. Focused directory and tgz v3 resolver tests passed before review.
+
+## 2026-08-01 - C5 v0.5.1 immutable publication receipt
+
+- `main` contains the reviewed archive-resolution repair at
+  `f9c9278b6a467a6ba7a3972e1644bfc3d13abd6b`; tag `v0.5.1` dereferences to
+  that exact commit. The published v0.5.0 tag and all v1/v2/v3 contract assets
+  remain unchanged.
+- GitHub release `v0.5.1` publishes
+  `radjax_contract-0.5.1.tar.gz`
+  (`sha256:83c3b48300fc6290e02299841046411455f504915bd194ca152c8b614b59a7df`)
+  and `radjax_contract-0.5.1-py3-none-any.whl`
+  (`sha256:6cd91f25624c11de01175faf6267cc1baa114b113f03aa805e0d0b9e062acbdf`).
