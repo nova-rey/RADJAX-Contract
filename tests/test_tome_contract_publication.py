@@ -450,6 +450,59 @@ def test_student_consumption_resolver_rejects_semantically_invalid_token_domain(
     assert [issue.code for issue in result.issues] == ["TSC034_TOKEN_DOMAIN"]
 
 
+@pytest.mark.parametrize(
+    ("arrays", "code"),
+    [
+        (
+            {
+                "input_ids": np.array([[1, 2]], dtype=np.float32),
+                "attention_mask": np.array([[1, 1]], dtype=np.int32),
+                "corridor_lengths": np.array([2], dtype=np.int32),
+            },
+            "TSC031_DTYPE_MISMATCH",
+        ),
+        (
+            {
+                "input_ids": np.array([1, 2], dtype=np.int32),
+                "attention_mask": np.array([1, 1], dtype=np.int32),
+                "corridor_lengths": np.array([2], dtype=np.int32),
+            },
+            "TSC032_RANK_SHAPE_AXIS_MISMATCH",
+        ),
+        (
+            {
+                "input_ids": np.array([[1, 2]], dtype=np.int32),
+                "attention_mask": np.array([[1, 0]], dtype=np.int32),
+                "corridor_lengths": np.array([2], dtype=np.int32),
+            },
+            "TSC035_MASK_LENGTH_ALIGNMENT",
+        ),
+    ],
+)
+def test_student_consumption_rejects_target_array_contract_mutations(
+    tmp_path: Path, arrays: dict[str, np.ndarray], code: str
+) -> None:
+    artifact = _student_artifact(tmp_path)
+    np.savez(artifact / "resources/00.npz", **arrays)
+    _refresh_sidecar_inventory(artifact)
+    result = validate_and_resolve_student_consumption(artifact)
+    assert [issue.code for issue in result.issues] == [code]
+
+
+def test_student_consumption_rejects_noncontiguous_target_shard_ranges(
+    tmp_path: Path,
+) -> None:
+    artifact = _student_artifact(tmp_path)
+    manifest_path = artifact / "manifests/student_consumption_v1.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    target = next(row for row in manifest["resources"] if row["role"] == "target_shard")
+    target["consumption"] = {"row_start": 1, "row_end": 2}
+    manifest_path.write_text(json.dumps(manifest, sort_keys=True), encoding="utf-8")
+    _refresh_sidecar_inventory(artifact)
+    result = validate_and_resolve_student_consumption(artifact)
+    assert [issue.code for issue in result.issues] == ["TSC033_SHARD_CARDINALITY_ORDER"]
+
+
 def test_student_consumption_resolver_accepts_transport_neutral_tgz(
     tmp_path: Path,
 ) -> None:

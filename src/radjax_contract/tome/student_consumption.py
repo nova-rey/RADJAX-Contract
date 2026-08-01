@@ -495,6 +495,8 @@ def _resolve(
     if issues:
         return None
     _validate_target_resources(resolved, root, identity, issues)
+    if issues:
+        return None
     _validate_corridor_and_exemplar_resources(resolved, root, identity, issues)
     if issues:
         return None
@@ -676,9 +678,29 @@ def _validate_target_resources(
 ) -> None:
     vocab = _nested(identity, "vocabulary", "vocab_size")
     sequence = _nested(identity, "sequence", "sequence_length")
-    for resource in resources:
-        if resource.role != "target_shard":
-            continue
+    targets = [resource for resource in resources if resource.role == "target_shard"]
+    expected_start = 0
+    for resource in targets:
+        start = resource.consumption.get("row_start")
+        end = resource.consumption.get("row_end")
+        if (
+            isinstance(start, bool)
+            or isinstance(end, bool)
+            or not isinstance(start, int)
+            or not isinstance(end, int)
+            or start != expected_start
+            or end <= start
+        ):
+            issues.append(
+                _issue(
+                    "TSC033_SHARD_CARDINALITY_ORDER",
+                    "encoding",
+                    resource_id=resource.resource_id,
+                )
+            )
+            return
+        expected_start = end
+    for resource in targets:
         if resource.encoding != "npz":
             issues.append(
                 _issue(
@@ -723,7 +745,7 @@ def _validate_target_resources(
         ):
             issues.append(
                 _issue(
-                    "TSC032_SHAPE_AXIS_MISMATCH",
+                    "TSC032_RANK_SHAPE_AXIS_MISMATCH",
                     "encoding",
                     resource_id=resource.resource_id,
                 )

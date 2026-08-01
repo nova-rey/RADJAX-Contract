@@ -296,3 +296,12 @@ This file is append-only institutional memory for shared Contract decisions.
   validation promotes that warning to rejection; permissive validation remains
   safe and explicit.  The warning is intentionally separate from the closed
   rejection-code corpus rather than pretending that a repack is unsafe.
+
+## 2026-08-01 - C2 target-shard admission and suppression
+
+- Target resources now require contiguous nonempty global row ranges before
+  their array content is inspected.  Public mutations prove distinct dtype,
+  rank/shape/axis, mask/length, token-domain, and row-range outcomes.
+- A failed target prerequisite suppresses dependent corridor/exemplar checks,
+  preserving the documented deterministic issue policy rather than producing
+  a cascade of coordinates derived from an invalid target shard.
