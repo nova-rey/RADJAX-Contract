@@ -2,7 +2,7 @@
 
 ## Status and scope
 
-This is the normative C1 record for `native_v3_student_v1`.  It describes a
+This is the released normative record for `native_v3_student_v1`. It describes a
 portable producer/consumer boundary for native-v3 Tome material.  It does not
 implement a Student reader, batching policy, objective, JAX materializer,
 training schedule, or v4 Student profile.

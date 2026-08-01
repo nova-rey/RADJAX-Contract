@@ -452,7 +452,7 @@ def test_student_consumption_contract_resources_are_discoverable_and_pinned() ->
         TOME_STUDENT_CONSUMPTION_CONTRACT_ID
         == "radjax_tome_student_consumption_contract"
     )
-    assert TOME_STUDENT_CONSUMPTION_CONTRACT_PUBLICATION_VERSION == "1.0.0-draft"
+    assert TOME_STUDENT_CONSUMPTION_CONTRACT_PUBLICATION_VERSION == "1.0.0"
     contract = json.loads((root / "contract.json").read_text(encoding="utf-8"))
     assert contract["contract_id"] == TOME_STUDENT_CONSUMPTION_CONTRACT_ID
     assert contract["publication_version"] == (

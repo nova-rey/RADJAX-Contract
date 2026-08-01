@@ -42,7 +42,7 @@ def test_c1_contract_profile_and_schema_identifiers_are_closed() -> None:
     profile = _json("profiles/native_v3_student_v1.json")
     assert contract == {
         "contract_id": "radjax_tome_student_consumption_contract",
-        "publication_version": "1.0.0-draft",
+        "publication_version": "1.0.0",
         "schema_draft": "https://json-schema.org/draft/2020-12/schema",
         "native_artifact_family": "radjax_tome_cover_v3_student_consumption_v1",
         "profile_id": "native_v3_student_v1",
@@ -51,7 +51,7 @@ def test_c1_contract_profile_and_schema_identifiers_are_closed() -> None:
         ),
         "extension_policy": "closed_core_new_version_required",
         "canonicality_policy": "safe_noncanonical_transport_warns_strict_mode_rejects",
-        "status": "normative_draft_pending_c1_review",
+        "status": "normative_released",
     }
     assert profile["requires_surfaces"] == ["corridor", "exemplar"]
     assert profile["role_authority"] == "role_and_instance_not_physical_path"

@@ -9,7 +9,7 @@ TOME_CONTRACT_ID = "radjax_tome_artifact_contract"
 TOME_CONTRACT_PUBLICATION_VERSION = "1.0.0"
 TOME_STREAMING_CONTRACT_PUBLICATION_VERSION = "2.0.0"
 TOME_STUDENT_CONSUMPTION_CONTRACT_ID = "radjax_tome_student_consumption_contract"
-TOME_STUDENT_CONSUMPTION_CONTRACT_PUBLICATION_VERSION = "1.0.0-draft"
+TOME_STUDENT_CONSUMPTION_CONTRACT_PUBLICATION_VERSION = "1.0.0"
 
 
 def tome_contract_root() -> Path:
@@ -57,7 +57,7 @@ def tome_streaming_contract_asset_path(relative_path: str) -> Path:
 
 
 def tome_student_consumption_contract_root() -> Path:
-    """Return the installed native-v3 Student-consumption draft assets."""
+    """Return the installed native-v3 Student-consumption contract assets."""
 
     root = files("radjax_contract").joinpath(
         "contracts", "radjax_tome", "student_consumption", "v1"

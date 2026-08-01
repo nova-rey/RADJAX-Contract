@@ -447,3 +447,12 @@ This file is append-only institutional memory for shared Contract decisions.
 - Focused vector, digest, materialization, resolver, and adversarial tests
   passed (87 passed, 1 environment-skipped). The isolated installed-wheel
   package-data test also passed with the configured setuptools build backend.
+
+## 2026-08-01 - C3 v0.4.0 release candidate
+
+- The accepted native-v3 Student-consumption profile is no longer declared as
+  a draft. Its immutable contract publication version is `1.0.0`; the Contract
+  distribution release candidate is `0.4.0`. This is an additive public API
+  and conformance-contract release, preserving all existing v1/v2 and M7
+  assets. The final tag, release, and package digests are recorded only after
+  verification and exact-main publication.
