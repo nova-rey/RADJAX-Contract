@@ -10,5 +10,5 @@
   ],
   "source_asset": "valid/native_v3_student_v1.json",
   "materializer": "tests/test_student_consumption_material_corpus.py",
-  "regeneration": "Fixtures are deterministically materialized in isolated temporary directories by the public Contract corpus runner from the checksum-pinned specification vector. Directory, rtome, and canonical tgz delivery digests are verified by that runner. Ordinary Tome integration fixtures remain deferred to T3 and are never backfilled into this publication."
+  "regeneration": "Fixtures are deterministically materialized in isolated temporary directories by the public Contract corpus runner from the checksum-pinned specification vector. The runner verifies equivalent consumption semantic digests across directory, rtome, and canonical tgz deliveries. Ordinary Tome integration fixtures remain deferred to T3 and are never backfilled into this publication."
 }

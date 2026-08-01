@@ -413,3 +413,10 @@ This file is append-only institutional memory for shared Contract decisions.
   1 environment-skipped test.  Ruff lint, formatting, compilation, and
   `git diff --check` also passed; the only working-tree item was the preserved
   unrelated `.DS_Store`.
+
+## 2026-08-01 - C2 vector-derived material corpus
+
+- The material constructor now derives its role sequence from the
+  checksum-pinned native-v3 specification vector.  Directory, rtome, and
+  canonical tgz admissions are proven to resolve one identical consumption
+  semantic digest, rather than merely returning success independently.

@@ -24,6 +24,17 @@ from test_tome_contract_publication import (
 from radjax_contract.tome import student_consumption as student_consumption_module
 from radjax_contract.tome import validate_and_resolve_student_consumption
 
+FIXTURE_ROOT = (
+    Path(__file__).parents[1]
+    / "src/radjax_contract/contracts/radjax_tome/student_consumption/v1/fixtures"
+)
+
+
+def _corpus_artifact(root: Path) -> Path:
+    return _student_artifact(
+        root, source_vector=FIXTURE_ROOT / "valid/native_v3_student_v1.json"
+    )
+
 
 def _archive(root: Path, destination: Path) -> None:
     with tarfile.open(destination, "w") as archive:
@@ -34,8 +45,9 @@ def _archive(root: Path, destination: Path) -> None:
 def test_material_corpus_validates_directory_rtome_and_canonical_tgz(
     tmp_path: Path,
 ) -> None:
-    directory = _student_artifact(tmp_path / "directory")
-    assert validate_and_resolve_student_consumption(directory).ok
+    directory = _corpus_artifact(tmp_path / "directory")
+    directory_result = validate_and_resolve_student_consumption(directory)
+    assert directory_result.ok and directory_result.descriptor is not None
 
     cover_path = directory / "cover_page.json"
     cover = json.loads(cover_path.read_text(encoding="utf-8"))
@@ -43,22 +55,25 @@ def test_material_corpus_validates_directory_rtome_and_canonical_tgz(
     cover_path.write_text(json.dumps(cover), encoding="utf-8")
     rtome = tmp_path / "student.rtome"
     _archive(directory, rtome)
-    assert validate_and_resolve_student_consumption(rtome).ok
+    rtome_result = validate_and_resolve_student_consumption(rtome)
+    assert rtome_result.ok and rtome_result.descriptor is not None
 
     cover["package"]["transport"] = "tgz"
     cover_path.write_text(json.dumps(cover), encoding="utf-8")
     tgz = tmp_path / "student.tgz"
     _canonical_tgz(directory, tgz)
-    assert validate_and_resolve_student_consumption(tgz, strict=True).ok
+    tgz_result = validate_and_resolve_student_consumption(tgz, strict=True)
+    assert tgz_result.ok and tgz_result.descriptor is not None
+    assert {
+        directory_result.descriptor.consumption_semantic_digest,
+        rtome_result.descriptor.consumption_semantic_digest,
+        tgz_result.descriptor.consumption_semantic_digest,
+    } == {directory_result.descriptor.consumption_semantic_digest}
 
 
 def test_material_corpus_catalog_declares_its_pinned_source_and_runner() -> None:
-    root = (
-        Path(__file__).parents[1]
-        / "src/radjax_contract/contracts/radjax_tome/student_consumption/v1/fixtures"
-    )
-    catalog = json.loads((root / "catalog.json").read_text(encoding="utf-8"))
-    source = root / catalog["source_asset"]
+    catalog = json.loads((FIXTURE_ROOT / "catalog.json").read_text(encoding="utf-8"))
+    source = FIXTURE_ROOT / catalog["source_asset"]
     assert source.is_file()
     assert (
         catalog["materializer"] == "tests/test_student_consumption_material_corpus.py"
@@ -78,7 +93,7 @@ def test_material_corpus_catalog_declares_its_pinned_source_and_runner() -> None
 def test_material_corpus_executes_corridor_mutations(
     tmp_path: Path, mutation: str, code: str
 ) -> None:
-    artifact = _student_artifact(tmp_path)
+    artifact = _corpus_artifact(tmp_path)
     path = artifact / "resources/03.npz"
     arrays = {
         "position_example_index": np.array([0, 0], dtype=np.int32),
@@ -132,7 +147,7 @@ def test_material_corpus_executes_corridor_mutations(
 
 
 def test_material_corpus_executes_mode_bounds_mutation(tmp_path: Path) -> None:
-    artifact = _student_artifact(tmp_path)
+    artifact = _corpus_artifact(tmp_path)
     path = artifact / "resources/02.json"
     payload = json.loads(path.read_text(encoding="utf-8"))
     payload["modes"][0]["bounds"]["entropy"] = {"min": 1.0, "max": 0.0}
@@ -156,7 +171,7 @@ def test_material_corpus_executes_mode_bounds_mutation(tmp_path: Path) -> None:
 def test_material_corpus_executes_exemplar_mutations(
     tmp_path: Path, mutation: str, code: str
 ) -> None:
-    artifact = _student_artifact(tmp_path)
+    artifact = _corpus_artifact(tmp_path)
     exemplar_path = artifact / "resources/05.json"
     exemplar = json.loads(exemplar_path.read_text(encoding="utf-8"))
     row = exemplar["selected_exemplars"][0]
@@ -193,7 +208,7 @@ def test_material_corpus_executes_exemplar_mutations(
 def test_material_corpus_executes_admission_and_identity_mutations(
     tmp_path: Path, mutation: str, code: str
 ) -> None:
-    artifact = _student_artifact(tmp_path)
+    artifact = _corpus_artifact(tmp_path)
     cover_path = artifact / "cover_page.json"
     cover = json.loads(cover_path.read_text(encoding="utf-8"))
     if mutation == "legacy":

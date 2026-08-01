@@ -54,7 +54,7 @@ def _canonical_tgz(root: Path, destination: Path) -> None:
                 archive.addfile(member, io.BytesIO(payload))
 
 
-def _student_artifact(root: Path) -> Path:
+def _student_artifact(root: Path, *, source_vector: Path | None = None) -> Path:
     roles = [
         "target_shard",
         "example_registry",
@@ -67,6 +67,9 @@ def _student_artifact(root: Path) -> Path:
         "delivery_receipt",
         "authority_reference",
     ]
+    if source_vector is not None:
+        vector = json.loads(source_vector.read_text(encoding="utf-8"))
+        roles = [row["role"] for row in vector["resources"]]
     resources = []
     training = []
     inventory = []
