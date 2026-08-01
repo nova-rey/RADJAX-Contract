@@ -5,12 +5,12 @@
     "no_student_training_claim",
     "no_delivery_path_quality_parity_claim"
   ],
-  "contract_commit": "abfc8d0c59f9345dab4edd36918487bb68ca9164",
+  "contract_commit": "be034aee296fb3f32cf6534a60676ca597743e98",
   "created_at": "2000-01-01T00:00:00Z",
   "fixture_id": "production_multi_surface_v1",
   "fixture_schema_version": "production_tome_fixture_v1",
   "generator": "radjax_tome.tome.golden_fixture",
-  "producer_commit": "5981e66ba5dfb37391e350752f64eb29a430c811",
+  "producer_commit": "fdb2bd4b4a2be7b4398bfb95d35e8a2bca5cba94",
   "source_examples": 8,
   "tree_digest": "44e2f32e1665bcce2f0853d1ba247bf423250d9c7b173f8af5b9007329d8df05"
 }

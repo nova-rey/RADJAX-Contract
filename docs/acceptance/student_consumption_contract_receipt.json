@@ -3,8 +3,8 @@
   "status": "pass",
   "contract_profile": "native_v3_student_v1",
   "contract_publication_version": "1.0.0",
-  "contract_assets_commit": "abfc8d0c59f9345dab4edd36918487bb68ca9164",
-  "tome_commit": "5981e66ba5dfb37391e350752f64eb29a430c811",
+  "contract_assets_commit": "be034aee296fb3f32cf6534a60676ca597743e98",
+  "tome_commit": "fdb2bd4b4a2be7b4398bfb95d35e8a2bca5cba94",
   "fixture": {
     "fixture_id": "production_multi_surface_v1",
     "tree_digest": "44e2f32e1665bcce2f0853d1ba247bf423250d9c7b173f8af5b9007329d8df05",
