@@ -110,6 +110,8 @@ class StudentConsumptionDescriptor:
         data = asdict(self)
         for key in ("corridor_resources", "exemplar_resources", "validation_resources"):
             data[key] = [item.to_dict() for item in getattr(self, key)]
+        data["joins"] = list(self.joins)
+        data["nonclaims"] = list(self.nonclaims)
         data["warnings"] = [item.to_dict() for item in self.warnings]
         return data
 

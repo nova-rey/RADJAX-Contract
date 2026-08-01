@@ -8,6 +8,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+from jsonschema import Draft202012Validator
 
 from radjax_contract.tome import (
     TOME_CONTRACT_ID,
@@ -312,6 +313,19 @@ def test_student_consumption_resolver_validates_real_sidecar_bindings(
     assert result.descriptor is not None
     assert result.descriptor.sequence["alignment"] == "teacher_logit_position"
     assert len(result.descriptor.validation_resources) == 4
+    contract_root = tome_student_consumption_contract_root()
+    descriptor_schema = json.loads(
+        (contract_root / "schemas/student_consumption_descriptor_v1.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    result_schema = json.loads(
+        (
+            contract_root / "schemas/student_consumption_validation_result_v1.json"
+        ).read_text(encoding="utf-8")
+    )
+    Draft202012Validator(descriptor_schema).validate(result.descriptor.to_dict())
+    Draft202012Validator(result_schema).validate(result.to_dict())
 
 
 def test_student_consumption_resolver_rejects_semantically_invalid_token_domain(

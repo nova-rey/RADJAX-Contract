@@ -214,3 +214,10 @@ This file is append-only institutional memory for shared Contract decisions.
   sidecar.  The resolver reports the physical archive transport while retaining
   the declared consumption identity; a directory/container declaration mismatch
   remains a hard error.
+
+## 2026-08-01 - C2 descriptor/result schema proof
+
+- The resolver's serializable descriptor and result are now validated against
+  their checked-in versioned JSON Schemas in the materialized artifact test.
+  Tuple-backed implementation details are normalized to contract arrays at the
+  public serialization boundary.
