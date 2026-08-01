@@ -354,3 +354,10 @@ This file is append-only institutional memory for shared Contract decisions.
   warning tuple is locator-ordered and stable.  This covers the public warning
   API separately from issue ordering and prevents tar iteration order from
   becoming externally observable behavior.
+
+## 2026-08-01 - C2 material delivery corpus
+
+- The deterministic material native-v3 Student artifact now has public
+  delivery proof as a directory, `.rtome`, and strict-canonical `.tgz`.  This
+  establishes the transport-neutral corpus base that adversarial mutations use
+  instead of relying only on schema vectors.
