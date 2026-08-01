@@ -263,11 +263,7 @@ def validate_and_resolve_student_consumption(
         resource_rows = manifest.get("resources")
         if (
             not isinstance(resource_rows, list)
-            or {
-                row.get("role")
-                for row in resource_rows
-                if isinstance(row, dict)
-            }
+            or {row.get("role") for row in resource_rows if isinstance(row, dict)}
             < _REQUIRED_ROLES
         ):
             issues.append(_issue("TSC010_ROLE_MISSING", "binding"))

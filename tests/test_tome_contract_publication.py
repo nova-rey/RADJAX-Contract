@@ -313,9 +313,12 @@ def _refresh_semantic_projection(root: Path) -> None:
         for row in manifest["resources"]
     ]
     identity.pop("semantic_digest", None)
-    identity["semantic_digest"] = "sha256:" + hashlib.sha256(
-        json.dumps(identity, sort_keys=True, separators=(",", ":")).encode()
-    ).hexdigest()
+    identity["semantic_digest"] = (
+        "sha256:"
+        + hashlib.sha256(
+            json.dumps(identity, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+    )
     manifest_path.write_text(json.dumps(manifest, sort_keys=True), encoding="utf-8")
     cover_path = root / "cover_page.json"
     cover = json.loads(cover_path.read_text(encoding="utf-8"))
@@ -712,14 +715,18 @@ def test_student_consumption_rejects_unsorted_role_instance_binding(
     assert [issue.code for issue in result.issues] == ["TSC012_ROLE_INSTANCE_ORDER"]
 
 
-def test_student_consumption_rejects_closed_cover_shape_violation(tmp_path: Path) -> None:
+def test_student_consumption_rejects_closed_cover_shape_violation(
+    tmp_path: Path,
+) -> None:
     artifact = _student_artifact(tmp_path)
     cover_path = artifact / "cover_page.json"
     cover = json.loads(cover_path.read_text(encoding="utf-8"))
     del cover["training"]
     cover_path.write_text(json.dumps(cover), encoding="utf-8")
     result = validate_and_resolve_student_consumption(artifact)
-    assert [issue.code for issue in result.issues] == ["TSC002_COVER_VERSION_UNSUPPORTED"]
+    assert [issue.code for issue in result.issues] == [
+        "TSC002_COVER_VERSION_UNSUPPORTED"
+    ]
 
 
 @pytest.mark.parametrize(

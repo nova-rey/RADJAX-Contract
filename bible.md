@@ -314,3 +314,10 @@ This file is append-only institutional memory for shared Contract decisions.
   digest, and base semantic-root disagreement.  Required-role absence is
   classified before schema-dependent resolution while the published schema
   remains independently strict.
+
+## 2026-08-01 - C2 branch validation checkpoint
+
+- The cache-cleared Contract suite passes with 135 passed and 1 skipped in the
+  current local interpreter.  Static validation follows the repository Ruff,
+  formatting, compile, and diff checks; the skipped installed-wheel test is
+  environment-specific and remains an explicit release-gate check.
