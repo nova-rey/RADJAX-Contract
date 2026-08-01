@@ -66,12 +66,16 @@ def validate_exemplar_passport_semantics(
 
     expected_rank = 1
     seen_keys: set[tuple[str, int]] = set()
+    join_failed = False
     allowed_paths = frozenset(allowed_delivery_paths)
     for index, exemplar in enumerate(exemplars):
         key = _passport_key(exemplar)
-        if key is None or key in seen_keys or key not in passport_by_key:
+        valid_join = key is not None and key not in seen_keys and key in passport_by_key
+        if not valid_join:
             findings.append(_finding("TSC050_PASSPORT_JOIN_INVALID", index))
-        elif key is not None:
+            join_failed = True
+        else:
+            assert key is not None
             seen_keys.add(key)
         if exemplar.get("rank") != expected_rank:
             findings.append(
@@ -86,12 +90,13 @@ def validate_exemplar_passport_semantics(
 
         _validate_dynamic_top_k(exemplar, index, findings, vocabulary_size)
         if (
-            key is not None
+            valid_join
+            and key is not None
             and corridor_coordinates is not None
             and key not in corridor_coordinates
         ):
             findings.append(_finding("TSC054_CORRIDOR_LINKAGE_INVALID", index))
-        if key is not None and key in passport_by_key:
+        if valid_join and key is not None:
             _validate_linkage_and_provenance(
                 exemplar, passport_by_key[key], index, allowed_paths, findings
             )
@@ -100,7 +105,7 @@ def validate_exemplar_passport_semantics(
     # missing key at a synthetic terminal index retains deterministic ordering
     # without pretending that the source had an exemplar row.
     for key in passport_by_key:
-        if key not in seen_keys:
+        if not join_failed and key not in seen_keys:
             findings.append(
                 _finding(
                     "TSC050_PASSPORT_JOIN_INVALID",

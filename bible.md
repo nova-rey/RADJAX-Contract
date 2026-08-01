@@ -369,3 +369,11 @@ This file is append-only institutional memory for shared Contract decisions.
   unknown modes, and negative weights.  Supporting observed-statistics lengths
   are adjusted where necessary so each case proves its advertised complete
   deterministic tuple rather than a prerequisite failure.
+
+## 2026-08-01 - C2 material exemplar mutation runner
+
+- Material selected-exemplar mutations now exercise passport joins, rank,
+  dynamic top-k masks, probability mass, corridor linkage, and delivery-path
+  provenance through the public resolver.  Invalid passport joins suppress
+  dependent linkage and missing-passport cascades, preserving the documented
+  primary complete issue tuple.

@@ -104,3 +104,39 @@ def test_material_corpus_executes_corridor_mutations(
     _refresh_sidecar_inventory(artifact)
     result = validate_and_resolve_student_consumption(artifact)
     assert [issue.code for issue in result.issues] == [code]
+
+
+@pytest.mark.parametrize(
+    ("mutation", "code"),
+    [
+        ("passport_mismatch", "TSC050_PASSPORT_JOIN_INVALID"),
+        ("rank_gap", "TSC051_EXEMPLAR_RANK_INVALID"),
+        ("top_k_mask", "TSC052_DYNAMIC_TOPK_INVALID"),
+        ("mass_sum", "TSC053_PROBABILITY_MASS_INVALID"),
+        ("corridor_link", "TSC054_CORRIDOR_LINKAGE_INVALID"),
+        ("delivery_path", "TSC055_PROVENANCE_CONTRADICTION"),
+    ],
+)
+def test_material_corpus_executes_exemplar_mutations(
+    tmp_path: Path, mutation: str, code: str
+) -> None:
+    artifact = _student_artifact(tmp_path)
+    exemplar_path = artifact / "resources/05.json"
+    exemplar = json.loads(exemplar_path.read_text(encoding="utf-8"))
+    row = exemplar["selected_exemplars"][0]
+    if mutation == "passport_mismatch":
+        row["selected_example_id"] = "other-example"
+    elif mutation == "rank_gap":
+        row["rank"] = 2
+    elif mutation == "top_k_mask":
+        row["top_selection_mask"] = [True, False, True]
+    elif mutation == "mass_sum":
+        row["top_mass"] = 0.5
+    elif mutation == "corridor_link":
+        row["corridor_mode_id"] = 99
+    else:
+        row["source_delivery_path"] = "not-a-path"
+    exemplar_path.write_text(json.dumps(exemplar), encoding="utf-8")
+    _refresh_sidecar_inventory(artifact)
+    result = validate_and_resolve_student_consumption(artifact)
+    assert [issue.code for issue in result.issues] == [code]
