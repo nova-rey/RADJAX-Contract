@@ -398,3 +398,11 @@ This file is append-only institutional memory for shared Contract decisions.
   per-member byte limit, aggregate byte limit, compression-ratio limit, and
   FIFO/special member rejection.  Each normalizes to `TSC021` without exposing
   tar implementation exceptions.
+
+## 2026-08-01 - C2 pinned material corpus policy
+
+- The Student conformance catalog now names its checksum-pinned normative
+  source vector and the public deterministic materializer, following the
+  repository's established temporary-fixture policy.  This avoids a second
+  binary-fixture authority while preserving portable directory, rtome, and
+  canonical tgz execution evidence.

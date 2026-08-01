@@ -52,6 +52,19 @@ def test_material_corpus_validates_directory_rtome_and_canonical_tgz(
     assert validate_and_resolve_student_consumption(tgz, strict=True).ok
 
 
+def test_material_corpus_catalog_declares_its_pinned_source_and_runner() -> None:
+    root = (
+        Path(__file__).parents[1]
+        / "src/radjax_contract/contracts/radjax_tome/student_consumption/v1/fixtures"
+    )
+    catalog = json.loads((root / "catalog.json").read_text(encoding="utf-8"))
+    source = root / catalog["source_asset"]
+    assert source.is_file()
+    assert (
+        catalog["materializer"] == "tests/test_student_consumption_material_corpus.py"
+    )
+
+
 @pytest.mark.parametrize(
     ("mutation", "code"),
     [

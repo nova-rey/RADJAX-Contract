@@ -8,5 +8,7 @@
     {"id": "path-a-path-b-provenance-equivalence", "kind": "vector", "expected_issues": []},
     {"id": "physical-relocation", "kind": "vector", "expected_issues": []}
   ],
-  "regeneration": "C1 fixtures are independently specification-constructed; ordinary Tome integration fixtures are deferred to T3 and never backfilled into this publication."
+  "source_asset": "valid/native_v3_student_v1.json",
+  "materializer": "tests/test_student_consumption_material_corpus.py",
+  "regeneration": "Fixtures are deterministically materialized in isolated temporary directories by the public Contract corpus runner from the checksum-pinned specification vector. Directory, rtome, and canonical tgz delivery digests are verified by that runner. Ordinary Tome integration fixtures remain deferred to T3 and are never backfilled into this publication."
 }
