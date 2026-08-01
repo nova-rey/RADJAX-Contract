@@ -19,7 +19,11 @@
       ,{"resource_id": "delivery_receipt/default", "role": "delivery_receipt", "instance_id": "default", "semantic_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"}
       ,{"resource_id": "authority_reference/default", "role": "authority_reference", "instance_id": "default", "semantic_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"}
     ],
-    "joins": [{"kind": "assignment_to_logit_position"}],
+    "joins": [
+      {"kind": "assignment_to_logit_position"},
+      {"kind": "exemplar_to_passport"},
+      {"kind": "exemplar_to_corridor"}
+    ],
     "authority": {"selection_integration_config_hash": "sha256:5555555555555555555555555555555555555555555555555555555555555555"},
     "semantic_digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666"
   },

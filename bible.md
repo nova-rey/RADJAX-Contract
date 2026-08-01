@@ -331,3 +331,12 @@ This file is append-only institutional memory for shared Contract decisions.
 - Public material cases now prove unsafe link rejection and a raw-integrity
   refreshed but wrong target container rejection, closing two formerly
   catalog-only adversarial outcomes.
+
+## 2026-08-01 - C2 semantic-schema precision
+
+- The portable consumption-identity schema now enumerates vocabulary size and
+  tokenizer identity, sequence length and teacher-logit alignment, the closed
+  three-join set, and the fixed selection integration authority hash.  The
+  cover extension also requires the native identity bindings and a supported
+  delivery transport rather than accepting an arbitrary object at those
+  consumer-relevant boundaries.

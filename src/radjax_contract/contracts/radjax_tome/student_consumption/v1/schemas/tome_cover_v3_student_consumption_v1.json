@@ -6,9 +6,30 @@
   "required": ["schema_version", "identity", "training", "package", "manifests", "authority", "provenance", "validation", "student_consumption"],
   "properties": {
     "schema_version": {"const": "radjax_tome_cover_v3_student_consumption_v1"},
-    "identity": {"type": "object"},
+    "identity": {
+      "type": "object",
+      "required": ["semantic_digest", "training_payload"],
+      "properties": {
+        "semantic_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+        "training_payload": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["logical_id", "semantic_digest"],
+            "properties": {
+              "logical_id": {"type": "string", "minLength": 1},
+              "semantic_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+            }
+          }
+        }
+      }
+    },
     "training": {"type": "object"},
-    "package": {"type": "object"},
+    "package": {
+      "type": "object",
+      "required": ["transport"],
+      "properties": {"transport": {"enum": ["directory", "rtome", "tgz"]}}
+    },
     "manifests": {
       "type": "object",
       "additionalProperties": false,

@@ -7,11 +7,43 @@
   "properties": {
     "schema_version": {"const": "radjax_tome_student_consumption_semantic_identity_v1"},
     "profile_id": {"const": "native_v3_student_v1"},
-    "vocabulary": {"type": "object"},
-    "sequence": {"type": "object"},
+    "vocabulary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["vocab_size", "tokenizer_identity"],
+      "properties": {
+        "vocab_size": {"type": "integer", "minimum": 1},
+        "tokenizer_identity": {"type": "string", "minLength": 1}
+      }
+    },
+    "sequence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sequence_length", "alignment"],
+      "properties": {
+        "sequence_length": {"type": "integer", "minimum": 1},
+        "alignment": {"const": "teacher_logit_position"}
+      }
+    },
     "resources": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/resource"}},
-    "joins": {"type": "array", "items": {"type": "object"}},
-    "authority": {"type": "object"},
+    "joins": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/join"},
+      "allOf": [
+        {"contains": {"properties": {"kind": {"const": "assignment_to_logit_position"}}, "required": ["kind"]}},
+        {"contains": {"properties": {"kind": {"const": "exemplar_to_passport"}}, "required": ["kind"]}},
+        {"contains": {"properties": {"kind": {"const": "exemplar_to_corridor"}}, "required": ["kind"]}}
+      ]
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["selection_integration_config_hash"],
+      "properties": {"selection_integration_config_hash": {"$ref": "#/$defs/sha256"}}
+    },
     "semantic_digest": {"$ref": "#/$defs/sha256"}
   },
   "$defs": {
@@ -26,6 +58,12 @@
         "instance_id": {"type": "string", "minLength": 1},
         "semantic_digest": {"$ref": "#/$defs/sha256"}
       }
+    },
+    "join": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {"kind": {"enum": ["assignment_to_logit_position", "exemplar_to_passport", "exemplar_to_corridor"]}}
     }
   }
 }

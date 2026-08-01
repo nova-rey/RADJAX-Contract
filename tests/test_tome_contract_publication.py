@@ -216,7 +216,7 @@ def _student_artifact(root: Path) -> Path:
     identity = {
         "schema_version": "radjax_tome_student_consumption_semantic_identity_v1",
         "profile_id": "native_v3_student_v1",
-        "vocabulary": {"vocab_size": 8},
+        "vocabulary": {"vocab_size": 8, "tokenizer_identity": "test-tokenizer"},
         "sequence": {"sequence_length": 2, "alignment": "teacher_logit_position"},
         "resources": [
             {
@@ -230,7 +230,7 @@ def _student_artifact(root: Path) -> Path:
             {"kind": "exemplar_to_passport"},
             {"kind": "exemplar_to_corridor"},
         ],
-        "authority": {},
+        "authority": {"selection_integration_config_hash": "sha256:" + "e" * 64},
     }
     identity["semantic_digest"] = (
         "sha256:"
