@@ -200,3 +200,10 @@ This file is append-only institutional memory for shared Contract decisions.
   over materialized resource files after integrity and target checks.  The
   focused fixture includes actual target, assignment, observed-statistics, and
   mode resources; no resolver branch derives a role from its locator.
+
+## 2026-08-01 - C2 semantic adversarial proof
+
+- Added a materialized artifact mutation that refreshes raw inventory and
+  sidecar hashes after changing a target token.  The resolver still rejects it
+  as `TSC034_TOKEN_DOMAIN`, proving semantic validation is independent of raw
+  integrity validation.

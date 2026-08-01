@@ -192,6 +192,31 @@ def _student_artifact(root: Path) -> Path:
     return root
 
 
+def _refresh_sidecar_inventory(root: Path) -> None:
+    cover_path = root / "cover_page.json"
+    cover = json.loads(cover_path.read_text(encoding="utf-8"))
+    manifest_path = root / cover["student_consumption"]["manifest_path"]
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    inventory = cover["manifests"]["content"]["inventory"]
+    for resource in manifest["resources"]:
+        path = root / resource["inventory_binding"]
+        entry = next(
+            item for item in inventory if item["path"] == resource["inventory_binding"]
+        )
+        entry["sha256"] = _sha256(path)
+        entry["size_bytes"] = path.stat().st_size
+    manifest_path.write_text(json.dumps(manifest, sort_keys=True), encoding="utf-8")
+    manifest_entry = next(
+        item
+        for item in inventory
+        if item["path"] == "manifests/student_consumption_v1.json"
+    )
+    manifest_entry["sha256"] = _sha256(manifest_path)
+    manifest_entry["size_bytes"] = manifest_path.stat().st_size
+    cover["student_consumption"]["manifest_sha256"] = manifest_entry["sha256"]
+    cover_path.write_text(json.dumps(cover), encoding="utf-8")
+
+
 def test_v3_contract_resources_are_packaged_and_checksum_pinned() -> None:
     root = tome_contract_root()
     assert TOME_CONTRACT_ID == "radjax_tome_artifact_contract"
@@ -287,6 +312,22 @@ def test_student_consumption_resolver_validates_real_sidecar_bindings(
     assert result.descriptor is not None
     assert result.descriptor.sequence["alignment"] == "teacher_logit_position"
     assert len(result.descriptor.validation_resources) == 4
+
+
+def test_student_consumption_resolver_rejects_semantically_invalid_token_domain(
+    tmp_path: Path,
+) -> None:
+    artifact = _student_artifact(tmp_path)
+    target_path = artifact / "resources/00.npz"
+    np.savez(
+        target_path,
+        input_ids=np.array([[1, 8]], dtype=np.int32),
+        attention_mask=np.array([[1, 1]], dtype=np.int32),
+        corridor_lengths=np.array([2], dtype=np.int32),
+    )
+    _refresh_sidecar_inventory(artifact)
+    result = validate_and_resolve_student_consumption(artifact)
+    assert [issue.code for issue in result.issues] == ["TSC034_TOKEN_DOMAIN"]
 
 
 def test_verified_student_resource_uses_stable_resource_id(tmp_path: Path) -> None:
