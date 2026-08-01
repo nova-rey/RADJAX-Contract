@@ -7,6 +7,7 @@ the public resolver handles the three supported physical deliveries.
 
 from __future__ import annotations
 
+import io
 import json
 import tarfile
 from pathlib import Path
@@ -20,6 +21,7 @@ from test_tome_contract_publication import (
     _write_manifest_then_refresh,
 )
 
+from radjax_contract.tome import student_consumption as student_consumption_module
 from radjax_contract.tome import validate_and_resolve_student_consumption
 
 
@@ -204,3 +206,29 @@ def test_material_corpus_executes_admission_and_identity_mutations(
     cover_path.write_text(json.dumps(cover), encoding="utf-8")
     result = validate_and_resolve_student_consumption(artifact)
     assert [issue.code for issue in result.issues] == [code]
+
+
+@pytest.mark.parametrize("limit", ["member", "total", "ratio", "fifo"])
+def test_material_corpus_executes_archive_safety_limits(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, limit: str
+) -> None:
+    archive_path = tmp_path / f"{limit}.tgz"
+    with tarfile.open(archive_path, "w:gz") as archive:
+        if limit == "fifo":
+            member = tarfile.TarInfo("pipe")
+            member.type = tarfile.FIFOTYPE
+            archive.addfile(member)
+        else:
+            for name in ("a", "b"):
+                payload = b"x" * 64
+                member = tarfile.TarInfo(name)
+                member.size = len(payload)
+                archive.addfile(member, io.BytesIO(payload))
+    if limit == "member":
+        monkeypatch.setattr(student_consumption_module, "_MAX_MEMBER_BYTES", 1)
+    elif limit == "total":
+        monkeypatch.setattr(student_consumption_module, "_MAX_TOTAL_BYTES", 1)
+    elif limit == "ratio":
+        monkeypatch.setattr(student_consumption_module, "_MAX_COMPRESSION_RATIO", 1)
+    result = validate_and_resolve_student_consumption(archive_path)
+    assert [issue.code for issue in result.issues] == ["TSC021_TRANSPORT_UNSAFE"]

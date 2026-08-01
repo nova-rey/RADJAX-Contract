@@ -391,3 +391,10 @@ This file is append-only institutional memory for shared Contract decisions.
   and inverted mode bounds.  Mode-table structural failure suppresses derived
   unknown-mode and statistics cascades, retaining its deterministic primary
   `TSC044` outcome.
+
+## 2026-08-01 - C2 archive safety-limit corpus
+
+- The material public-resolver corpus now invokes each archive safety branch:
+  per-member byte limit, aggregate byte limit, compression-ratio limit, and
+  FIFO/special member rejection.  Each normalizes to `TSC021` without exposing
+  tar implementation exceptions.
