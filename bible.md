@@ -560,3 +560,15 @@ next minor publication is planned as `v0.5.0` after complete verification.
 - The new Path A/Path B regression changes only valid delivery provenance and
   proves one resolved consumption digest. Existing v2/v3 profile IDs and
   assets remain available without fallback or reinterpretation.
+
+## 2026-08-01 - C4 v0.6.0 immutable publication receipt
+
+- `v0.6.0` is annotated at
+  `b1209f21fef9405776a757f1a5749d3152bbc3c6`. It publishes the additive
+  `native_v3_student_v4` profile; v2 and v3 profile sources, validators, and
+  static assets remain unchanged.
+- GitHub release artifacts are
+  `radjax_contract-0.6.0-py3-none-any.whl`
+  (`sha256:c237f6b8be3bb0b8dc95181a80350c7a5dddf4d2dcb23be8ad1ef0b6f8c620c2`)
+  and `radjax_contract-0.6.0.tar.gz`
+  (`sha256:52899b277763d3325467f34eb0a482445af621fe1f712d1da461061882d7720d`).
