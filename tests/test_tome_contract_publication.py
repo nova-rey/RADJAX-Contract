@@ -51,7 +51,11 @@ def _student_artifact(root: Path) -> Path:
     for index, role in enumerate(roles):
         relative = f"resources/{index:02d}.json"
         encoding = "json"
-        if role == "target_shard":
+        if role in {
+            "target_shard",
+            "corridor_assignment",
+            "corridor_observed_statistics",
+        }:
             relative = f"resources/{index:02d}.npz"
             encoding = "npz"
         path = root / relative
@@ -63,6 +67,40 @@ def _student_artifact(root: Path) -> Path:
                 attention_mask=np.array([[1, 1]], dtype=np.int32),
                 corridor_lengths=np.array([2], dtype=np.int32),
             )
+        elif role == "corridor_assignment":
+            np.savez(
+                path,
+                position_example_index=np.array([0, 0], dtype=np.int32),
+                position=np.array([0, 1], dtype=np.int32),
+                mode_id=np.array([0, 0], dtype=np.int32),
+                weight=np.array([1.0, 1.0], dtype=np.float32),
+            )
+        elif role == "corridor_observed_statistics":
+            np.savez(
+                path,
+                entropy=np.array([0.5, 0.5], dtype=np.float32),
+                top1_margin=np.array([0.5, 0.5], dtype=np.float32),
+                top8_mass=np.array([0.5, 0.5], dtype=np.float32),
+                top32_mass=np.array([0.5, 0.5], dtype=np.float32),
+                tail_mass=np.array([0.5, 0.5], dtype=np.float32),
+            )
+        elif role == "corridor_mode_table":
+            bounds = {
+                name: {"min": 0.0, "max": 1.0}
+                for name in (
+                    "entropy",
+                    "top1_margin",
+                    "top8_mass",
+                    "top32_mass",
+                    "tail_mass",
+                )
+            }
+            path.write_text(
+                json.dumps({"modes": [{"mode_id": 0, "bounds": bounds}]}),
+                encoding="utf-8",
+            )
+        elif role in {"selected_passport_index", "selected_exemplar_payload"}:
+            path.write_text(json.dumps({"selected_exemplars": []}), encoding="utf-8")
         else:
             path.write_text("{}", encoding="utf-8")
         semantic = f"sha256:{index + 1:064x}"
@@ -76,7 +114,11 @@ def _student_artifact(root: Path) -> Path:
                 "inventory_binding": relative,
                 "encoding": encoding,
                 "classification": "validation",
-                "consumption": {"kind": role},
+                "consumption": (
+                    {"row_start": 0, "row_end": 1}
+                    if role == "target_shard"
+                    else {"kind": role}
+                ),
             }
         )
         training.append({"logical_id": relative, "semantic_digest": semantic})

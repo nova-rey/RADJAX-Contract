@@ -193,3 +193,10 @@ This file is append-only institutional memory for shared Contract decisions.
 - The descriptor schema now explicitly separates `validation_resources` from
   corridor and exemplar batch resources so a consumer cannot mistake evidence
   for a training input.
+
+## 2026-08-01 - C2 resolver semantic integration
+
+- The public resolver now invokes the portable corridor and exemplar primitives
+  over materialized resource files after integrity and target checks.  The
+  focused fixture includes actual target, assignment, observed-statistics, and
+  mode resources; no resolver branch derives a role from its locator.

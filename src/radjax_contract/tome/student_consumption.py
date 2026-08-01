@@ -20,6 +20,12 @@ import numpy as np
 from radjax_contract.tome.contract_publication import (
     TOME_STUDENT_CONSUMPTION_CONTRACT_ID,
 )
+from radjax_contract.tome.student_consumption_corridor import (
+    validate_corridor_resources,
+)
+from radjax_contract.tome.student_exemplar_semantics import (
+    validate_exemplar_passport_semantics,
+)
 
 PROFILE_ID = "native_v3_student_v1"
 _PHASES = (
@@ -426,6 +432,7 @@ def _resolve(
     if issues:
         return None
     _validate_target_resources(resolved, root, identity, issues)
+    _validate_corridor_and_exemplar_resources(resolved, root, issues)
     if issues:
         return None
 
@@ -463,6 +470,38 @@ def _resolve(
         tuple(warnings),
         ("not_a_student_loader", "not_a_training_policy"),
     )
+
+
+def _validate_corridor_and_exemplar_resources(
+    resources: list[ResolvedStudentResource],
+    root: Path,
+    issues: list[StudentConsumptionIssue],
+) -> None:
+    for finding in validate_corridor_resources(resources, root):
+        phase = "corridor" if finding.code.startswith("TSC04") else "encoding"
+        issues.append(_issue(finding.code, phase, **finding.context))
+    by_role = {resource.role: resource for resource in resources}
+    passport = by_role.get("selected_passport_index")
+    exemplar = by_role.get("selected_exemplar_payload")
+    if passport is None or exemplar is None:
+        return
+    try:
+        passports = _read_object(root / passport.locator, issues, "exemplar")
+        exemplars = _read_object(root / exemplar.locator, issues, "exemplar")
+        passport_rows = passports["selected_exemplars"] if passports else None
+        exemplar_rows = exemplars["selected_exemplars"] if exemplars else None
+        if not isinstance(passport_rows, list) or not isinstance(exemplar_rows, list):
+            raise ValueError("selected_exemplars list required")
+    except (KeyError, TypeError, ValueError):
+        issues.append(_issue("TSC050_PASSPORT_JOIN_INVALID", "exemplar"))
+        return
+    for finding in validate_exemplar_passport_semantics(passport_rows, exemplar_rows):
+        phase = (
+            "provenance"
+            if finding.code == "TSC055_PROVENANCE_CONTRADICTION"
+            else "exemplar"
+        )
+        issues.append(_issue(finding.code, phase, **finding.context))
 
 
 def _validate_target_resources(
