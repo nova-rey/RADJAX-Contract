@@ -43,6 +43,10 @@ _REQUIRED_ROLES = {
     "delivery_receipt",
     "authority_reference",
 }
+_MAX_ARCHIVE_MEMBERS = 100_000
+_MAX_MEMBER_BYTES = 64 * 1024**3
+_MAX_TOTAL_BYTES = 1024 * 1024**3
+_MAX_COMPRESSION_RATIO = 10_000
 
 
 @dataclass(frozen=True)
@@ -152,6 +156,11 @@ def validate_and_resolve_student_consumption(
             return _result(profile_id, issues, warnings)
         if cover.get("schema_version") != "radjax_tome_cover_v3_student_consumption_v1":
             issues.append(_issue("TSC002_COVER_VERSION_UNSUPPORTED", "profile_cover"))
+            return _result(profile_id, issues, warnings)
+        declared_transport = _nested(cover, "package", "transport")
+        actual_transport = "directory" if path.is_dir() else _archive_transport(path)
+        if declared_transport != actual_transport:
+            issues.append(_issue("TSC020_TRANSPORT_UNSUPPORTED", "profile_cover"))
             return _result(profile_id, issues, warnings)
         sidecar = cover.get("student_consumption")
         content = _nested(cover, "manifests", "content")
@@ -439,8 +448,25 @@ class _safe_archive_root:
         root = Path(self.temp.name)
         try:
             with tarfile.open(self.path, "r:*") as archive:
+                names: set[str] = set()
+                total = 0
+                count = 0
                 for member in archive:
-                    if not member.isfile() or not _safe(member.name):
+                    count += 1
+                    total += member.size
+                    if (
+                        count > _MAX_ARCHIVE_MEMBERS
+                        or member.size < 0
+                        or member.size > _MAX_MEMBER_BYTES
+                        or total > _MAX_TOTAL_BYTES
+                        or not member.isfile()
+                        or not _safe(member.name)
+                        or member.name in names
+                    ):
+                        raise ValueError
+                    names.add(member.name)
+                    compressed = max(self.path.stat().st_size, 1)
+                    if total / compressed > _MAX_COMPRESSION_RATIO:
                         raise ValueError
                     target = root / member.name
                     target.parent.mkdir(parents=True, exist_ok=True)
@@ -491,6 +517,15 @@ def _safe(value: str) -> bool:
         and ".." not in pure.parts
         and pure.as_posix() == value
     )
+
+
+def _archive_transport(path: Path) -> str:
+    try:
+        with path.open("rb") as handle:
+            header = handle.read(2)
+    except OSError:
+        return "unknown"
+    return "tgz" if header == b"\x1f\x8b" else "rtome"
 
 
 def _nested(value: Any, *keys: str) -> Any:

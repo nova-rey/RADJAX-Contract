@@ -233,6 +233,23 @@ def test_student_consumption_resolver_validates_real_sidecar_bindings(
     assert len(result.descriptor.validation_resources) == 4
 
 
+def test_student_consumption_resolver_rejects_transport_declaration_mismatch(
+    tmp_path: Path,
+) -> None:
+    archive_path = tmp_path / "mismatch.tgz"
+    cover = {
+        "schema_version": "radjax_tome_cover_v3_student_consumption_v1",
+        "package": {"transport": "directory"},
+    }
+    with tarfile.open(archive_path, "w:gz") as archive:
+        payload = json.dumps(cover).encode("utf-8")
+        member = tarfile.TarInfo("cover_page.json")
+        member.size = len(payload)
+        archive.addfile(member, io.BytesIO(payload))
+    result = validate_and_resolve_student_consumption(archive_path)
+    assert [issue.code for issue in result.issues] == ["TSC020_TRANSPORT_UNSUPPORTED"]
+
+
 @pytest.mark.parametrize("cover", ["[]", '{"schema_version":"x","schema_version":"x"}'])
 def test_student_consumption_resolver_fails_closed_for_non_object_or_duplicate_json(
     tmp_path: Path, cover: str

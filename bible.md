@@ -162,3 +162,10 @@ This file is append-only institutional memory for shared Contract decisions.
   roles, and inconsistent base or consumption semantic identity digests before
   it returns a descriptor.  Materialized local artifact tests cover the valid
   sidecar route and malformed cover failure.
+
+## 2026-08-01 - C2 archive-admission hardening
+
+- Student-consumption archive admission now has bounded member, per-member,
+  total-size, compression-ratio, safe-path, regular-file, and duplicate-member
+  checks.  It rejects a container whose declared transport does not match its
+  actual directory, `.rtome`, or gzip-wrapped tar form.
