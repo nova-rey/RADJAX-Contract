@@ -137,3 +137,10 @@ This file is append-only institutional memory for shared Contract decisions.
   cover-to-content-manifest raw-integrity relation.  This is a documentation
   correction only; no profile, schema, fixture, identity, or runtime behavior
   changed.
+
+## 2026-08-01 - C2 portable asset discovery
+
+- Added a dedicated, traversal-safe public discovery surface for the checked-in
+  native-v3 Student-consumption contract assets.  It exposes only the C1 draft
+  identifier and draft publication version; it does not imply a release, a
+  resolver, or a Student runtime dependency.

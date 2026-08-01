@@ -12,11 +12,15 @@ from radjax_contract.tome import (
     TOME_CONTRACT_ID,
     TOME_CONTRACT_PUBLICATION_VERSION,
     TOME_STREAMING_CONTRACT_PUBLICATION_VERSION,
+    TOME_STUDENT_CONSUMPTION_CONTRACT_ID,
+    TOME_STUDENT_CONSUMPTION_CONTRACT_PUBLICATION_VERSION,
     open_streaming_tome,
     tome_contract_asset_path,
     tome_contract_root,
     tome_streaming_contract_asset_path,
     tome_streaming_contract_root,
+    tome_student_consumption_contract_asset_path,
+    tome_student_consumption_contract_root,
     validate_streaming_tome,
 )
 
@@ -73,6 +77,27 @@ def test_m7_streaming_resource_lookup_rejects_unsafe_or_unknown_paths() -> None:
         tome_streaming_contract_asset_path("../contract.json")
     with pytest.raises(ValueError, match="unknown"):
         tome_streaming_contract_asset_path("missing.json")
+
+
+def test_student_consumption_contract_resources_are_discoverable_and_pinned() -> None:
+    root = tome_student_consumption_contract_root()
+    assert (
+        TOME_STUDENT_CONSUMPTION_CONTRACT_ID
+        == "radjax_tome_student_consumption_contract"
+    )
+    assert TOME_STUDENT_CONSUMPTION_CONTRACT_PUBLICATION_VERSION == "1.0.0-draft"
+    contract = json.loads((root / "contract.json").read_text(encoding="utf-8"))
+    assert contract["contract_id"] == TOME_STUDENT_CONSUMPTION_CONTRACT_ID
+    assert contract["publication_version"] == (
+        TOME_STUDENT_CONSUMPTION_CONTRACT_PUBLICATION_VERSION
+    )
+    assert tome_student_consumption_contract_asset_path(
+        "profiles/native_v3_student_v1.json"
+    ).is_file()
+    with pytest.raises(ValueError, match="normalized relative"):
+        tome_student_consumption_contract_asset_path("../contract.json")
+    with pytest.raises(ValueError, match="unknown"):
+        tome_student_consumption_contract_asset_path("missing.json")
 
 
 def test_m7_streaming_validator_is_a_portable_contract_primitive(
