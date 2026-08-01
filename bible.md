@@ -249,3 +249,10 @@ This file is append-only institutional memory for shared Contract decisions.
   nonempty/unknown required capability list before any dependent resource work.
   The materialized fixture declares its required native-v3 Student profile
   explicitly, matching the closed cover extension.
+
+## 2026-08-01 - C2 role and join admission hardening
+
+- Resolver admission now requires all three declared cross-resource joins and
+  rejects a resource whose classification disagrees with its closed semantic
+  role.  The materialized fixture uses real batch, validation, and provenance
+  classifications rather than treating every role as validation evidence.

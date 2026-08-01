@@ -114,7 +114,21 @@ def _student_artifact(root: Path) -> Path:
                 "training_payload_binding": relative,
                 "inventory_binding": relative,
                 "encoding": encoding,
-                "classification": "validation",
+                "classification": (
+                    "batch"
+                    if role
+                    in {
+                        "target_shard",
+                        "example_registry",
+                        "corridor_mode_table",
+                        "corridor_assignment",
+                        "selected_passport_index",
+                        "selected_exemplar_payload",
+                    }
+                    else "provenance"
+                    if role == "delivery_receipt"
+                    else "validation"
+                ),
                 "consumption": (
                     {"row_start": 0, "row_end": 1}
                     if role == "target_shard"
@@ -142,7 +156,11 @@ def _student_artifact(root: Path) -> Path:
             }
             for item in resources
         ],
-        "joins": [],
+        "joins": [
+            {"kind": "assignment_to_logit_position"},
+            {"kind": "exemplar_to_passport"},
+            {"kind": "exemplar_to_corridor"},
+        ],
         "authority": {},
     }
     identity["semantic_digest"] = (
@@ -157,7 +175,11 @@ def _student_artifact(root: Path) -> Path:
         "base_artifact_semantic_digest": "sha256:" + "a" * 64,
         "semantic_identity": identity,
         "resources": resources,
-        "joins": [],
+        "joins": [
+            {"kind": "assignment_to_logit_position"},
+            {"kind": "exemplar_to_passport"},
+            {"kind": "exemplar_to_corridor"},
+        ],
         "provenance": {"delivery_path": "two_pass_rerun_selected"},
     }
     manifest_path = root / "manifests/student_consumption_v1.json"

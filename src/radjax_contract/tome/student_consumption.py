@@ -52,6 +52,23 @@ _REQUIRED_ROLES = {
     "delivery_receipt",
     "authority_reference",
 }
+_ROLE_CLASSIFICATIONS = {
+    "target_shard": "batch",
+    "example_registry": "batch",
+    "corridor_mode_table": "batch",
+    "corridor_assignment": "batch",
+    "selected_passport_index": "batch",
+    "selected_exemplar_payload": "batch",
+    "corridor_observed_statistics": "validation",
+    "row_range_declaration": "validation",
+    "delivery_receipt": "provenance",
+    "authority_reference": "validation",
+}
+_REQUIRED_JOINS = {
+    "assignment_to_logit_position",
+    "exemplar_to_passport",
+    "exemplar_to_corridor",
+}
 _MAX_ARCHIVE_MEMBERS = 100_000
 _MAX_MEMBER_BYTES = 64 * 1024**3
 _MAX_TOTAL_BYTES = 1024 * 1024**3
@@ -351,6 +368,14 @@ def _resolve(
     if {row[1] for row in actual} < _REQUIRED_ROLES:
         issues.append(_issue("TSC010_ROLE_MISSING", "binding"))
         return None
+    joins = manifest.get("joins")
+    if (
+        not isinstance(joins, list)
+        or {item.get("kind") for item in joins if isinstance(item, dict)}
+        != _REQUIRED_JOINS
+    ):
+        issues.append(_issue("TSC013_BINDING_ABSENT", "structural_join"))
+        return None
     if not _semantic_identity_matches(identity, cover):
         issues.append(_issue("TSC061_CONSUMPTION_DIGEST_MISMATCH", "semantic_digest"))
         return None
@@ -385,6 +410,15 @@ def _resolve(
     for row in resources:
         if not isinstance(row, dict):
             issues.append(_issue("TSC013_BINDING_ABSENT", "binding"))
+            continue
+        if row.get("classification") != _ROLE_CLASSIFICATIONS.get(row.get("role")):
+            issues.append(
+                _issue(
+                    "TSC015_BINDING_INCONSISTENT",
+                    "binding",
+                    resource_id=row.get("resource_id"),
+                )
+            )
             continue
         logical = row.get("training_payload_binding")
         locator = row.get("inventory_binding")
