@@ -490,3 +490,15 @@ This file is append-only institutional memory for shared Contract decisions.
   compatibility tests passed: 40 passed, 1 environment-skipped. No v0.4.0
   asset or tag was changed. Release version metadata and publication are
   intentionally deferred until the complete v0.4.1 verification gate.
+
+## 2026-08-01 - C4 v0.4.1 immutable publication receipt
+
+- `main` contains the reviewed v2 profile at
+  `a6877178d5f07d68f5e0bc28419d0e8e1a58890e`; annotated tag `v0.4.1`
+  dereferences to exactly that commit. No existing release or tag was moved.
+- GitHub release `v0.4.1` publishes
+  `radjax_contract-0.4.1.tar.gz`
+  (`sha256:37ad0bc1cde5c41118f8a1dd3ccd45eea5f2b66a4054c7e9f4c8852558574506`)
+  and `radjax_contract-0.4.1-py3-none-any.whl`
+  (`sha256:4edb26ae027d8c6c81e8dffd30130eba9be091bebd5b5bdda2671558d20640dd`).
+  Tome may now pin only this immutable tag, commit, and verified asset tree.
