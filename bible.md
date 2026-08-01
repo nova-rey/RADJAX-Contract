@@ -242,3 +242,10 @@ This file is append-only institutional memory for shared Contract decisions.
   A/Path B provenance and refreshing raw sidecar binding preserves consumption
   semantic identity.  Delivery provenance remains auditable but is not batch
   meaning.
+
+## 2026-08-01 - C2 negotiation fail-closed checks
+
+- Resolver admission now rejects a sidecar with an unsupported digest method or
+  nonempty/unknown required capability list before any dependent resource work.
+  The materialized fixture declares its required native-v3 Student profile
+  explicitly, matching the closed cover extension.

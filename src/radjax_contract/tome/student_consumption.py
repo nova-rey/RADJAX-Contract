@@ -178,6 +178,16 @@ def validate_and_resolve_student_consumption(
         if not isinstance(sidecar, dict) or not isinstance(content, dict):
             issues.append(_issue("TSC013_BINDING_ABSENT", "binding"))
             return _result(profile_id, issues, warnings)
+        if sidecar.get("profile_id") != profile_id:
+            issues.append(_issue("TSC001_PROFILE_UNSUPPORTED", "profile_cover"))
+            return _result(profile_id, issues, warnings)
+        if sidecar.get("digest_method", "sha256") != "sha256":
+            issues.append(_issue("TSC004_DIGEST_METHOD_UNSUPPORTED", "profile_cover"))
+            return _result(profile_id, issues, warnings)
+        capabilities = sidecar.get("required_capabilities", [])
+        if not isinstance(capabilities, list) or capabilities:
+            issues.append(_issue("TSC003_REQUIRED_CAPABILITY_UNKNOWN", "profile_cover"))
+            return _result(profile_id, issues, warnings)
         manifest_path = sidecar.get("manifest_path")
         inventory = content.get("inventory")
         if (

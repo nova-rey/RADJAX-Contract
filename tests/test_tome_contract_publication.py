@@ -184,6 +184,7 @@ def _student_artifact(root: Path) -> Path:
             }
         },
         "student_consumption": {
+            "profile_id": "native_v3_student_v1",
             "manifest_path": "manifests/student_consumption_v1.json",
             "manifest_sha256": _sha256(manifest_path),
             "semantic_digest": identity["semantic_digest"],
@@ -452,6 +453,25 @@ def test_student_consumption_identity_ignores_delivery_path_provenance(
         after.descriptor.consumption_semantic_digest
         == before.descriptor.consumption_semantic_digest
     )
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "code"),
+    [
+        ("digest_method", "sha512", "TSC004_DIGEST_METHOD_UNSUPPORTED"),
+        ("required_capabilities", ["unknown"], "TSC003_REQUIRED_CAPABILITY_UNKNOWN"),
+    ],
+)
+def test_student_consumption_rejects_unknown_required_negotiation(
+    tmp_path: Path, field: str, value: object, code: str
+) -> None:
+    artifact = _student_artifact(tmp_path)
+    cover_path = artifact / "cover_page.json"
+    cover = json.loads(cover_path.read_text(encoding="utf-8"))
+    cover["student_consumption"][field] = value
+    cover_path.write_text(json.dumps(cover), encoding="utf-8")
+    result = validate_and_resolve_student_consumption(artifact)
+    assert [issue.code for issue in result.issues] == [code]
 
 
 def test_verified_student_resource_uses_stable_resource_id(tmp_path: Path) -> None:
