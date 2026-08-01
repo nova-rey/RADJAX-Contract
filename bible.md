@@ -49,3 +49,40 @@ This file is append-only institutional memory for shared Contract decisions.
   import Tome, and existing v2 APIs and fixtures remain unchanged.
 - The package checksum inventory pins every portable asset. Tome verifies this
   release before demoting its local source tree to an offline checked mirror.
+
+## 2026-07-31 - M7E RADJAX-Tome Streaming Contract Publication
+
+- RADJAX-Contract 0.3.0 packages a byte-identical copy of Tome's approved v2
+  streaming-contract assets, including the v4 cover, acyclic manifests, JSONL
+  indexes, semantic identity, recipes, vectors, compatibility descriptors, and
+  conformance catalog.
+- New v2 resource discovery is additive beside the established v1 API; existing
+  Contract v2 production APIs and fixtures are unchanged. Contract remains a
+  static contract owner and never imports Tome.
+- Package-data and checksum tests pin source and installed asset integrity.
+
+## 2026-07-31 - M7E Portable Validator Ownership Correction
+
+- Contract 0.3.1 owns the reusable, stdlib-only M7 streaming validator beside
+  the published v2 schemas and resources. Tome retains only a command-line
+  forwarding shim, so producer and consumer conformance have one implementation.
+- The validator supports safe sequential archive spooling and bounded-memory
+  directory validation without importing RADJAX-Tome.
+
+## 2026-07-31 - M7 corrective direct streaming candidate
+
+- The untagged 0.3.2 candidate replaces archive-wide temporary extraction with
+  a direct sequential v4 archive reader. It retains only bounded control-plane
+  data and disk-backed JSONL indexes while validating and yielding one payload
+  record at a time.
+- Safe noncanonical container metadata remains a permissive warning and a
+  strict-mode rejection. A cover declaration that disagrees with the physical
+  directory/tgz/rtome container now fails explicitly as `transport_mismatch`.
+- This is a corrective branch candidate only: v0.3.1 and its published assets
+  remain immutable, and no release or tag was created.
+
+## 2026-07-31 - M7 direct-stream index linkage hardening
+
+- The direct shard stream additionally checks each payload-index row's
+  `shard_sha256` against the streamed shard-index authority, preserving the
+  native validator's address/linkage obligation without retaining records.

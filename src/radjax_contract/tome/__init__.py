@@ -8,8 +8,11 @@ from radjax_contract.tome.compression import (
 from radjax_contract.tome.contract_publication import (
     TOME_CONTRACT_ID,
     TOME_CONTRACT_PUBLICATION_VERSION,
+    TOME_STREAMING_CONTRACT_PUBLICATION_VERSION,
     tome_contract_asset_path,
     tome_contract_root,
+    tome_streaming_contract_asset_path,
+    tome_streaming_contract_root,
 )
 from radjax_contract.tome.cover_page import (
     TomeBehavioralSummary,
@@ -46,6 +49,16 @@ from radjax_contract.tome.records import (
     load_tome_records,
 )
 from radjax_contract.tome.shards import TomeShard
+from radjax_contract.tome.streaming_validation import (
+    Result as StreamingTomeValidationResult,
+)
+from radjax_contract.tome.streaming_validation import (
+    StreamingTomeDescriptor,
+    StreamingTomeReader,
+    open_streaming_tome,
+    read_extracted_payload_record,
+    validate_streaming_tome,
+)
 from radjax_contract.tome.validation import (
     TomeValidationResult,
     validate_tome,
@@ -57,6 +70,7 @@ __all__ = [
     "ArtifactLocalModeId",
     "TOME_CONTRACT_ID",
     "TOME_CONTRACT_PUBLICATION_VERSION",
+    "TOME_STREAMING_CONTRACT_PUBLICATION_VERSION",
     "ProductionTomeArtifact",
     "ProductionTomeInspection",
     "ProductionTomeValidationResult",
@@ -80,15 +94,23 @@ __all__ = [
     "TomeStudentConsumptionSummary",
     "TomeTeacherSummary",
     "TomeValidationResult",
+    "StreamingTomeValidationResult",
+    "StreamingTomeDescriptor",
+    "StreamingTomeReader",
     "inspect_tome_for_consumption",
     "inspect_production_tome",
     "load_tome_cover_page",
     "load_tome_records",
+    "open_streaming_tome",
+    "read_extracted_payload_record",
     "tome_contract_asset_path",
     "tome_contract_root",
+    "tome_streaming_contract_asset_path",
+    "tome_streaming_contract_root",
     "load_production_tome",
     "valid_compression_for_payload",
     "validate_tome",
+    "validate_streaming_tome",
     "validate_tome_split_disjointness",
     "validate_production_tome",
 ]
