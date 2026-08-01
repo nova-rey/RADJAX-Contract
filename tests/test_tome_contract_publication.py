@@ -364,6 +364,24 @@ def test_student_consumption_resolver_accepts_transport_neutral_tgz(
     assert archive_result.descriptor.delivery["transport"] == "tgz"
 
 
+def test_student_consumption_resolver_accepts_transport_neutral_rtome(
+    tmp_path: Path,
+) -> None:
+    artifact = _student_artifact(tmp_path / "directory")
+    cover_path = artifact / "cover_page.json"
+    cover = json.loads(cover_path.read_text(encoding="utf-8"))
+    cover["package"]["transport"] = "rtome"
+    cover_path.write_text(json.dumps(cover), encoding="utf-8")
+    archive_path = tmp_path / "student.rtome"
+    with tarfile.open(archive_path, "w") as archive:
+        for path in sorted(item for item in artifact.rglob("*") if item.is_file()):
+            archive.add(path, arcname=path.relative_to(artifact).as_posix())
+    result = validate_and_resolve_student_consumption(archive_path)
+    assert result.ok
+    assert result.descriptor is not None
+    assert result.descriptor.delivery["transport"] == "rtome"
+
+
 def test_verified_student_resource_uses_stable_resource_id(tmp_path: Path) -> None:
     artifact = _student_artifact(tmp_path)
     with open_verified_student_resource(artifact, "target_shard/default") as handle:

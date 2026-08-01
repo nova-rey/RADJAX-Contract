@@ -221,3 +221,10 @@ This file is append-only institutional memory for shared Contract decisions.
   their checked-in versioned JSON Schemas in the materialized artifact test.
   Tuple-backed implementation details are normalized to contract arrays at the
   public serialization boundary.
+
+## 2026-08-01 - C2 RTome transport proof
+
+- Added the plain-tar `.rtome` equivalent of the native-v3 consumption
+  transport proof.  Directory, gzip-wrapped tar, and RTome now each exercise
+  the same explicit sidecar resolver path with physical transport facts kept
+  outside consumption identity.
