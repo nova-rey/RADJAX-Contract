@@ -29,6 +29,16 @@ native-v3 `training_payload.logical_id` binding, but an NPZ resource may have
 many named array members.  Roles and instances are the semantic authority;
 paths are delivery locators only.
 
+The consumption manifest and consumption semantic identity contain the same
+ordered tuple for every resource: `(resource_id, role, instance_id,
+semantic_digest)`.  `resource_id` and `(role, instance_id)` are each unique;
+the manifest adds exactly one training-payload binding and exactly one inventory
+member binding.  The portable validator recomputes this projection before
+accepting the consumption digest.  The cover's
+`student_consumption.manifest_sha256` MUST equal the `sha256` of its single
+`manifests/student_consumption_v1.json` inventory entry.  This is a raw
+integrity relation, not a second semantic digest.
+
 Adding the declaration changes the content-manifest, cover, directory/tree,
 and archive raw digests.  It does not reinterpret or rewrite an existing v3
 semantic root.  A relocation can change a path-bound legacy identity while

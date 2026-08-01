@@ -130,3 +130,10 @@ This file is append-only institutional memory for shared Contract decisions.
   resource/role-instance uniqueness, and one-to-one inventory bindings.  C2
   must make those cross-document relations and the cover manifest-hash to
   inventory-hash equality executable before resolving any descriptor.
+
+## 2026-08-01 - C1 normative relation clarification
+
+- Clarified the portable record's one-to-one logical-resource mapping and its
+  cover-to-content-manifest raw-integrity relation.  This is a documentation
+  correction only; no profile, schema, fixture, identity, or runtime behavior
+  changed.
