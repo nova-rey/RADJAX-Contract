@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "radjax-contract"
-version = "0.1.0"
+version = "0.3.2"
 description = "Shared RADJAX artifact, vocab, provenance, and validation contracts"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -15,7 +15,6 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-  "jsonschema>=4.23",
   "pytest>=8.0",
   "ruff>=0.6",
 ]
@@ -29,9 +28,8 @@ where = ["src"]
 [tool.setuptools.package-data]
 radjax_contract = [
   "schemas/*.json",
-  "contracts/radjax_tome/consumption/v1/**/*",
-  "testing/fixtures/native_v3_student_v1/FIXTURE_PROVENANCE.json",
-  "testing/fixtures/native_v3_student_v1/artifact/**/*",
+  "contracts/radjax_tome/v1/**/*",
+  "contracts/radjax_tome/v2/**/*",
   "testing/fixtures/production_multi_surface_v1/FIXTURE_PROVENANCE.json",
   "testing/fixtures/production_multi_surface_v1/artifact/**/*",
 ]
