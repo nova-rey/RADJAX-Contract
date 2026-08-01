@@ -496,6 +496,30 @@ def test_student_consumption_rejects_unknown_required_negotiation(
     assert [issue.code for issue in result.issues] == [code]
 
 
+def test_student_consumption_rejects_incomplete_join_declaration(
+    tmp_path: Path,
+) -> None:
+    artifact = _student_artifact(tmp_path)
+    cover_path = artifact / "cover_page.json"
+    cover = json.loads(cover_path.read_text(encoding="utf-8"))
+    manifest_path = artifact / "manifests/student_consumption_v1.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["joins"] = [{"kind": "assignment_to_logit_position"}]
+    manifest_path.write_text(json.dumps(manifest, sort_keys=True), encoding="utf-8")
+    inventory = cover["manifests"]["content"]["inventory"]
+    entry = next(
+        item
+        for item in inventory
+        if item["path"] == "manifests/student_consumption_v1.json"
+    )
+    entry["sha256"] = _sha256(manifest_path)
+    entry["size_bytes"] = manifest_path.stat().st_size
+    cover["student_consumption"]["manifest_sha256"] = entry["sha256"]
+    cover_path.write_text(json.dumps(cover), encoding="utf-8")
+    result = validate_and_resolve_student_consumption(artifact)
+    assert [issue.code for issue in result.issues] == ["TSC013_BINDING_ABSENT"]
+
+
 def test_verified_student_resource_uses_stable_resource_id(tmp_path: Path) -> None:
     artifact = _student_artifact(tmp_path)
     with open_verified_student_resource(artifact, "target_shard/default") as handle:

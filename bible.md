@@ -256,3 +256,6 @@ This file is append-only institutional memory for shared Contract decisions.
   rejects a resource whose classification disagrees with its closed semantic
   role.  The materialized fixture uses real batch, validation, and provenance
   classifications rather than treating every role as validation evidence.
+- A raw-integrity-refreshed sidecar mutation with only one join now fails the
+  public resolver as `TSC013_BINDING_ABSENT`, proving the check is semantic
+  admission rather than a stale-manifest artifact.
