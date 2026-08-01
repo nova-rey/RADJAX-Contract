@@ -11,7 +11,13 @@ import json
 import tarfile
 from pathlib import Path
 
-from test_tome_contract_publication import _canonical_tgz, _student_artifact
+import numpy as np
+import pytest
+from test_tome_contract_publication import (
+    _canonical_tgz,
+    _refresh_sidecar_inventory,
+    _student_artifact,
+)
 
 from radjax_contract.tome import validate_and_resolve_student_consumption
 
@@ -41,3 +47,60 @@ def test_material_corpus_validates_directory_rtome_and_canonical_tgz(
     tgz = tmp_path / "student.tgz"
     _canonical_tgz(directory, tgz)
     assert validate_and_resolve_student_consumption(tgz, strict=True).ok
+
+
+@pytest.mark.parametrize(
+    ("mutation", "code"),
+    [
+        ("assignment_missing", "TSC041_ASSIGNMENT_MISSING"),
+        ("assignment_duplicate", "TSC042_ASSIGNMENT_DUPLICATE"),
+        ("mode_unknown", "TSC043_MODE_UNKNOWN"),
+        ("negative_weight", "TSC045_WEIGHT_INVALID"),
+    ],
+)
+def test_material_corpus_executes_corridor_mutations(
+    tmp_path: Path, mutation: str, code: str
+) -> None:
+    artifact = _student_artifact(tmp_path)
+    path = artifact / "resources/03.npz"
+    arrays = {
+        "position_example_index": np.array([0, 0], dtype=np.int32),
+        "position": np.array([0, 1], dtype=np.int32),
+        "mode_id": np.array([0, 0], dtype=np.int32),
+        "weight": np.array([1.0, 1.0], dtype=np.float32),
+    }
+    if mutation == "assignment_missing":
+        arrays = {key: value[:1] for key, value in arrays.items()}
+        count = 1
+    elif mutation == "assignment_duplicate":
+        arrays = {
+            "position_example_index": np.array([0, 0, 0], dtype=np.int32),
+            "position": np.array([0, 0, 1], dtype=np.int32),
+            "mode_id": np.array([0, 0, 0], dtype=np.int32),
+            "weight": np.array([1.0, 1.0, 1.0], dtype=np.float32),
+        }
+        count = 3
+    elif mutation == "mode_unknown":
+        arrays["mode_id"] = np.array([99, 0], dtype=np.int32)
+        count = 2
+    else:
+        arrays["weight"] = np.array([-1.0, 1.0], dtype=np.float32)
+        count = 2
+    np.savez(path, **arrays)
+    if count != 2:
+        np.savez(
+            artifact / "resources/06.npz",
+            **{
+                name: np.full(count, 0.5, dtype=np.float32)
+                for name in (
+                    "entropy",
+                    "top1_margin",
+                    "top8_mass",
+                    "top32_mass",
+                    "tail_mass",
+                )
+            },
+        )
+    _refresh_sidecar_inventory(artifact)
+    result = validate_and_resolve_student_consumption(artifact)
+    assert [issue.code for issue in result.issues] == [code]
