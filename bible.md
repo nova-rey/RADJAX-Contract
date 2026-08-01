@@ -361,3 +361,11 @@ This file is append-only institutional memory for shared Contract decisions.
   delivery proof as a directory, `.rtome`, and strict-canonical `.tgz`.  This
   establishes the transport-neutral corpus base that adversarial mutations use
   instead of relying only on schema vectors.
+
+## 2026-08-01 - C2 material corridor mutation runner
+
+- The material corpus now executes integrity-refreshed packed-assignment
+  mutations through the public resolver for missing coordinates, duplicates,
+  unknown modes, and negative weights.  Supporting observed-statistics lengths
+  are adjusted where necessary so each case proves its advertised complete
+  deterministic tuple rather than a prerequisite failure.
