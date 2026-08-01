@@ -59,7 +59,7 @@ def _student_artifact(root: Path) -> Path:
             relative = f"resources/{index:02d}.npz"
             encoding = "npz"
         path = root / relative
-        path.parent.mkdir(exist_ok=True)
+        path.parent.mkdir(parents=True, exist_ok=True)
         if role == "target_shard":
             np.savez(
                 path,
@@ -160,7 +160,7 @@ def _student_artifact(root: Path) -> Path:
         "provenance": {"delivery_path": "two_pass_rerun_selected"},
     }
     manifest_path = root / "manifests/student_consumption_v1.json"
-    manifest_path.parent.mkdir(exist_ok=True)
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
     manifest_path.write_text(json.dumps(manifest, sort_keys=True), encoding="utf-8")
     inventory.append(
         {
@@ -328,6 +328,26 @@ def test_student_consumption_resolver_rejects_semantically_invalid_token_domain(
     _refresh_sidecar_inventory(artifact)
     result = validate_and_resolve_student_consumption(artifact)
     assert [issue.code for issue in result.issues] == ["TSC034_TOKEN_DOMAIN"]
+
+
+def test_student_consumption_resolver_accepts_transport_neutral_tgz(
+    tmp_path: Path,
+) -> None:
+    artifact = _student_artifact(tmp_path / "directory")
+    cover_path = artifact / "cover_page.json"
+    cover = json.loads(cover_path.read_text(encoding="utf-8"))
+    cover["package"]["transport"] = "tgz"
+    cover_path.write_text(json.dumps(cover), encoding="utf-8")
+    archive_path = tmp_path / "student.tgz"
+    with tarfile.open(archive_path, "w:gz") as archive:
+        for path in sorted(item for item in artifact.rglob("*") if item.is_file()):
+            archive.add(path, arcname=path.relative_to(artifact).as_posix())
+    directory_result = validate_and_resolve_student_consumption(artifact)
+    archive_result = validate_and_resolve_student_consumption(archive_path)
+    assert directory_result.ok is False  # declaration/container mismatch is explicit
+    assert archive_result.ok
+    assert archive_result.descriptor is not None
+    assert archive_result.descriptor.delivery["transport"] == "tgz"
 
 
 def test_verified_student_resource_uses_stable_resource_id(tmp_path: Path) -> None:

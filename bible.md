@@ -207,3 +207,10 @@ This file is append-only institutional memory for shared Contract decisions.
   sidecar hashes after changing a target token.  The resolver still rejects it
   as `TSC034_TOKEN_DOMAIN`, proving semantic validation is independent of raw
   integrity validation.
+
+## 2026-08-01 - C2 archive transport equivalence
+
+- Added a real `.tgz` resolution proof for the same explicit consumption
+  sidecar.  The resolver reports the physical archive transport while retaining
+  the declared consumption identity; a directory/container declaration mismatch
+  remains a hard error.
