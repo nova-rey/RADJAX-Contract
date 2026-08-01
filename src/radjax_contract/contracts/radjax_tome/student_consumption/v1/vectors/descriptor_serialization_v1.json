@@ -1,0 +1,8 @@
+{
+  "schema_version": "radjax_student_consumption_descriptor_vector_v1",
+  "result_schema": "radjax_student_consumption_validation_result_v1",
+  "descriptor_schema": "radjax_student_consumption_descriptor_v1",
+  "canonical_issue_order": ["profile_cover", "archive_safety", "inventory_integrity", "binding", "encoding", "structural_join", "corridor", "exemplar", "provenance", "semantic_digest"],
+  "negative_zero": "normalized_to_positive_zero",
+  "nonfinite": "rejected"
+}

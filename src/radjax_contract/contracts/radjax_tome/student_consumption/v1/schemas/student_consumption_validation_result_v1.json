@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "radjax_student_consumption_validation_result_v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "ok", "profile_id", "issues", "warnings", "descriptor"],
+  "properties": {
+    "schema_version": {"const": "radjax_student_consumption_validation_result_v1"},
+    "ok": {"type": "boolean"},
+    "profile_id": {"type": "string", "minLength": 1},
+    "issues": {"type": "array", "items": {"$ref": "#/$defs/issue"}},
+    "warnings": {"type": "array", "items": {"$ref": "#/$defs/issue"}},
+    "descriptor": {"type": ["object", "null"]}
+  },
+  "$defs": {
+    "issue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "phase", "profile_id", "context"],
+      "properties": {
+        "code": {"type": "string", "pattern": "^TSC[0-9]{3}_[A-Z_]+$"},
+        "phase": {"type": "string", "minLength": 1},
+        "profile_id": {"type": "string", "minLength": 1},
+        "context": {"type": "object"}
+      }
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "schema_version": "radjax_tome_student_consumption_conformance_catalog_v1",
+  "cases": [
+    {"id": "normative-native-v3-directory", "kind": "valid_spec_constructed", "expected_issues": []},
+    {"id": "normative-native-v3-rtome", "kind": "valid_spec_constructed", "expected_issues": []},
+    {"id": "normative-native-v3-tgz", "kind": "valid_spec_constructed", "expected_issues": []},
+    {"id": "legacy-v3-not-consumable", "kind": "historical", "primary_issue": "TSC001_PROFILE_UNSUPPORTED", "expected_issues": ["TSC001_PROFILE_UNSUPPORTED"]},
+    {"id": "path-a-path-b-provenance-equivalence", "kind": "vector", "expected_issues": []},
+    {"id": "physical-relocation", "kind": "vector", "expected_issues": []}
+  ],
+  "regeneration": "C1 fixtures are independently specification-constructed; ordinary Tome integration fixtures are deferred to T3 and never backfilled into this publication."
+}

@@ -1,0 +1,37 @@
+{
+  "schema_version": "radjax_tome_student_consumption_profile_v1",
+  "profile_id": "native_v3_student_v1",
+  "requires_surfaces": ["corridor", "exemplar"],
+  "accepted_package_profiles": ["unpacked", "student", "full_debug_provenance"],
+  "accepted_transports": ["directory", "rtome", "tgz"],
+  "role_authority": "role_and_instance_not_physical_path",
+  "required_batch_roles": [
+    "target_shard",
+    "example_registry",
+    "corridor_mode_table",
+    "corridor_assignment",
+    "selected_passport_index",
+    "selected_exemplar_payload"
+  ],
+  "required_validation_roles": [
+    "corridor_observed_statistics",
+    "delivery_receipt",
+    "authority_reference"
+  ],
+  "optional_diagnostic_roles": [
+    "corridor_fingerprint",
+    "corridor_fingerprint_index",
+    "score_diagnostic",
+    "human_report",
+    "debug_provenance"
+  ],
+  "numeric_policy": {
+    "probability_atol": 0.000001,
+    "probability_rtol": 0.00001,
+    "log_probability_atol": 0.00001,
+    "log_probability_rtol": 0.00001,
+    "inactive_token_id": 0,
+    "inactive_probability": 0.0,
+    "inactive_log_probability": -100.0
+  }
+}

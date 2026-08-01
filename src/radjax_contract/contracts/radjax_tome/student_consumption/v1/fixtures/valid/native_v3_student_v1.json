@@ -1,0 +1,26 @@
+{
+  "schema_version": "radjax_tome_student_consumption_manifest_v1",
+  "profile_id": "native_v3_student_v1",
+  "base_artifact_semantic_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+  "semantic_identity": {
+    "schema_version": "radjax_tome_student_consumption_semantic_identity_v1",
+    "profile_id": "native_v3_student_v1",
+    "vocabulary": {"vocab_size": 32, "tokenizer_identity": "fixture"},
+    "sequence": {"sequence_length": 4, "alignment": "teacher_logit_position"},
+    "resources": [
+      {"resource_id": "target_shard/000000", "role": "target_shard", "instance_id": "000000", "semantic_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"},
+      {"resource_id": "corridor_assignment/packed", "role": "corridor_assignment", "instance_id": "packed", "semantic_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333"},
+      {"resource_id": "exemplar_payload/000000", "role": "selected_exemplar_payload", "instance_id": "000000", "semantic_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444"}
+    ],
+    "joins": [{"kind": "assignment_to_logit_position"}],
+    "authority": {"selection_integration_config_hash": "sha256:5555555555555555555555555555555555555555555555555555555555555555"},
+    "semantic_digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666"
+  },
+  "resources": [
+    {"resource_id": "target_shard/000000", "role": "target_shard", "instance_id": "000000", "semantic_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222", "training_payload_binding": "legacy/path/is/a/locator.npz", "inventory_binding": "portable/location.npz", "encoding": "npz", "classification": "batch", "consumption": {"row_start": 0, "row_end": 1}},
+    {"resource_id": "corridor_assignment/packed", "role": "corridor_assignment", "instance_id": "packed", "semantic_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333", "training_payload_binding": "legacy/path/is/a/locator.json", "inventory_binding": "portable/assignment.json", "encoding": "json", "classification": "batch", "consumption": {"ordering": "global_example_index_position"}},
+    {"resource_id": "exemplar_payload/000000", "role": "selected_exemplar_payload", "instance_id": "000000", "semantic_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444", "training_payload_binding": "legacy/path/is/a/locator.json", "inventory_binding": "portable/exemplar.json", "encoding": "json", "classification": "batch", "consumption": {"rank_start": 1}}
+  ],
+  "joins": [{"kind": "assignment_to_logit_position"}],
+  "provenance": {"delivery_path": "two_pass_rerun_selected"}
+}

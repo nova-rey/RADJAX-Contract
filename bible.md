@@ -96,3 +96,18 @@ This file is append-only institutional memory for shared Contract decisions.
 - M7 v2 streaming assets, direct validation behavior, and historical v1/v2/v3
   production contract surfaces remain in place. No replacement consumption
   design is introduced by this restoration.
+
+## 2026-08-01 - C1 native-v3 Student-consumption normative boundary
+
+- Added a closed, specification-only Contract draft for
+  `native_v3_student_v1`: a native-v3 cover-family extension, a separate
+  consumption semantic identity, path-independent role/instance bindings,
+  fixed numeric policy, deterministic issue ordering, archive limits, and
+  versioned descriptor/result schemas.
+- Legacy v3 admission remains historical and unmodified.  The draft explicitly
+  separates Student batch resources, Contract-only validation evidence,
+  optional diagnostics, and provenance-only Path A/Path B facts.
+- C1 contains an independently constructed manifest fixture and complete named
+  adversarial-code catalog.  It does not implement a resolver, publish an
+  asset, modify Tome, or claim Student batch/training behavior.  C2 remains
+  behind independent C1 review.

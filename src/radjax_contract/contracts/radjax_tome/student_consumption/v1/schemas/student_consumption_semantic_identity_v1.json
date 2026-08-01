@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "radjax_tome_student_consumption_semantic_identity_v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "profile_id", "vocabulary", "sequence", "resources", "joins", "authority", "semantic_digest"],
+  "properties": {
+    "schema_version": {"const": "radjax_tome_student_consumption_semantic_identity_v1"},
+    "profile_id": {"const": "native_v3_student_v1"},
+    "vocabulary": {"type": "object"},
+    "sequence": {"type": "object"},
+    "resources": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/resource"}},
+    "joins": {"type": "array", "items": {"type": "object"}},
+    "authority": {"type": "object"},
+    "semantic_digest": {"$ref": "#/$defs/sha256"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "resource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["resource_id", "role", "instance_id", "semantic_digest"],
+      "properties": {
+        "resource_id": {"type": "string", "minLength": 1},
+        "role": {"type": "string", "minLength": 1},
+        "instance_id": {"type": "string", "minLength": 1},
+        "semantic_digest": {"$ref": "#/$defs/sha256"}
+      }
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "radjax_student_consumption_descriptor_v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "contract_id", "profile_id", "base_artifact_semantic_digest", "consumption_semantic_digest", "vocabulary", "sequence", "corridor_resources", "exemplar_resources", "joins", "delivery", "provenance", "warnings", "nonclaims"],
+  "properties": {
+    "schema_version": {"const": "radjax_student_consumption_descriptor_v1"},
+    "contract_id": {"const": "radjax_tome_student_consumption_contract"},
+    "profile_id": {"const": "native_v3_student_v1"},
+    "base_artifact_semantic_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "consumption_semantic_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "vocabulary": {"type": "object"},
+    "sequence": {"type": "object"},
+    "corridor_resources": {"type": "array", "items": {"type": "object"}},
+    "exemplar_resources": {"type": "array", "items": {"type": "object"}},
+    "joins": {"type": "array", "items": {"type": "object"}},
+    "delivery": {"type": "object"},
+    "provenance": {"type": "object"},
+    "warnings": {"type": "array", "items": {"type": "object"}},
+    "nonclaims": {"type": "array", "items": {"type": "string"}}
+  }
+}

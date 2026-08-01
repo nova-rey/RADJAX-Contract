@@ -1,0 +1,11 @@
+{
+  "contract_id": "radjax_tome_student_consumption_contract",
+  "publication_version": "1.0.0-draft",
+  "schema_draft": "https://json-schema.org/draft/2020-12/schema",
+  "native_artifact_family": "radjax_tome_cover_v3_student_consumption_v1",
+  "profile_id": "native_v3_student_v1",
+  "semantic_identity_schema": "radjax_tome_student_consumption_semantic_identity_v1",
+  "extension_policy": "closed_core_new_version_required",
+  "canonicality_policy": "safe_noncanonical_transport_warns_strict_mode_rejects",
+  "status": "normative_draft_pending_c1_review"
+}
