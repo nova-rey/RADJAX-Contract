@@ -182,6 +182,12 @@ def validate_and_resolve_student_consumption(
         )
 
         return validate_and_resolve_student_consumption_v3(artifact, strict=strict)
+    if profile_id == "native_v3_student_v4":
+        from radjax_contract.tome.student_consumption_v4 import (
+            validate_and_resolve_student_consumption_v4,
+        )
+
+        return validate_and_resolve_student_consumption_v4(artifact, strict=strict)
     issues: list[StudentConsumptionIssue] = []
     warnings: list[StudentConsumptionIssue] = []
     if profile_id != PROFILE_ID:
@@ -332,6 +338,16 @@ def open_verified_student_resource(
         )
 
         with open_verified_student_resource_v3(
+            artifact, resource_id, strict=strict
+        ) as handle:
+            yield handle
+        return
+    if profile_id == "native_v3_student_v4":
+        from radjax_contract.tome.student_consumption_v4 import (
+            open_verified_student_resource_v4,
+        )
+
+        with open_verified_student_resource_v4(
             artifact, resource_id, strict=strict
         ) as handle:
             yield handle

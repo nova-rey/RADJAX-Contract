@@ -550,3 +550,13 @@ next minor publication is planned as `v0.5.0` after complete verification.
   (`sha256:83c3b48300fc6290e02299841046411455f504915bd194ca152c8b614b59a7df`)
   and `radjax_contract-0.5.1-py3-none-any.whl`
   (`sha256:6cd91f25624c11de01175faf6267cc1baa114b113f03aa805e0d0b9e062acbdf`).
+
+## 2026-08-01 - C4 native-v3 Student-consumption v4 candidate
+
+- The published `native_v3_student_v3` profile remains immutable. This additive
+  v4 candidate keeps `delivery_receipt` and `authority_reference` manifest- and
+  raw-integrity-bound and validates their closed bodies, but excludes their
+  body digests from the v4 batch-semantic identity projection.
+- The new Path A/Path B regression changes only valid delivery provenance and
+  proves one resolved consumption digest. Existing v2/v3 profile IDs and
+  assets remain available without fallback or reinterpretation.
