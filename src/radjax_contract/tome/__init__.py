@@ -5,15 +5,6 @@ from radjax_contract.tome.compression import (
     TomeCompressionFamily,
     valid_compression_for_payload,
 )
-from radjax_contract.tome.contract_publication import (
-    TOME_CONTRACT_ID,
-    TOME_CONTRACT_PUBLICATION_VERSION,
-    TOME_STREAMING_CONTRACT_PUBLICATION_VERSION,
-    tome_contract_asset_path,
-    tome_contract_root,
-    tome_streaming_contract_asset_path,
-    tome_streaming_contract_root,
-)
 from radjax_contract.tome.cover_page import (
     TomeBehavioralSummary,
     TomeContentsSummary,
@@ -49,15 +40,13 @@ from radjax_contract.tome.records import (
     load_tome_records,
 )
 from radjax_contract.tome.shards import TomeShard
-from radjax_contract.tome.streaming_validation import (
-    Result as StreamingTomeValidationResult,
-)
-from radjax_contract.tome.streaming_validation import (
-    StreamingTomeDescriptor,
-    StreamingTomeReader,
-    open_streaming_tome,
-    read_extracted_payload_record,
-    validate_streaming_tome,
+from radjax_contract.tome.student_consumption import (
+    CONSUMPTION_CONTRACT_VERSION,
+    PROFILE_ID,
+    StudentTomeConsumptionResult,
+    student_consumption_contract_root,
+    student_consumption_profile_path,
+    validate_student_tome_consumption,
 )
 from radjax_contract.tome.validation import (
     TomeValidationResult,
@@ -66,14 +55,14 @@ from radjax_contract.tome.validation import (
 )
 
 __all__ = [
+    "CONSUMPTION_CONTRACT_VERSION",
+    "PROFILE_ID",
     "ArtifactLocalFingerprintId",
     "ArtifactLocalModeId",
-    "TOME_CONTRACT_ID",
-    "TOME_CONTRACT_PUBLICATION_VERSION",
-    "TOME_STREAMING_CONTRACT_PUBLICATION_VERSION",
     "ProductionTomeArtifact",
     "ProductionTomeInspection",
     "ProductionTomeValidationResult",
+    "StudentTomeConsumptionResult",
     "TomeBehavioralSummary",
     "TomeCompression",
     "TomeCompressionFamily",
@@ -94,23 +83,16 @@ __all__ = [
     "TomeStudentConsumptionSummary",
     "TomeTeacherSummary",
     "TomeValidationResult",
-    "StreamingTomeValidationResult",
-    "StreamingTomeDescriptor",
-    "StreamingTomeReader",
     "inspect_tome_for_consumption",
     "inspect_production_tome",
     "load_tome_cover_page",
     "load_tome_records",
-    "open_streaming_tome",
-    "read_extracted_payload_record",
-    "tome_contract_asset_path",
-    "tome_contract_root",
-    "tome_streaming_contract_asset_path",
-    "tome_streaming_contract_root",
     "load_production_tome",
+    "student_consumption_contract_root",
+    "student_consumption_profile_path",
     "valid_compression_for_payload",
     "validate_tome",
-    "validate_streaming_tome",
     "validate_tome_split_disjointness",
     "validate_production_tome",
+    "validate_student_tome_consumption",
 ]

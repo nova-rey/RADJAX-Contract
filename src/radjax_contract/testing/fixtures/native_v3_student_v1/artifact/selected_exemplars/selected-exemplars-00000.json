@@ -1,0 +1,356 @@
+{
+  "delivery_path": "two_pass_rerun_selected",
+  "schema_version": "selected_exemplar_payload_shard_v1",
+  "selected_exemplars": [
+    {
+      "bucket_masses": [
+        0.1933333327372869,
+        0.1933333327372869,
+        0.1933333327372869
+      ],
+      "corridor_assignment_status": "linked",
+      "corridor_fingerprint_id": "fp_000000",
+      "corridor_mode_id": 0,
+      "dynamic_mass_threshold": 0.95,
+      "dynamic_top_k": {
+        "dynamic_mass_threshold": 0.95,
+        "dynamic_top_k_max": 5,
+        "effective_top_k": 2,
+        "policy": "mass_threshold_v1",
+        "requested_top_k": 5,
+        "score_policy": "entropy_top_n_v1",
+        "source_payload": "deterministic_fixture",
+        "top_k_saturated": false
+      },
+      "dynamic_top_k_max": 5,
+      "effective_top_k": 2,
+      "effective_top_k_fraction_of_vocab": 0.0625,
+      "long_tail_class": "normal",
+      "long_tail_warnings": [],
+      "num_buckets": 3,
+      "payload_ref": {
+        "kind": "corridor_exemplar_score_pass_v1",
+        "source_position": 0,
+        "source_row": 0,
+        "source_score": 0.5,
+        "source_shard_id": 0,
+        "source_top_token_id": 0
+      },
+      "rank": 1,
+      "raw_top_mass": 0.42000000178813934,
+      "score_selected_position_entropy": 0.5,
+      "score_top_token_id": 0,
+      "selected_board": "primary",
+      "selected_example_id": "fixture-00",
+      "selected_policy": "entropy_top_n_v1",
+      "selected_position": 0,
+      "selected_score": 0.5,
+      "semantic_tail_tag": "unknown_open_class_tail",
+      "sequence_length": 4,
+      "source_delivery_path": "two_pass_rerun_selected",
+      "source_position": 0,
+      "source_row": 0,
+      "source_score": 0.5,
+      "source_score_policy": "entropy_top_n_v1",
+      "source_shard_id": 0,
+      "source_top_token_id": 0,
+      "tail_mass": 0.5799999982118607,
+      "teacher_entropy": 0.5,
+      "top_k_saturated": false,
+      "top_log_probs": [
+        -1.4271163779918878,
+        -1.7147983883554976,
+        -100.0,
+        -100.0,
+        -100.0
+      ],
+      "top_mass": 0.42000000178813934,
+      "top_mass_clamped": false,
+      "top_probs": [
+        0.23999999463558197,
+        0.18000000715255737,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "top_selection_mask": [
+        true,
+        true,
+        false,
+        false,
+        false
+      ],
+      "top_token_ids": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "vocab_size": 32
+    },
+    {
+      "bucket_masses": [
+        0.15333333363135657,
+        0.15333333363135657,
+        0.15333333363135657
+      ],
+      "corridor_assignment_status": "linked",
+      "corridor_fingerprint_id": "fp_000005",
+      "corridor_mode_id": 0,
+      "dynamic_mass_threshold": 0.95,
+      "dynamic_top_k": {
+        "dynamic_mass_threshold": 0.95,
+        "dynamic_top_k_max": 5,
+        "effective_top_k": 3,
+        "policy": "mass_threshold_v1",
+        "requested_top_k": 5,
+        "score_policy": "entropy_top_n_v1",
+        "source_payload": "deterministic_fixture",
+        "top_k_saturated": false
+      },
+      "dynamic_top_k_max": 5,
+      "effective_top_k": 3,
+      "effective_top_k_fraction_of_vocab": 0.09375,
+      "long_tail_class": "normal",
+      "long_tail_warnings": [],
+      "num_buckets": 3,
+      "payload_ref": {
+        "kind": "corridor_exemplar_score_pass_v1",
+        "source_position": 1,
+        "source_row": 1,
+        "source_score": 0.5,
+        "source_shard_id": 0,
+        "source_top_token_id": 5
+      },
+      "rank": 2,
+      "raw_top_mass": 0.5399999991059303,
+      "score_selected_position_entropy": 0.5,
+      "score_top_token_id": 5,
+      "selected_board": "primary",
+      "selected_example_id": "fixture-01",
+      "selected_policy": "entropy_top_n_v1",
+      "selected_position": 1,
+      "selected_score": 0.5,
+      "semantic_tail_tag": "unknown_open_class_tail",
+      "sequence_length": 4,
+      "source_delivery_path": "two_pass_rerun_selected",
+      "source_position": 1,
+      "source_row": 1,
+      "source_score": 0.5,
+      "source_score_policy": "entropy_top_n_v1",
+      "source_shard_id": 0,
+      "source_top_token_id": 5,
+      "tail_mass": 0.46000000089406967,
+      "teacher_entropy": 0.5,
+      "top_k_saturated": false,
+      "top_log_probs": [
+        -1.4271163779918878,
+        -1.7147983883554976,
+        -2.1202635585518332,
+        -100.0,
+        -100.0
+      ],
+      "top_mass": 0.5399999991059303,
+      "top_mass_clamped": false,
+      "top_probs": [
+        0.23999999463558197,
+        0.18000000715255737,
+        0.11999999731779099,
+        0.0,
+        0.0
+      ],
+      "top_selection_mask": [
+        true,
+        true,
+        true,
+        false,
+        false
+      ],
+      "top_token_ids": [
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "vocab_size": 32
+    },
+    {
+      "bucket_masses": [
+        0.12666666756073633,
+        0.12666666756073633,
+        0.12666666756073633
+      ],
+      "corridor_assignment_status": "linked",
+      "corridor_fingerprint_id": "fp_000010",
+      "corridor_mode_id": 0,
+      "dynamic_mass_threshold": 0.95,
+      "dynamic_top_k": {
+        "dynamic_mass_threshold": 0.95,
+        "dynamic_top_k_max": 5,
+        "effective_top_k": 4,
+        "policy": "mass_threshold_v1",
+        "requested_top_k": 5,
+        "score_policy": "entropy_top_n_v1",
+        "source_payload": "deterministic_fixture",
+        "top_k_saturated": false
+      },
+      "dynamic_top_k_max": 5,
+      "effective_top_k": 4,
+      "effective_top_k_fraction_of_vocab": 0.125,
+      "long_tail_class": "normal",
+      "long_tail_warnings": [],
+      "num_buckets": 3,
+      "payload_ref": {
+        "kind": "corridor_exemplar_score_pass_v1",
+        "source_position": 2,
+        "source_row": 2,
+        "source_score": 0.5,
+        "source_shard_id": 0,
+        "source_top_token_id": 10
+      },
+      "rank": 3,
+      "raw_top_mass": 0.619999997317791,
+      "score_selected_position_entropy": 0.5,
+      "score_top_token_id": 10,
+      "selected_board": "primary",
+      "selected_example_id": "fixture-02",
+      "selected_policy": "entropy_top_n_v1",
+      "selected_position": 2,
+      "selected_score": 0.5,
+      "semantic_tail_tag": "unknown_open_class_tail",
+      "sequence_length": 4,
+      "source_delivery_path": "two_pass_rerun_selected",
+      "source_position": 2,
+      "source_row": 2,
+      "source_score": 0.5,
+      "source_score_policy": "entropy_top_n_v1",
+      "source_shard_id": 0,
+      "source_top_token_id": 10,
+      "tail_mass": 0.380000002682209,
+      "teacher_entropy": 0.5,
+      "top_k_saturated": false,
+      "top_log_probs": [
+        -1.4271163779918878,
+        -1.7147983883554976,
+        -2.1202635585518332,
+        -2.5257286666599974,
+        -100.0
+      ],
+      "top_mass": 0.619999997317791,
+      "top_mass_clamped": false,
+      "top_probs": [
+        0.23999999463558197,
+        0.18000000715255737,
+        0.11999999731779099,
+        0.07999999821186066,
+        0.0
+      ],
+      "top_selection_mask": [
+        true,
+        true,
+        true,
+        true,
+        false
+      ],
+      "top_token_ids": [
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "vocab_size": 32
+    },
+    {
+      "bucket_masses": [
+        0.11000000064571698,
+        0.11000000064571698,
+        0.11000000064571698
+      ],
+      "corridor_assignment_status": "linked",
+      "corridor_fingerprint_id": "fp_000015",
+      "corridor_mode_id": 0,
+      "dynamic_mass_threshold": 0.95,
+      "dynamic_top_k": {
+        "dynamic_mass_threshold": 0.95,
+        "dynamic_top_k_max": 5,
+        "effective_top_k": 5,
+        "policy": "mass_threshold_v1",
+        "requested_top_k": 5,
+        "score_policy": "entropy_top_n_v1",
+        "source_payload": "deterministic_fixture",
+        "top_k_saturated": true
+      },
+      "dynamic_top_k_max": 5,
+      "effective_top_k": 5,
+      "effective_top_k_fraction_of_vocab": 0.15625,
+      "long_tail_class": "normal",
+      "long_tail_warnings": [
+        "dynamic_top_k_max reached: effective_top_k=5, dynamic_top_k_max=5"
+      ],
+      "num_buckets": 3,
+      "payload_ref": {
+        "kind": "corridor_exemplar_score_pass_v1",
+        "source_position": 3,
+        "source_row": 3,
+        "source_score": 0.5,
+        "source_shard_id": 0,
+        "source_top_token_id": 15
+      },
+      "rank": 4,
+      "raw_top_mass": 0.669999998062849,
+      "score_selected_position_entropy": 0.5,
+      "score_top_token_id": 15,
+      "selected_board": "primary",
+      "selected_example_id": "fixture-03",
+      "selected_policy": "entropy_top_n_v1",
+      "selected_position": 3,
+      "selected_score": 0.5,
+      "semantic_tail_tag": "unknown_open_class_tail",
+      "sequence_length": 4,
+      "source_delivery_path": "two_pass_rerun_selected",
+      "source_position": 3,
+      "source_row": 3,
+      "source_score": 0.5,
+      "source_score_policy": "entropy_top_n_v1",
+      "source_shard_id": 0,
+      "source_top_token_id": 15,
+      "tail_mass": 0.33000000193715096,
+      "teacher_entropy": 0.5,
+      "top_k_saturated": true,
+      "top_log_probs": [
+        -1.4271163779918878,
+        -1.7147983883554976,
+        -2.1202635585518332,
+        -2.5257286666599974,
+        -2.99573225865283
+      ],
+      "top_mass": 0.669999998062849,
+      "top_mass_clamped": false,
+      "top_probs": [
+        0.23999999463558197,
+        0.18000000715255737,
+        0.11999999731779099,
+        0.07999999821186066,
+        0.05000000074505806
+      ],
+      "top_selection_mask": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "top_token_ids": [
+        15,
+        16,
+        17,
+        18,
+        19
+      ],
+      "vocab_size": 32
+    }
+  ]
+}
