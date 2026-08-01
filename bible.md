@@ -259,3 +259,10 @@ This file is append-only institutional memory for shared Contract decisions.
 - A raw-integrity-refreshed sidecar mutation with only one join now fails the
   public resolver as `TSC013_BINDING_ABSENT`, proving the check is semantic
   admission rather than a stale-manifest artifact.
+
+## 2026-08-01 - C2 published-schema admission
+
+- Resolver admission now loads the packaged manifest and external semantic
+  identity schemas and validates the source sidecar before cross-document
+  resolution.  `jsonschema` is a runtime Contract dependency because this is a
+  portable validation guarantee, not a test-only assertion.

@@ -16,9 +16,12 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 
 import numpy as np
+from jsonschema import Draft202012Validator
+from referencing import Registry, Resource
 
 from radjax_contract.tome.contract_publication import (
     TOME_STUDENT_CONSUMPTION_CONTRACT_ID,
+    tome_student_consumption_contract_root,
 )
 from radjax_contract.tome.student_consumption_corridor import (
     validate_corridor_resources,
@@ -252,6 +255,9 @@ def validate_and_resolve_student_consumption(
             return _result(profile_id, issues, warnings)
         manifest = _read_object(manifest_file, issues, "binding")
         if manifest is None:
+            return _result(profile_id, issues, warnings)
+        if not _validate_manifest_schema(manifest):
+            issues.append(_issue("TSC013_BINDING_ABSENT", "binding"))
             return _result(profile_id, issues, warnings)
         descriptor = _resolve(
             cover, content, manifest, root, profile_id, issues, warnings
@@ -516,6 +522,32 @@ def _resolve(
         tuple(warnings),
         ("not_a_student_loader", "not_a_training_policy"),
     )
+
+
+def _validate_manifest_schema(manifest: dict[str, Any]) -> bool:
+    """Validate the published manifest and its external identity reference."""
+
+    root = tome_student_consumption_contract_root() / "schemas"
+    try:
+        identity_schema = json.loads(
+            (root / "student_consumption_semantic_identity_v1.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        manifest_schema = json.loads(
+            (root / "student_consumption_manifest_v1.json").read_text(encoding="utf-8")
+        )
+        registry = Registry().with_resources(
+            [(identity_schema["$id"], Resource.from_contents(identity_schema))]
+        )
+        Draft202012Validator(manifest_schema, registry=registry).validate(manifest)
+    except (OSError, ValueError, KeyError):
+        return False
+    except Exception as exc:
+        if exc.__class__.__module__.startswith("jsonschema"):
+            return False
+        raise
+    return True
 
 
 def _validate_corridor_and_exemplar_resources(

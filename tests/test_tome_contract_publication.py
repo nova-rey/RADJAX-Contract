@@ -132,6 +132,10 @@ def _student_artifact(root: Path) -> Path:
                 "consumption": (
                     {"row_start": 0, "row_end": 1}
                     if role == "target_shard"
+                    else {"ordering": "global_example_index"}
+                    if role == "example_registry"
+                    else {"ordering": "global_example_index_position"}
+                    if role == "corridor_assignment"
                     else {"kind": role}
                 ),
             }
