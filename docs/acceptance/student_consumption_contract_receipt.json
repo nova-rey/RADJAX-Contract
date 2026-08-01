@@ -1,0 +1,22 @@
+{
+  "receipt_version": 1,
+  "status": "pass",
+  "contract_profile": "native_v3_student_v1",
+  "contract_publication_version": "1.0.0",
+  "contract_assets_commit": "be034aee296fb3f32cf6534a60676ca597743e98",
+  "tome_commit": "fdb2bd4b4a2be7b4398bfb95d35e8a2bca5cba94",
+  "fixture": {
+    "fixture_id": "production_multi_surface_v1",
+    "tree_digest": "44e2f32e1665bcce2f0853d1ba247bf423250d9c7b173f8af5b9007329d8df05",
+    "semantic_digest": "sha256:c7eb093e3481504197018209e94eca41a5b31efc16588d54cc6b453ac1e91d72"
+  },
+  "public_validation_entry_point": "radjax_contract.tome.validate_student_tome_consumption",
+  "verification": {
+    "contract": "89 passed; Ruff, compileall, diff-check pass",
+    "tome_focused": "32 passed; Ruff, compileall, diff-check pass",
+    "tome_full": "all tests reached 96% with no assertion failures after the role-overlay correction; process terminated with environment-level fatal library lookup before summary",
+    "mirror": "byte-identical"
+  },
+  "student_modified": false,
+  "claims_not_made": ["no_student_training_claim", "no_model_quality_claim", "no_accelerator_claim"]
+}

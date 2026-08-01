@@ -1,0 +1,1105 @@
+{
+  "corridor_observation_basis": "full_token_position_corridor",
+  "corridor_observation_count": 32,
+  "corridor_positions_available": 32,
+  "corridor_positions_used": 32,
+  "degraded_corridor_export": false,
+  "fingerprint_count": 32,
+  "fingerprint_policy": "top_token_entropy_confidence_v1",
+  "fingerprints": [
+    {
+      "count": 1,
+      "example_count": 1,
+      "fingerprint_id": "fp_000000",
+      "fingerprint_policy": "top_token_entropy_confidence_v1",
+      "max_entropy": 0.5,
+      "mean_confidence": 0.75,
+      "mean_entropy": 0.5,
+      "num_examples_scored": 8,
+      "num_positions_scored": 32,
+      "positions_observed": 1,
+      "representatives": [
+        {
+          "confidence": 0.75,
+          "entropy": 0.5,
+          "example_id": "fixture-00",
+          "position": 0
+        }
+      ],
+      "signature": {
+        "bucket": "low_high_early",
+        "confidence_bucket": "high",
+        "entropy_bucket": "low",
+        "position_bucket": "early",
+        "top_token_ids": [
+          0
+        ],
+        "top_token_ranks": [
+          0
+        ]
+      },
+      "source_target_type": "corridor_exemplar_score_pass_v1",
+      "target_type": "corridor_exemplar_v1"
+    },
+    {
+      "count": 1,
+      "example_count": 1,
+      "fingerprint_id": "fp_000001",
+      "fingerprint_policy": "top_token_entropy_confidence_v1",
+      "max_entropy": 0.5,
+      "mean_confidence": 0.75,
+      "mean_entropy": 0.5,
+      "num_examples_scored": 8,
+      "num_positions_scored": 32,
+      "positions_observed": 1,
+      "representatives": [
+        {
+          "confidence": 0.75,
+          "entropy": 0.5,
+          "example_id": "fixture-00",
+          "position": 1
+        }
+      ],
+      "signature": {
+        "bucket": "low_high_middle",
+        "confidence_bucket": "high",
+        "entropy_bucket": "low",
+        "position_bucket": "middle",
+        "top_token_ids": [
+          1
+        ],
+        "top_token_ranks": [
+          0
+        ]
+      },
+      "source_target_type": "corridor_exemplar_score_pass_v1",
+      "target_type": "corridor_exemplar_v1"
+    },
+    {
+      "count": 1,
+      "example_count": 1,
+      "fingerprint_id": "fp_000002",
+      "fingerprint_policy": "top_token_entropy_confidence_v1",
+      "max_entropy": 0.5,
+      "mean_confidence": 0.75,
+      "mean_entropy": 0.5,
+      "num_examples_scored": 8,
+      "num_positions_scored": 32,
+      "positions_observed": 1,
+      "representatives": [
+        {
+          "confidence": 0.75,
+          "entropy": 0.5,
+          "example_id": "fixture-00",
+          "position": 2
+        }
+      ],
+      "signature": {
+        "bucket": "low_high_late",
+        "confidence_bucket": "high",
+        "entropy_bucket": "low",
+        "position_bucket": "late",
+        "top_token_ids": [
+          2
+        ],
+        "top_token_ranks": [
+          0
+        ]
+      },
+      "source_target_type": "corridor_exemplar_score_pass_v1",
+      "target_type": "corridor_exemplar_v1"
+    },
+    {
+      "count": 1,
+      "example_count": 1,
+      "fingerprint_id": "fp_000003",
+      "fingerprint_policy": "top_token_entropy_confidence_v1",
+      "max_entropy": 0.5,
+      "mean_confidence": 0.75,
+      "mean_entropy": 0.5,
+      "num_examples_scored": 8,
+      "num_positions_scored": 32,
+      "positions_observed": 1,
+      "representatives": [
+        {
+          "confidence": 0.75,
+          "entropy": 0.5,
+          "example_id": "fixture-00",
+          "position": 3
+        }
+      ],
+      "signature": {
+        "bucket": "low_high_final",
+        "confidence_bucket": "high",
+        "entropy_bucket": "low",
+        "position_bucket": "final",
+        "top_token_ids": [
+          3
+        ],
+        "top_token_ranks": [
+          0
+        ]
+      },
+      "source_target_type": "corridor_exemplar_score_pass_v1",
+      "target_type": "corridor_exemplar_v1"
+    },
+    {
+      "count": 1,
+      "example_count": 1,
+      "fingerprint_id": "fp_000004",
+      "fingerprint_policy": "top_token_entropy_confidence_v1",
+      "max_entropy": 0.5,
+      "mean_confidence": 0.75,
+      "mean_entropy": 0.5,
+      "num_examples_scored": 8,
+      "num_positions_scored": 32,
+      "positions_observed": 1,
+      "representatives": [
+        {
+          "confidence": 0.75,
+          "entropy": 0.5,
+          "example_id": "fixture-01",
+          "position": 0
+        }
+      ],
+      "signature": {
+        "bucket": "low_high_early",
+        "confidence_bucket": "high",
+        "entropy_bucket": "low",
+        "position_bucket": "early",
+        "top_token_ids": [
+          4
+        ],
+        "top_token_ranks": [
+          0
+        ]
+      },
+      "source_target_type": "corridor_exemplar_score_pass_v1",
+      "target_type": "corridor_exemplar_v1"
+    },
+    {
+      "count": 1,
+      "example_count": 1,
+      "fingerprint_id": "fp_000005",
+      "fingerprint_policy": "top_token_entropy_confidence_v1",
+      "max_entropy": 0.5,
+      "mean_confidence": 0.75,
+      "mean_entropy": 0.5,
+      "num_examples_scored": 8,
+      "num_positions_scored": 32,
+      "positions_observed": 1,
+      "representatives": [
+        {
+          "confidence": 0.75,
+          "entropy": 0.5,
+          "example_id": "fixture-01",
+          "position": 1
+        }
+      ],
+      "signature": {
+        "bucket": "low_high_middle",
+        "confidence_bucket": "high",
+        "entropy_bucket": "low",
+        "position_bucket": "middle",
+        "top_token_ids": [
+          5
+        ],
+        "top_token_ranks": [
+          0
+        ]
+      },
+      "source_target_type": "corridor_exemplar_score_pass_v1",
+      "target_type": "corridor_exemplar_v1"
+    },
+    {
+      "count": 1,
+      "example_count": 1,
+      "fingerprint_id": "fp_000006",
+      "fingerprint_policy": "top_token_entropy_confidence_v1",
+      "max_entropy": 0.5,
+      "mean_confidence": 0.75,
+      "mean_entropy": 0.5,
+      "num_examples_scored": 8,
+      "num_positions_scored": 32,
+      "positions_observed": 1,
+      "representatives": [
+        {
+          "confidence": 0.75,
+          "entropy": 0.5,
+          "example_id": "fixture-01",
+          "position": 2
+        }
+      ],
+      "signature": {
+        "bucket": "low_high_late",
+        "confidence_bucket": "high",
+        "entropy_bucket": "low",
+        "position_bucket": "late",
+        "top_token_ids": [
+          6
+        ],
+        "top_token_ranks": [
+          0
+        ]
+      },
+      "source_target_type": "corridor_exemplar_score_pass_v1",
+      "target_type": "corridor_exemplar_v1"
+    },
+    {
+      "count": 1,
+      "example_count": 1,
+      "fingerprint_id": "fp_000007",
+      "fingerprint_policy": "top_token_entropy_confidence_v1",
+      "max_entropy": 0.5,
+      "mean_confidence": 0.75,
+      "mean_entropy": 0.5,
+      "num_examples_scored": 8,
+      "num_positions_scored": 32,
+      "positions_observed": 1,
+      "representatives": [
+        {
+          "confidence": 0.75,
+          "entropy": 0.5,
+          "example_id": "fixture-01",
+          "position": 3
+        }
+      ],
+      "signature": {
+        "bucket": "low_high_final",
+        "confidence_bucket": "high",
+        "entropy_bucket": "low",
+        "position_bucket": "final",
+        "top_token_ids": [
+          7
+        ],
+        "top_token_ranks": [
+          0
+        ]
+      },
+      "source_target_type": "corridor_exemplar_score_pass_v1",
+      "target_type": "corridor_exemplar_v1"
+    },
+    {
+      "count": 1,
+      "example_count": 1,
+      "fingerprint_id": "fp_000008",
+      "fingerprint_policy": "top_token_entropy_confidence_v1",
+      "max_entropy": 0.5,
+      "mean_confidence": 0.75,
+      "mean_entropy": 0.5,
+      "num_examples_scored": 8,
+      "num_positions_scored": 32,
+      "positions_observed": 1,
+      "representatives": [
+        {
+          "confidence": 0.75,
+          "entropy": 0.5,
+          "example_id": "fixture-02",
+          "position": 0
+        }
+      ],
+      "signature": {
+        "bucket": "low_high_early",
+        "confidence_bucket": "high",
+        "entropy_bucket": "low",
+        "position_bucket": "early",
+        "top_token_ids": [
+          8
+        ],
+        "top_token_ranks": [
+          0
+        ]
+      },
+      "source_target_type": "corridor_exemplar_score_pass_v1",
+      "target_type": "corridor_exemplar_v1"
+    },
+    {
+      "count": 1,
+      "example_count": 1,
+      "fingerprint_id": "fp_000009",
+      "fingerprint_policy": "top_token_entropy_confidence_v1",
+      "max_entropy": 0.5,
+      "mean_confidence": 0.75,
+      "mean_entropy": 0.5,
+      "num_examples_scored": 8,
+      "num_positions_scored": 32,
+      "positions_observed": 1,
+      "representatives": [
+        {
+          "confidence": 0.75,
+          "entropy": 0.5,
+          "example_id": "fixture-02",
+          "position": 1
+        }
+      ],
+      "signature": {
+        "bucket": "low_high_middle",
+        "confidence_bucket": "high",
+        "entropy_bucket": "low",
+        "position_bucket": "middle",
+        "top_token_ids": [
+          9
+        ],
+        "top_token_ranks": [
+          0
+        ]
+      },
+      "source_target_type": "corridor_exemplar_score_pass_v1",
+      "target_type": "corridor_exemplar_v1"
+    },
+    {
+      "count": 1,
+      "example_count": 1,
+      "fingerprint_id": "fp_000010",
+      "fingerprint_policy": "top_token_entropy_confidence_v1",
+      "max_entropy": 0.5,
+      "mean_confidence": 0.75,
+      "mean_entropy": 0.5,
+      "num_examples_scored": 8,
+      "num_positions_scored": 32,
+      "positions_observed": 1,
+      "representatives": [
+        {
+          "confidence": 0.75,
+          "entropy": 0.5,
+          "example_id": "fixture-02",
+          "position": 2
+        }
+      ],
+      "signature": {
+        "bucket": "low_high_late",
+        "confidence_bucket": "high",
+        "entropy_bucket": "low",
+        "position_bucket": "late",
+        "top_token_ids": [
+          10
+        ],
+        "top_token_ranks": [
+          0
+        ]
+      },
+      "source_target_type": "corridor_exemplar_score_pass_v1",
+      "target_type": "corridor_exemplar_v1"
+    },
+    {
+      "count": 1,
+      "example_count": 1,
+      "fingerprint_id": "fp_000011",
+      "fingerprint_policy": "top_token_entropy_confidence_v1",
+      "max_entropy": 0.5,
+      "mean_confidence": 0.75,
+      "mean_entropy": 0.5,
+      "num_examples_scored": 8,
+      "num_positions_scored": 32,
+      "positions_observed": 1,
+      "representatives": [
+        {
+          "confidence": 0.75,
+          "entropy": 0.5,
+          "example_id": "fixture-02",
+          "position": 3
+        }
+      ],
+      "signature": {
+        "bucket": "low_high_final",
+        "confidence_bucket": "high",
+        "entropy_bucket": "low",
+        "position_bucket": "final",
+        "top_token_ids": [
+          11
+        ],
+        "top_token_ranks": [
+          0
+        ]
+      },
+      "source_target_type": "corridor_exemplar_score_pass_v1",
+      "target_type": "corridor_exemplar_v1"
+    },
+    {
+      "count": 1,
+      "example_count": 1,
+      "fingerprint_id": "fp_000012",
+      "fingerprint_policy": "top_token_entropy_confidence_v1",
+      "max_entropy": 0.5,
+      "mean_confidence": 0.75,
+      "mean_entropy": 0.5,
+      "num_examples_scored": 8,
+      "num_positions_scored": 32,
+      "positions_observed": 1,
+      "representatives": [
+        {
+          "confidence": 0.75,
+          "entropy": 0.5,
+          "example_id": "fixture-03",
+          "position": 0
+        }
+      ],
+      "signature": {
+        "bucket": "low_high_early",
+        "confidence_bucket": "high",
+        "entropy_bucket": "low",
+        "position_bucket": "early",
+        "top_token_ids": [
+          12
+        ],
+        "top_token_ranks": [
+          0
+        ]
+      },
+      "source_target_type": "corridor_exemplar_score_pass_v1",
+      "target_type": "corridor_exemplar_v1"
+    },
+    {
+      "count": 1,
+      "example_count": 1,
+      "fingerprint_id": "fp_000013",
+      "fingerprint_policy": "top_token_entropy_confidence_v1",
+      "max_entropy": 0.5,
+      "mean_confidence": 0.75,
+      "mean_entropy": 0.5,
+      "num_examples_scored": 8,
+      "num_positions_scored": 32,
+      "positions_observed": 1,
+      "representatives": [
+        {
+          "confidence": 0.75,
+          "entropy": 0.5,
+          "example_id": "fixture-03",
+          "position": 1
+        }
+      ],
+      "signature": {
+        "bucket": "low_high_middle",
+        "confidence_bucket": "high",
+        "entropy_bucket": "low",
+        "position_bucket": "middle",
+        "top_token_ids": [
+          13
+        ],
+        "top_token_ranks": [
+          0
+        ]
+      },
+      "source_target_type": "corridor_exemplar_score_pass_v1",
+      "target_type": "corridor_exemplar_v1"
+    },
+    {
+      "count": 1,
+      "example_count": 1,
+      "fingerprint_id": "fp_000014",
+      "fingerprint_policy": "top_token_entropy_confidence_v1",
+      "max_entropy": 0.5,
+      "mean_confidence": 0.75,
+      "mean_entropy": 0.5,
+      "num_examples_scored": 8,
+      "num_positions_scored": 32,
+      "positions_observed": 1,
+      "representatives": [
+        {
+          "confidence": 0.75,
+          "entropy": 0.5,
+          "example_id": "fixture-03",
+          "position": 2
+        }
+      ],
+      "signature": {
+        "bucket": "low_high_late",
+        "confidence_bucket": "high",
+        "entropy_bucket": "low",
+        "position_bucket": "late",
+        "top_token_ids": [
+          14
+        ],
+        "top_token_ranks": [
+          0
+        ]
+      },
+      "source_target_type": "corridor_exemplar_score_pass_v1",
+      "target_type": "corridor_exemplar_v1"
+    },
+    {
+      "count": 1,
+      "example_count": 1,
+      "fingerprint_id": "fp_000015",
+      "fingerprint_policy": "top_token_entropy_confidence_v1",
+      "max_entropy": 0.5,
+      "mean_confidence": 0.75,
+      "mean_entropy": 0.5,
+      "num_examples_scored": 8,
+      "num_positions_scored": 32,
+      "positions_observed": 1,
+      "representatives": [
+        {
+          "confidence": 0.75,
+          "entropy": 0.5,
+          "example_id": "fixture-03",
+          "position": 3
+        }
+      ],
+      "signature": {
+        "bucket": "low_high_final",
+        "confidence_bucket": "high",
+        "entropy_bucket": "low",
+        "position_bucket": "final",
+        "top_token_ids": [
+          15
+        ],
+        "top_token_ranks": [
+          0
+        ]
+      },
+      "source_target_type": "corridor_exemplar_score_pass_v1",
+      "target_type": "corridor_exemplar_v1"
+    },
+    {
+      "count": 1,
+      "example_count": 1,
+      "fingerprint_id": "fp_000016",
+      "fingerprint_policy": "top_token_entropy_confidence_v1",
+      "max_entropy": 3.0,
+      "mean_confidence": 0.4000000059604645,
+      "mean_entropy": 3.0,
+      "num_examples_scored": 8,
+      "num_positions_scored": 32,
+      "positions_observed": 1,
+      "representatives": [
+        {
+          "confidence": 0.4000000059604645,
+          "entropy": 3.0,
+          "example_id": "fixture-04",
+          "position": 0
+        }
+      ],
+      "signature": {
+        "bucket": "high_mid_early",
+        "confidence_bucket": "mid",
+        "entropy_bucket": "high",
+        "position_bucket": "early",
+        "top_token_ids": [
+          16
+        ],
+        "top_token_ranks": [
+          0
+        ]
+      },
+      "source_target_type": "corridor_exemplar_score_pass_v1",
+      "target_type": "corridor_exemplar_v1"
+    },
+    {
+      "count": 1,
+      "example_count": 1,
+      "fingerprint_id": "fp_000017",
+      "fingerprint_policy": "top_token_entropy_confidence_v1",
+      "max_entropy": 3.0,
+      "mean_confidence": 0.4000000059604645,
+      "mean_entropy": 3.0,
+      "num_examples_scored": 8,
+      "num_positions_scored": 32,
+      "positions_observed": 1,
+      "representatives": [
+        {
+          "confidence": 0.4000000059604645,
+          "entropy": 3.0,
+          "example_id": "fixture-04",
+          "position": 1
+        }
+      ],
+      "signature": {
+        "bucket": "high_mid_middle",
+        "confidence_bucket": "mid",
+        "entropy_bucket": "high",
+        "position_bucket": "middle",
+        "top_token_ids": [
+          17
+        ],
+        "top_token_ranks": [
+          0
+        ]
+      },
+      "source_target_type": "corridor_exemplar_score_pass_v1",
+      "target_type": "corridor_exemplar_v1"
+    },
+    {
+      "count": 1,
+      "example_count": 1,
+      "fingerprint_id": "fp_000018",
+      "fingerprint_policy": "top_token_entropy_confidence_v1",
+      "max_entropy": 3.0,
+      "mean_confidence": 0.4000000059604645,
+      "mean_entropy": 3.0,
+      "num_examples_scored": 8,
+      "num_positions_scored": 32,
+      "positions_observed": 1,
+      "representatives": [
+        {
+          "confidence": 0.4000000059604645,
+          "entropy": 3.0,
+          "example_id": "fixture-04",
+          "position": 2
+        }
+      ],
+      "signature": {
+        "bucket": "high_mid_late",
+        "confidence_bucket": "mid",
+        "entropy_bucket": "high",
+        "position_bucket": "late",
+        "top_token_ids": [
+          18
+        ],
+        "top_token_ranks": [
+          0
+        ]
+      },
+      "source_target_type": "corridor_exemplar_score_pass_v1",
+      "target_type": "corridor_exemplar_v1"
+    },
+    {
+      "count": 1,
+      "example_count": 1,
+      "fingerprint_id": "fp_000019",
+      "fingerprint_policy": "top_token_entropy_confidence_v1",
+      "max_entropy": 3.0,
+      "mean_confidence": 0.4000000059604645,
+      "mean_entropy": 3.0,
+      "num_examples_scored": 8,
+      "num_positions_scored": 32,
+      "positions_observed": 1,
+      "representatives": [
+        {
+          "confidence": 0.4000000059604645,
+          "entropy": 3.0,
+          "example_id": "fixture-04",
+          "position": 3
+        }
+      ],
+      "signature": {
+        "bucket": "high_mid_final",
+        "confidence_bucket": "mid",
+        "entropy_bucket": "high",
+        "position_bucket": "final",
+        "top_token_ids": [
+          19
+        ],
+        "top_token_ranks": [
+          0
+        ]
+      },
+      "source_target_type": "corridor_exemplar_score_pass_v1",
+      "target_type": "corridor_exemplar_v1"
+    },
+    {
+      "count": 1,
+      "example_count": 1,
+      "fingerprint_id": "fp_000020",
+      "fingerprint_policy": "top_token_entropy_confidence_v1",
+      "max_entropy": 3.0,
+      "mean_confidence": 0.4000000059604645,
+      "mean_entropy": 3.0,
+      "num_examples_scored": 8,
+      "num_positions_scored": 32,
+      "positions_observed": 1,
+      "representatives": [
+        {
+          "confidence": 0.4000000059604645,
+          "entropy": 3.0,
+          "example_id": "fixture-05",
+          "position": 0
+        }
+      ],
+      "signature": {
+        "bucket": "high_mid_early",
+        "confidence_bucket": "mid",
+        "entropy_bucket": "high",
+        "position_bucket": "early",
+        "top_token_ids": [
+          20
+        ],
+        "top_token_ranks": [
+          0
+        ]
+      },
+      "source_target_type": "corridor_exemplar_score_pass_v1",
+      "target_type": "corridor_exemplar_v1"
+    },
+    {
+      "count": 1,
+      "example_count": 1,
+      "fingerprint_id": "fp_000021",
+      "fingerprint_policy": "top_token_entropy_confidence_v1",
+      "max_entropy": 3.0,
+      "mean_confidence": 0.4000000059604645,
+      "mean_entropy": 3.0,
+      "num_examples_scored": 8,
+      "num_positions_scored": 32,
+      "positions_observed": 1,
+      "representatives": [
+        {
+          "confidence": 0.4000000059604645,
+          "entropy": 3.0,
+          "example_id": "fixture-05",
+          "position": 1
+        }
+      ],
+      "signature": {
+        "bucket": "high_mid_middle",
+        "confidence_bucket": "mid",
+        "entropy_bucket": "high",
+        "position_bucket": "middle",
+        "top_token_ids": [
+          21
+        ],
+        "top_token_ranks": [
+          0
+        ]
+      },
+      "source_target_type": "corridor_exemplar_score_pass_v1",
+      "target_type": "corridor_exemplar_v1"
+    },
+    {
+      "count": 1,
+      "example_count": 1,
+      "fingerprint_id": "fp_000022",
+      "fingerprint_policy": "top_token_entropy_confidence_v1",
+      "max_entropy": 3.0,
+      "mean_confidence": 0.4000000059604645,
+      "mean_entropy": 3.0,
+      "num_examples_scored": 8,
+      "num_positions_scored": 32,
+      "positions_observed": 1,
+      "representatives": [
+        {
+          "confidence": 0.4000000059604645,
+          "entropy": 3.0,
+          "example_id": "fixture-05",
+          "position": 2
+        }
+      ],
+      "signature": {
+        "bucket": "high_mid_late",
+        "confidence_bucket": "mid",
+        "entropy_bucket": "high",
+        "position_bucket": "late",
+        "top_token_ids": [
+          22
+        ],
+        "top_token_ranks": [
+          0
+        ]
+      },
+      "source_target_type": "corridor_exemplar_score_pass_v1",
+      "target_type": "corridor_exemplar_v1"
+    },
+    {
+      "count": 1,
+      "example_count": 1,
+      "fingerprint_id": "fp_000023",
+      "fingerprint_policy": "top_token_entropy_confidence_v1",
+      "max_entropy": 3.0,
+      "mean_confidence": 0.4000000059604645,
+      "mean_entropy": 3.0,
+      "num_examples_scored": 8,
+      "num_positions_scored": 32,
+      "positions_observed": 1,
+      "representatives": [
+        {
+          "confidence": 0.4000000059604645,
+          "entropy": 3.0,
+          "example_id": "fixture-05",
+          "position": 3
+        }
+      ],
+      "signature": {
+        "bucket": "high_mid_final",
+        "confidence_bucket": "mid",
+        "entropy_bucket": "high",
+        "position_bucket": "final",
+        "top_token_ids": [
+          23
+        ],
+        "top_token_ranks": [
+          0
+        ]
+      },
+      "source_target_type": "corridor_exemplar_score_pass_v1",
+      "target_type": "corridor_exemplar_v1"
+    },
+    {
+      "count": 1,
+      "example_count": 1,
+      "fingerprint_id": "fp_000024",
+      "fingerprint_policy": "top_token_entropy_confidence_v1",
+      "max_entropy": 3.0,
+      "mean_confidence": 0.4000000059604645,
+      "mean_entropy": 3.0,
+      "num_examples_scored": 8,
+      "num_positions_scored": 32,
+      "positions_observed": 1,
+      "representatives": [
+        {
+          "confidence": 0.4000000059604645,
+          "entropy": 3.0,
+          "example_id": "fixture-06",
+          "position": 0
+        }
+      ],
+      "signature": {
+        "bucket": "high_mid_early",
+        "confidence_bucket": "mid",
+        "entropy_bucket": "high",
+        "position_bucket": "early",
+        "top_token_ids": [
+          24
+        ],
+        "top_token_ranks": [
+          0
+        ]
+      },
+      "source_target_type": "corridor_exemplar_score_pass_v1",
+      "target_type": "corridor_exemplar_v1"
+    },
+    {
+      "count": 1,
+      "example_count": 1,
+      "fingerprint_id": "fp_000025",
+      "fingerprint_policy": "top_token_entropy_confidence_v1",
+      "max_entropy": 3.0,
+      "mean_confidence": 0.4000000059604645,
+      "mean_entropy": 3.0,
+      "num_examples_scored": 8,
+      "num_positions_scored": 32,
+      "positions_observed": 1,
+      "representatives": [
+        {
+          "confidence": 0.4000000059604645,
+          "entropy": 3.0,
+          "example_id": "fixture-06",
+          "position": 1
+        }
+      ],
+      "signature": {
+        "bucket": "high_mid_middle",
+        "confidence_bucket": "mid",
+        "entropy_bucket": "high",
+        "position_bucket": "middle",
+        "top_token_ids": [
+          25
+        ],
+        "top_token_ranks": [
+          0
+        ]
+      },
+      "source_target_type": "corridor_exemplar_score_pass_v1",
+      "target_type": "corridor_exemplar_v1"
+    },
+    {
+      "count": 1,
+      "example_count": 1,
+      "fingerprint_id": "fp_000026",
+      "fingerprint_policy": "top_token_entropy_confidence_v1",
+      "max_entropy": 3.0,
+      "mean_confidence": 0.4000000059604645,
+      "mean_entropy": 3.0,
+      "num_examples_scored": 8,
+      "num_positions_scored": 32,
+      "positions_observed": 1,
+      "representatives": [
+        {
+          "confidence": 0.4000000059604645,
+          "entropy": 3.0,
+          "example_id": "fixture-06",
+          "position": 2
+        }
+      ],
+      "signature": {
+        "bucket": "high_mid_late",
+        "confidence_bucket": "mid",
+        "entropy_bucket": "high",
+        "position_bucket": "late",
+        "top_token_ids": [
+          26
+        ],
+        "top_token_ranks": [
+          0
+        ]
+      },
+      "source_target_type": "corridor_exemplar_score_pass_v1",
+      "target_type": "corridor_exemplar_v1"
+    },
+    {
+      "count": 1,
+      "example_count": 1,
+      "fingerprint_id": "fp_000027",
+      "fingerprint_policy": "top_token_entropy_confidence_v1",
+      "max_entropy": 3.0,
+      "mean_confidence": 0.4000000059604645,
+      "mean_entropy": 3.0,
+      "num_examples_scored": 8,
+      "num_positions_scored": 32,
+      "positions_observed": 1,
+      "representatives": [
+        {
+          "confidence": 0.4000000059604645,
+          "entropy": 3.0,
+          "example_id": "fixture-06",
+          "position": 3
+        }
+      ],
+      "signature": {
+        "bucket": "high_mid_final",
+        "confidence_bucket": "mid",
+        "entropy_bucket": "high",
+        "position_bucket": "final",
+        "top_token_ids": [
+          27
+        ],
+        "top_token_ranks": [
+          0
+        ]
+      },
+      "source_target_type": "corridor_exemplar_score_pass_v1",
+      "target_type": "corridor_exemplar_v1"
+    },
+    {
+      "count": 1,
+      "example_count": 1,
+      "fingerprint_id": "fp_000028",
+      "fingerprint_policy": "top_token_entropy_confidence_v1",
+      "max_entropy": 3.0,
+      "mean_confidence": 0.4000000059604645,
+      "mean_entropy": 3.0,
+      "num_examples_scored": 8,
+      "num_positions_scored": 32,
+      "positions_observed": 1,
+      "representatives": [
+        {
+          "confidence": 0.4000000059604645,
+          "entropy": 3.0,
+          "example_id": "fixture-07",
+          "position": 0
+        }
+      ],
+      "signature": {
+        "bucket": "high_mid_early",
+        "confidence_bucket": "mid",
+        "entropy_bucket": "high",
+        "position_bucket": "early",
+        "top_token_ids": [
+          28
+        ],
+        "top_token_ranks": [
+          0
+        ]
+      },
+      "source_target_type": "corridor_exemplar_score_pass_v1",
+      "target_type": "corridor_exemplar_v1"
+    },
+    {
+      "count": 1,
+      "example_count": 1,
+      "fingerprint_id": "fp_000029",
+      "fingerprint_policy": "top_token_entropy_confidence_v1",
+      "max_entropy": 3.0,
+      "mean_confidence": 0.4000000059604645,
+      "mean_entropy": 3.0,
+      "num_examples_scored": 8,
+      "num_positions_scored": 32,
+      "positions_observed": 1,
+      "representatives": [
+        {
+          "confidence": 0.4000000059604645,
+          "entropy": 3.0,
+          "example_id": "fixture-07",
+          "position": 1
+        }
+      ],
+      "signature": {
+        "bucket": "high_mid_middle",
+        "confidence_bucket": "mid",
+        "entropy_bucket": "high",
+        "position_bucket": "middle",
+        "top_token_ids": [
+          29
+        ],
+        "top_token_ranks": [
+          0
+        ]
+      },
+      "source_target_type": "corridor_exemplar_score_pass_v1",
+      "target_type": "corridor_exemplar_v1"
+    },
+    {
+      "count": 1,
+      "example_count": 1,
+      "fingerprint_id": "fp_000030",
+      "fingerprint_policy": "top_token_entropy_confidence_v1",
+      "max_entropy": 3.0,
+      "mean_confidence": 0.4000000059604645,
+      "mean_entropy": 3.0,
+      "num_examples_scored": 8,
+      "num_positions_scored": 32,
+      "positions_observed": 1,
+      "representatives": [
+        {
+          "confidence": 0.4000000059604645,
+          "entropy": 3.0,
+          "example_id": "fixture-07",
+          "position": 2
+        }
+      ],
+      "signature": {
+        "bucket": "high_mid_late",
+        "confidence_bucket": "mid",
+        "entropy_bucket": "high",
+        "position_bucket": "late",
+        "top_token_ids": [
+          30
+        ],
+        "top_token_ranks": [
+          0
+        ]
+      },
+      "source_target_type": "corridor_exemplar_score_pass_v1",
+      "target_type": "corridor_exemplar_v1"
+    },
+    {
+      "count": 1,
+      "example_count": 1,
+      "fingerprint_id": "fp_000031",
+      "fingerprint_policy": "top_token_entropy_confidence_v1",
+      "max_entropy": 3.0,
+      "mean_confidence": 0.4000000059604645,
+      "mean_entropy": 3.0,
+      "num_examples_scored": 8,
+      "num_positions_scored": 32,
+      "positions_observed": 1,
+      "representatives": [
+        {
+          "confidence": 0.4000000059604645,
+          "entropy": 3.0,
+          "example_id": "fixture-07",
+          "position": 3
+        }
+      ],
+      "signature": {
+        "bucket": "high_mid_final",
+        "confidence_bucket": "mid",
+        "entropy_bucket": "high",
+        "position_bucket": "final",
+        "top_token_ids": [
+          31
+        ],
+        "top_token_ranks": [
+          0
+        ]
+      },
+      "source_target_type": "corridor_exemplar_score_pass_v1",
+      "target_type": "corridor_exemplar_v1"
+    }
+  ],
+  "num_examples_scored": 8,
+  "num_positions_scored": 32,
+  "schema_version": "corridor_fingerprints_v1",
+  "source_store_target_type": "corridor_exemplar_score_pass_v1",
+  "source_target_type": "corridor_exemplar_score_pass_v1",
+  "target_type": "corridor_exemplar_v1"
+}
