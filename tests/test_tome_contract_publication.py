@@ -100,8 +100,51 @@ def _student_artifact(root: Path) -> Path:
                 json.dumps({"modes": [{"mode_id": 0, "bounds": bounds}]}),
                 encoding="utf-8",
             )
+        elif role == "example_registry":
+            path.write_text(
+                json.dumps(
+                    {
+                        "examples": [
+                            {
+                                "global_example_index": 0,
+                                "selected_example_id": "example-0",
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
         elif role in {"selected_passport_index", "selected_exemplar_payload"}:
-            path.write_text(json.dumps({"selected_exemplars": []}), encoding="utf-8")
+            record = {
+                "rank": 1,
+                "selected_example_id": "example-0",
+                "selected_position": 0,
+                "source_shard_id": 0,
+                "source_row": 0,
+                "source_position": 0,
+                "source_delivery_path": "two_pass_rerun_selected",
+                "corridor_mode_id": 0,
+            }
+            if role == "selected_exemplar_payload":
+                record.update(
+                    {
+                        "top_token_ids": [1, 2, 0],
+                        "top_probs": [0.6, 0.3, 0.0],
+                        "top_log_probs": [
+                            -0.5108256238,
+                            -1.2039728043,
+                            -100.0,
+                        ],
+                        "top_selection_mask": [True, True, False],
+                        "effective_top_k": 2,
+                        "top_mass": 0.9,
+                        "tail_mass": 0.1,
+                        "bucket_masses": [0.04, 0.06],
+                    }
+                )
+            path.write_text(
+                json.dumps({"selected_exemplars": [record]}), encoding="utf-8"
+            )
         else:
             path.write_text("{}", encoding="utf-8")
         semantic = f"sha256:{index + 1:064x}"

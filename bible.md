@@ -277,3 +277,14 @@ This file is append-only institutional memory for shared Contract decisions.
   produce their distinct published `TSC011` and `TSC012` outcomes.  Archive
   extraction copies bounded blocks and rejects premature member EOF instead of
   materializing each tar member with an unbounded `read()`.
+
+## 2026-08-01 - C2 material exemplar/corridor admission
+
+- The material resolver fixture now carries a real example registry, selected
+  passport, selected exemplar payload, and packed corridor coordinates.  The
+  resolver maps declared registry identities onto declared assignment
+  coordinates before validating exemplar-to-corridor linkage; no physical path
+  supplies that meaning.
+- Dynamic top-k validation now enforces active token uniqueness and vocabulary
+  membership, descending active probabilities, and canonical inactive token ID
+  zero in addition to Contract-owned probability and log-probability rules.

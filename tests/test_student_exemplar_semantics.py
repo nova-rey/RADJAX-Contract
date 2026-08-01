@@ -25,7 +25,7 @@ def _exemplar(rank: int) -> dict[str, object]:
     record = _passport(rank)
     record.update(
         {
-            "top_token_ids": [4, 5, 6],
+            "top_token_ids": [4, 5, 0],
             "top_probs": [0.6, 0.3, 0.0],
             "top_log_probs": [-0.5108256238, -1.2039728043, -100.0],
             "top_selection_mask": [True, True, False],

@@ -35,6 +35,7 @@ def validate_exemplar_passport_semantics(
     exemplars: Sequence[Mapping[str, Any]],
     *,
     corridor_coordinates: Collection[tuple[str, int]] | None = None,
+    vocabulary_size: int | None = None,
     allowed_delivery_paths: Collection[str] = (
         "one_pass_pruned_candidate",
         "two_pass_rerun_selected",
@@ -83,7 +84,7 @@ def validate_exemplar_passport_semantics(
             )
         expected_rank += 1
 
-        _validate_dynamic_top_k(exemplar, index, findings)
+        _validate_dynamic_top_k(exemplar, index, findings, vocabulary_size)
         if (
             key is not None
             and corridor_coordinates is not None
@@ -112,7 +113,10 @@ def validate_exemplar_passport_semantics(
 
 
 def _validate_dynamic_top_k(
-    record: Mapping[str, Any], index: int, findings: list[ExemplarSemanticFinding]
+    record: Mapping[str, Any],
+    index: int,
+    findings: list[ExemplarSemanticFinding],
+    vocabulary_size: int | None,
 ) -> None:
     names = ("top_token_ids", "top_probs", "top_log_probs", "top_selection_mask")
     values = [record.get(name) for name in names]
@@ -133,8 +137,16 @@ def _validate_dynamic_top_k(
         or any(type(value) is not bool for value in mask)
         or mask != [slot < effective_top_k for slot in range(width)]
         or any(
-            isinstance(token, bool) or not isinstance(token, int) or token < 0
-            for token in tokens
+            isinstance(token, bool)
+            or not isinstance(token, int)
+            or token < 0
+            or (vocabulary_size is not None and token >= vocabulary_size)
+            for token in tokens[:effective_top_k]
+        )
+        or len(set(tokens[:effective_top_k])) != effective_top_k
+        or any(
+            probabilities[slot] <= probabilities[slot + 1]
+            for slot in range(max(effective_top_k - 1, 0))
         )
     ):
         findings.append(_finding("TSC052_DYNAMIC_TOPK_INVALID", index))
@@ -161,7 +173,8 @@ def _validate_dynamic_top_k(
             ):
                 probability_invalid = True
         elif (
-            probability != INACTIVE_PROBABILITY
+            tokens[slot] != 0
+            or probability != INACTIVE_PROBABILITY
             or log_probability != INACTIVE_LOG_PROBABILITY
         ):
             probability_invalid = True

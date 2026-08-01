@@ -495,7 +495,7 @@ def _resolve(
     if issues:
         return None
     _validate_target_resources(resolved, root, identity, issues)
-    _validate_corridor_and_exemplar_resources(resolved, root, issues)
+    _validate_corridor_and_exemplar_resources(resolved, root, identity, issues)
     if issues:
         return None
 
@@ -584,6 +584,7 @@ def _validate_cover_schema(cover: dict[str, Any]) -> bool:
 def _validate_corridor_and_exemplar_resources(
     resources: list[ResolvedStudentResource],
     root: Path,
+    identity: dict[str, Any],
     issues: list[StudentConsumptionIssue],
 ) -> None:
     for finding in validate_corridor_resources(resources, root):
@@ -592,7 +593,9 @@ def _validate_corridor_and_exemplar_resources(
     by_role = {resource.role: resource for resource in resources}
     passport = by_role.get("selected_passport_index")
     exemplar = by_role.get("selected_exemplar_payload")
-    if passport is None or exemplar is None:
+    registry = by_role.get("example_registry")
+    assignment = by_role.get("corridor_assignment")
+    if passport is None or exemplar is None or registry is None or assignment is None:
         return
     try:
         passports = _read_object(root / passport.locator, issues, "exemplar")
@@ -604,13 +607,65 @@ def _validate_corridor_and_exemplar_resources(
     except (KeyError, TypeError, ValueError):
         issues.append(_issue("TSC050_PASSPORT_JOIN_INVALID", "exemplar"))
         return
-    for finding in validate_exemplar_passport_semantics(passport_rows, exemplar_rows):
+    coordinates = _exemplar_corridor_coordinates(root, registry, assignment, issues)
+    if coordinates is None:
+        return
+    for finding in validate_exemplar_passport_semantics(
+        passport_rows,
+        exemplar_rows,
+        corridor_coordinates=coordinates,
+        vocabulary_size=_nested(identity, "vocabulary", "vocab_size"),
+    ):
         phase = (
             "provenance"
             if finding.code == "TSC055_PROVENANCE_CONTRADICTION"
             else "exemplar"
         )
         issues.append(_issue(finding.code, phase, **finding.context))
+
+
+def _exemplar_corridor_coordinates(
+    root: Path,
+    registry: ResolvedStudentResource,
+    assignment: ResolvedStudentResource,
+    issues: list[StudentConsumptionIssue],
+) -> set[tuple[str, int]] | None:
+    """Map declared registry identities onto declared assignment coordinates."""
+
+    try:
+        payload = _read_object(root / registry.locator, issues, "structural_join")
+        rows = payload["examples"] if payload else None
+        if not isinstance(rows, list):
+            raise ValueError("examples list required")
+        identifiers: dict[int, str] = {}
+        for row in rows:
+            index = row["global_example_index"]
+            identifier = row["selected_example_id"]
+            if (
+                isinstance(index, bool)
+                or not isinstance(index, int)
+                or index < 0
+                or not isinstance(identifier, str)
+                or not identifier
+                or index in identifiers
+                or identifier in identifiers.values()
+            ):
+                raise ValueError("registry identity")
+            identifiers[index] = identifier
+        with np.load(root / assignment.locator, allow_pickle=False) as data:
+            examples = data["position_example_index"]
+            positions = data["position"]
+        if examples.ndim != 1 or positions.ndim != 1 or len(examples) != len(positions):
+            raise ValueError("assignment shape")
+        coordinates: set[tuple[str, int]] = set()
+        for example, position in zip(examples, positions, strict=True):
+            if int(example) not in identifiers or int(position) < 0:
+                raise ValueError("assignment registry join")
+            coordinates.add((identifiers[int(example)], int(position)))
+        return coordinates
+    except (KeyError, OSError, TypeError, ValueError):
+        issues.append(_issue("TSC050_PASSPORT_JOIN_INVALID", "structural_join"))
+        return None
 
 
 def _validate_target_resources(
