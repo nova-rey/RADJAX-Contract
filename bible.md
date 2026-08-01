@@ -420,3 +420,11 @@ This file is append-only institutional memory for shared Contract decisions.
   checksum-pinned native-v3 specification vector.  Directory, rtome, and
   canonical tgz admissions are proven to resolve one identical consumption
   semantic digest, rather than merely returning success independently.
+
+## 2026-08-01 - C2 canonical NPZ assignment vector
+
+- The normative native-v3 Student vector now declares `corridor_assignment`
+  as NPZ with explicit inventory-backed `resources/03.npz` delivery binding.
+  Contract fixture checks reject the former legacy JSON/path assumption; legacy
+  JSON remains a negative compatibility surface rather than canonical payload
+  meaning.

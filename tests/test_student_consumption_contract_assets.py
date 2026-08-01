@@ -125,7 +125,10 @@ def test_c1_fixture_declares_path_independent_role_bindings() -> None:
     assert fixture["schema_version"] == "radjax_tome_student_consumption_manifest_v1"
     bindings = fixture["resources"]
     assert all(item["resource_id"] != item["inventory_binding"] for item in bindings)
-    assert all("legacy/path" in item["training_payload_binding"] for item in bindings)
+    assignment = next(item for item in bindings if item["role"] == "corridor_assignment")
+    assert assignment["encoding"] == "npz"
+    assert assignment["inventory_binding"] == "resources/03.npz"
+    assert assignment["training_payload_binding"] == "resources/03.npz"
     assert fixture["semantic_identity"]["sequence"]["alignment"] == (
         "teacher_logit_position"
     )
