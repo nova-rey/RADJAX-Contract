@@ -63,6 +63,13 @@ from radjax_contract.tome.streaming_validation import (
     read_extracted_payload_record,
     validate_streaming_tome,
 )
+from radjax_contract.tome.student_consumption import (
+    ResolvedStudentResource,
+    StudentConsumptionDescriptor,
+    StudentConsumptionIssue,
+    StudentConsumptionValidationResult,
+    validate_and_resolve_student_consumption,
+)
 from radjax_contract.tome.validation import (
     TomeValidationResult,
     validate_tome,
@@ -80,6 +87,10 @@ __all__ = [
     "ProductionTomeArtifact",
     "ProductionTomeInspection",
     "ProductionTomeValidationResult",
+    "ResolvedStudentResource",
+    "StudentConsumptionDescriptor",
+    "StudentConsumptionIssue",
+    "StudentConsumptionValidationResult",
     "TomeBehavioralSummary",
     "TomeCompression",
     "TomeCompressionFamily",
@@ -121,4 +132,5 @@ __all__ = [
     "validate_streaming_tome",
     "validate_tome_split_disjointness",
     "validate_production_tome",
+    "validate_and_resolve_student_consumption",
 ]

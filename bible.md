@@ -144,3 +144,13 @@ This file is append-only institutional memory for shared Contract decisions.
   native-v3 Student-consumption contract assets.  It exposes only the C1 draft
   identifier and draft publication version; it does not imply a release, a
   resolver, or a Student runtime dependency.
+
+## 2026-08-01 - C2 resolver foundation
+
+- Added the new structured native-v3 Student-consumption resolver foundation.
+  It recognizes only the closed v3 consumption cover extension, treats legacy
+  v3 as explicitly not consumable, validates the sidecar's raw inventory
+  binding, and resolves roles only from sidecar role/instance declarations.
+- Archive handling remains private and safety-gated.  Full resource-content,
+  join, and semantic-digest validation is still required before C2 acceptance;
+  this commit does not authorize publication or Tome integration.

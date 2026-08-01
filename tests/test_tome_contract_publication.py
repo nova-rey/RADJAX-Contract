@@ -21,6 +21,7 @@ from radjax_contract.tome import (
     tome_streaming_contract_root,
     tome_student_consumption_contract_asset_path,
     tome_student_consumption_contract_root,
+    validate_and_resolve_student_consumption,
     validate_streaming_tome,
 )
 
@@ -98,6 +99,18 @@ def test_student_consumption_contract_resources_are_discoverable_and_pinned() ->
         tome_student_consumption_contract_asset_path("../contract.json")
     with pytest.raises(ValueError, match="unknown"):
         tome_student_consumption_contract_asset_path("missing.json")
+
+
+def test_legacy_v3_is_not_silently_reinterpreted_as_student_consumable(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "cover_page.json").write_text(
+        json.dumps({"schema_version": "radjax_tome_cover_v3"}), encoding="utf-8"
+    )
+    result = validate_and_resolve_student_consumption(tmp_path)
+    assert result.ok is False
+    assert result.descriptor is None
+    assert [issue.code for issue in result.issues] == ["TSC001_PROFILE_UNSUPPORTED"]
 
 
 def test_m7_streaming_validator_is_a_portable_contract_primitive(
