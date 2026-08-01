@@ -31,6 +31,18 @@ _PHASES = (
     "provenance",
     "semantic_digest",
 )
+_REQUIRED_ROLES = {
+    "target_shard",
+    "example_registry",
+    "corridor_mode_table",
+    "corridor_assignment",
+    "selected_passport_index",
+    "selected_exemplar_payload",
+    "corridor_observed_statistics",
+    "row_range_declaration",
+    "delivery_receipt",
+    "authority_reference",
+}
 
 
 @dataclass(frozen=True)
@@ -223,6 +235,7 @@ def _resolve(
     if (
         not isinstance(base, str)
         or manifest.get("base_artifact_semantic_digest") != base
+        or content.get("semantic_identity_digest") != base
     ):
         issues.append(_issue("TSC062_BASE_IDENTITY_MISMATCH", "semantic_digest"))
         return None
@@ -262,14 +275,37 @@ def _resolve(
     ):
         issues.append(_issue("TSC015_BINDING_INCONSISTENT", "binding"))
         return None
+    if {row[1] for row in actual} < _REQUIRED_ROLES:
+        issues.append(_issue("TSC010_ROLE_MISSING", "binding"))
+        return None
+    if not _semantic_identity_matches(identity, cover):
+        issues.append(_issue("TSC061_CONSUMPTION_DIGEST_MISMATCH", "semantic_digest"))
+        return None
+    raw_inventory = content.get("inventory", [])
+    raw_training = _nested(cover, "identity", "training_payload") or []
+    if not isinstance(raw_inventory, list) or not isinstance(raw_training, list):
+        issues.append(_issue("TSC013_BINDING_ABSENT", "binding"))
+        return None
+    inventory_paths = [
+        entry.get("path") for entry in raw_inventory if isinstance(entry, dict)
+    ]
+    logical_ids = [
+        entry.get("logical_id") for entry in raw_training if isinstance(entry, dict)
+    ]
+    if (
+        len(inventory_paths) != len(raw_inventory)
+        or len(set(inventory_paths)) != len(inventory_paths)
+        or len(logical_ids) != len(raw_training)
+        or len(set(logical_ids)) != len(logical_ids)
+    ):
+        issues.append(_issue("TSC014_BINDING_AMBIGUOUS", "binding"))
+        return None
     inventory = {
-        entry.get("path"): entry
-        for entry in content.get("inventory", [])
-        if isinstance(entry, dict)
+        entry.get("path"): entry for entry in raw_inventory if isinstance(entry, dict)
     }
     training = {
         entry.get("logical_id"): entry
-        for entry in _nested(cover, "identity", "training_payload") or []
+        for entry in raw_training
         if isinstance(entry, dict)
     }
     resolved: list[ResolvedStudentResource] = []
@@ -293,8 +329,21 @@ def _resolve(
                 )
             )
             continue
+        if training[logical].get("semantic_digest") != row.get("semantic_digest"):
+            issues.append(
+                _issue(
+                    "TSC015_BINDING_INCONSISTENT",
+                    "binding",
+                    resource_id=row.get("resource_id"),
+                )
+            )
+            continue
         file = root / locator
-        if not file.is_file() or _digest(file) != inventory[locator].get("sha256"):
+        if (
+            not file.is_file()
+            or _digest(file) != inventory[locator].get("sha256")
+            or file.stat().st_size != inventory[locator].get("size_bytes")
+        ):
             issues.append(
                 _issue(
                     "TSC023_RESOURCE_INTEGRITY_MISMATCH",
@@ -414,12 +463,24 @@ def _read_object(
     try:
         value = json.loads(
             path.read_text(encoding="utf-8"),
+            object_pairs_hook=_unique_object,
             parse_constant=lambda _: (_ for _ in ()).throw(ValueError()),
         )
-        return value if isinstance(value, dict) else None
+        if not isinstance(value, dict):
+            raise ValueError("JSON object required")
+        return value
     except (OSError, UnicodeDecodeError, json.JSONDecodeError, ValueError):
         issues.append(_issue("TSC060_CONSUMPTION_CANONICALIZATION", phase))
         return None
+
+
+def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("duplicate JSON object key")
+        result[key] = value
+    return result
 
 
 def _safe(value: str) -> bool:
@@ -442,6 +503,30 @@ def _nested(value: Any, *keys: str) -> Any:
 
 def _digest(path: Path) -> str:
     return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _semantic_identity_matches(identity: dict[str, Any], cover: dict[str, Any]) -> bool:
+    """Validate the C1 canonical semantic projection without hashing locators."""
+
+    digest = identity.get("semantic_digest")
+    sidecar = cover.get("student_consumption")
+    if not isinstance(digest, str) or not isinstance(sidecar, dict):
+        return False
+    projection = {
+        key: value for key, value in identity.items() if key != "semantic_digest"
+    }
+    try:
+        encoded = json.dumps(
+            projection,
+            ensure_ascii=False,
+            allow_nan=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        ).encode("utf-8")
+    except (TypeError, ValueError):
+        return False
+    expected = "sha256:" + hashlib.sha256(encoded).hexdigest()
+    return digest == expected and sidecar.get("semantic_digest") == expected
 
 
 def _issue(code: str, phase: str, **context: Any) -> StudentConsumptionIssue:

@@ -154,3 +154,11 @@ This file is append-only institutional memory for shared Contract decisions.
 - Archive handling remains private and safety-gated.  Full resource-content,
   join, and semantic-digest validation is still required before C2 acceptance;
   this commit does not authorize publication or Tome integration.
+
+## 2026-08-01 - C2 binding and identity hardening
+
+- The resolver now rejects duplicate JSON keys, non-object metadata, ambiguous
+  inventory/logical-payload bindings, mismatched raw sizes, missing required
+  roles, and inconsistent base or consumption semantic identity digests before
+  it returns a descriptor.  Materialized local artifact tests cover the valid
+  sidecar route and malformed cover failure.

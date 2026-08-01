@@ -26,6 +26,116 @@ from radjax_contract.tome import (
 )
 
 
+def _sha256(path: Path) -> str:
+    return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _student_artifact(root: Path) -> Path:
+    roles = [
+        "target_shard",
+        "example_registry",
+        "corridor_mode_table",
+        "corridor_assignment",
+        "selected_passport_index",
+        "selected_exemplar_payload",
+        "corridor_observed_statistics",
+        "row_range_declaration",
+        "delivery_receipt",
+        "authority_reference",
+    ]
+    resources = []
+    training = []
+    inventory = []
+    for index, role in enumerate(roles):
+        relative = f"resources/{index:02d}.json"
+        path = root / relative
+        path.parent.mkdir(exist_ok=True)
+        path.write_text("{}", encoding="utf-8")
+        semantic = f"sha256:{index + 1:064x}"
+        resources.append(
+            {
+                "resource_id": f"{role}/default",
+                "role": role,
+                "instance_id": "default",
+                "semantic_digest": semantic,
+                "training_payload_binding": relative,
+                "inventory_binding": relative,
+                "encoding": "json",
+                "classification": "validation",
+                "consumption": {"kind": role},
+            }
+        )
+        training.append({"logical_id": relative, "semantic_digest": semantic})
+        inventory.append(
+            {
+                "path": relative,
+                "sha256": _sha256(path),
+                "size_bytes": path.stat().st_size,
+            }
+        )
+    identity = {
+        "schema_version": "radjax_tome_student_consumption_semantic_identity_v1",
+        "profile_id": "native_v3_student_v1",
+        "vocabulary": {"vocab_size": 8},
+        "sequence": {"sequence_length": 2, "alignment": "teacher_logit_position"},
+        "resources": [
+            {
+                key: item[key]
+                for key in ("resource_id", "role", "instance_id", "semantic_digest")
+            }
+            for item in resources
+        ],
+        "joins": [],
+        "authority": {},
+    }
+    identity["semantic_digest"] = (
+        "sha256:"
+        + hashlib.sha256(
+            json.dumps(identity, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+    )
+    manifest = {
+        "schema_version": "radjax_tome_student_consumption_manifest_v1",
+        "profile_id": "native_v3_student_v1",
+        "base_artifact_semantic_digest": "sha256:" + "a" * 64,
+        "semantic_identity": identity,
+        "resources": resources,
+        "joins": [],
+        "provenance": {"delivery_path": "two_pass_rerun_selected"},
+    }
+    manifest_path = root / "manifests/student_consumption_v1.json"
+    manifest_path.parent.mkdir(exist_ok=True)
+    manifest_path.write_text(json.dumps(manifest, sort_keys=True), encoding="utf-8")
+    inventory.append(
+        {
+            "path": "manifests/student_consumption_v1.json",
+            "sha256": _sha256(manifest_path),
+            "size_bytes": manifest_path.stat().st_size,
+        }
+    )
+    cover = {
+        "schema_version": "radjax_tome_cover_v3_student_consumption_v1",
+        "identity": {
+            "semantic_digest": "sha256:" + "a" * 64,
+            "training_payload": training,
+        },
+        "package": {"transport": "directory"},
+        "manifests": {
+            "content": {
+                "semantic_identity_digest": "sha256:" + "a" * 64,
+                "inventory": inventory,
+            }
+        },
+        "student_consumption": {
+            "manifest_path": "manifests/student_consumption_v1.json",
+            "manifest_sha256": _sha256(manifest_path),
+            "semantic_digest": identity["semantic_digest"],
+        },
+    }
+    (root / "cover_page.json").write_text(json.dumps(cover), encoding="utf-8")
+    return root
+
+
 def test_v3_contract_resources_are_packaged_and_checksum_pinned() -> None:
     root = tome_contract_root()
     assert TOME_CONTRACT_ID == "radjax_tome_artifact_contract"
@@ -111,6 +221,28 @@ def test_legacy_v3_is_not_silently_reinterpreted_as_student_consumable(
     assert result.ok is False
     assert result.descriptor is None
     assert [issue.code for issue in result.issues] == ["TSC001_PROFILE_UNSUPPORTED"]
+
+
+def test_student_consumption_resolver_validates_real_sidecar_bindings(
+    tmp_path: Path,
+) -> None:
+    result = validate_and_resolve_student_consumption(_student_artifact(tmp_path))
+    assert result.ok
+    assert result.descriptor is not None
+    assert result.descriptor.sequence["alignment"] == "teacher_logit_position"
+    assert len(result.descriptor.validation_resources) == 4
+
+
+@pytest.mark.parametrize("cover", ["[]", '{"schema_version":"x","schema_version":"x"}'])
+def test_student_consumption_resolver_fails_closed_for_non_object_or_duplicate_json(
+    tmp_path: Path, cover: str
+) -> None:
+    (tmp_path / "cover_page.json").write_text(cover, encoding="utf-8")
+    result = validate_and_resolve_student_consumption(tmp_path)
+    assert result.ok is False
+    assert [issue.code for issue in result.issues] == [
+        "TSC060_CONSUMPTION_CANONICALIZATION"
+    ]
 
 
 def test_m7_streaming_validator_is_a_portable_contract_primitive(
