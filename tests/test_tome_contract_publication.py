@@ -6,6 +6,7 @@ import json
 import tarfile
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 from radjax_contract.tome import (
@@ -49,9 +50,21 @@ def _student_artifact(root: Path) -> Path:
     inventory = []
     for index, role in enumerate(roles):
         relative = f"resources/{index:02d}.json"
+        encoding = "json"
+        if role == "target_shard":
+            relative = f"resources/{index:02d}.npz"
+            encoding = "npz"
         path = root / relative
         path.parent.mkdir(exist_ok=True)
-        path.write_text("{}", encoding="utf-8")
+        if role == "target_shard":
+            np.savez(
+                path,
+                input_ids=np.array([[1, 2]], dtype=np.int32),
+                attention_mask=np.array([[1, 1]], dtype=np.int32),
+                corridor_lengths=np.array([2], dtype=np.int32),
+            )
+        else:
+            path.write_text("{}", encoding="utf-8")
         semantic = f"sha256:{index + 1:064x}"
         resources.append(
             {
@@ -61,7 +74,7 @@ def _student_artifact(root: Path) -> Path:
                 "semantic_digest": semantic,
                 "training_payload_binding": relative,
                 "inventory_binding": relative,
-                "encoding": "json",
+                "encoding": encoding,
                 "classification": "validation",
                 "consumption": {"kind": role},
             }
@@ -237,7 +250,7 @@ def test_student_consumption_resolver_validates_real_sidecar_bindings(
 def test_verified_student_resource_uses_stable_resource_id(tmp_path: Path) -> None:
     artifact = _student_artifact(tmp_path)
     with open_verified_student_resource(artifact, "target_shard/default") as handle:
-        assert handle.read() == b"{}"
+        assert handle.read(2) == b"PK"
     with pytest.raises(ValueError, match="unknown Student-consumption resource"):
         with open_verified_student_resource(artifact, "resources/00.json"):
             pass

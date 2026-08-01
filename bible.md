@@ -176,3 +176,10 @@ This file is append-only institutional memory for shared Contract decisions.
   `resource_id`, never caller-provided paths.  It completes admission first and
   rechecks the selected member's raw size and streaming SHA-256 before yielding
   bytes, with deterministic cleanup for directory and archive transports.
+
+## 2026-08-01 - C2 target-shard semantic admission
+
+- Target-shard resources are now decoded as NPZ only and checked for required
+  `int32` input, mask, and length arrays; rank/shape agreement; vocabulary
+  domain; prefix masks; and mask-to-length equality.  This preserves the
+  declared teacher-logit-position alignment without applying a loader shift.

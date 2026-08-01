@@ -15,6 +15,8 @@ from dataclasses import asdict, dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any
 
+import numpy as np
+
 from radjax_contract.tome.contract_publication import (
     TOME_STUDENT_CONSUMPTION_CONTRACT_ID,
 )
@@ -423,6 +425,9 @@ def _resolve(
         )
     if issues:
         return None
+    _validate_target_resources(resolved, root, identity, issues)
+    if issues:
+        return None
 
     def group(names: set[str]) -> tuple[ResolvedStudentResource, ...]:
         return tuple(item for item in resolved if item.role in names)
@@ -458,6 +463,80 @@ def _resolve(
         tuple(warnings),
         ("not_a_student_loader", "not_a_training_policy"),
     )
+
+
+def _validate_target_resources(
+    resources: list[ResolvedStudentResource],
+    root: Path,
+    identity: dict[str, Any],
+    issues: list[StudentConsumptionIssue],
+) -> None:
+    vocab = _nested(identity, "vocabulary", "vocab_size")
+    sequence = _nested(identity, "sequence", "sequence_length")
+    for resource in resources:
+        if resource.role != "target_shard":
+            continue
+        if resource.encoding != "npz":
+            issues.append(
+                _issue(
+                    "TSC030_CONTAINER_ENCODING_MISMATCH",
+                    "encoding",
+                    resource_id=resource.resource_id,
+                )
+            )
+            continue
+        try:
+            with np.load(root / resource.locator, allow_pickle=False) as shard:
+                input_ids = shard["input_ids"]
+                mask = shard["attention_mask"]
+                lengths = shard["corridor_lengths"]
+        except (KeyError, OSError, ValueError):
+            issues.append(
+                _issue(
+                    "TSC030_CONTAINER_ENCODING_MISMATCH",
+                    "encoding",
+                    resource_id=resource.resource_id,
+                )
+            )
+            continue
+        if (
+            input_ids.dtype != np.dtype("int32")
+            or mask.dtype != np.dtype("int32")
+            or lengths.dtype != np.dtype("int32")
+            or input_ids.ndim != 2
+            or mask.shape != input_ids.shape
+            or lengths.shape != (input_ids.shape[0],)
+            or (isinstance(sequence, int) and input_ids.shape[1] != sequence)
+        ):
+            issues.append(
+                _issue(
+                    "TSC031_DTYPE_MISMATCH",
+                    "encoding",
+                    resource_id=resource.resource_id,
+                )
+            )
+            continue
+        if isinstance(vocab, int) and (
+            (input_ids < 0).any() or (input_ids >= vocab).any()
+        ):
+            issues.append(
+                _issue(
+                    "TSC034_TOKEN_DOMAIN", "encoding", resource_id=resource.resource_id
+                )
+            )
+        expected_lengths = mask.sum(axis=1)
+        valid_mask = np.isin(mask, (0, 1)).all() and all(
+            np.all(row[:length] == 1) and np.all(row[length:] == 0)
+            for row, length in zip(mask, expected_lengths, strict=True)
+        )
+        if not valid_mask or not np.array_equal(lengths, expected_lengths):
+            issues.append(
+                _issue(
+                    "TSC035_MASK_LENGTH_ALIGNMENT",
+                    "encoding",
+                    resource_id=resource.resource_id,
+                )
+            )
 
 
 def _artifact_root(path: Path, issues: list[StudentConsumptionIssue]):
