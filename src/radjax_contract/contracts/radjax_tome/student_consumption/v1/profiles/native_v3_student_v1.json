@@ -15,6 +15,7 @@
   ],
   "required_validation_roles": [
     "corridor_observed_statistics",
+    "row_range_declaration",
     "delivery_receipt",
     "authority_reference"
   ],

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "radjax_tome_student_consumption_semantic_identity_v1",
+  "$id": "https://radjax.dev/contracts/radjax_tome/student_consumption/v1/schemas/student_consumption_semantic_identity_v1.json",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "profile_id", "vocabulary", "sequence", "resources", "joins", "authority", "semantic_digest"],

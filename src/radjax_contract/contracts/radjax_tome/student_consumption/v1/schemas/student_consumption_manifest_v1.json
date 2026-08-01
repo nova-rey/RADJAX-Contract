@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "radjax_tome_student_consumption_manifest_v1",
+  "$id": "https://radjax.dev/contracts/radjax_tome/student_consumption/v1/schemas/student_consumption_manifest_v1.json",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "profile_id", "base_artifact_semantic_digest", "semantic_identity", "resources", "joins", "provenance"],
@@ -8,10 +8,27 @@
     "schema_version": {"const": "radjax_tome_student_consumption_manifest_v1"},
     "profile_id": {"const": "native_v3_student_v1"},
     "base_artifact_semantic_digest": {"$ref": "#/$defs/sha256"},
-    "semantic_identity": {"$ref": "student_consumption_semantic_identity_v1.json"},
-    "resources": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/resource"}},
-    "joins": {"type": "array", "items": {"type": "object"}},
-    "provenance": {"type": "object"}
+    "semantic_identity": {"$ref": "https://radjax.dev/contracts/radjax_tome/student_consumption/v1/schemas/student_consumption_semantic_identity_v1.json"},
+    "resources": {
+      "type": "array",
+      "minItems": 10,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/resource"},
+      "allOf": [
+        {"contains": {"properties": {"role": {"const": "target_shard"}}, "required": ["role"]}},
+        {"contains": {"properties": {"role": {"const": "example_registry"}}, "required": ["role"]}},
+        {"contains": {"properties": {"role": {"const": "corridor_mode_table"}}, "required": ["role"]}},
+        {"contains": {"properties": {"role": {"const": "corridor_assignment"}}, "required": ["role"]}},
+        {"contains": {"properties": {"role": {"const": "selected_passport_index"}}, "required": ["role"]}},
+        {"contains": {"properties": {"role": {"const": "selected_exemplar_payload"}}, "required": ["role"]}},
+        {"contains": {"properties": {"role": {"const": "corridor_observed_statistics"}}, "required": ["role"]}},
+        {"contains": {"properties": {"role": {"const": "row_range_declaration"}}, "required": ["role"]}},
+        {"contains": {"properties": {"role": {"const": "delivery_receipt"}}, "required": ["role"]}},
+        {"contains": {"properties": {"role": {"const": "authority_reference"}}, "required": ["role"]}}
+      ]
+    },
+    "joins": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/join"}},
+    "provenance": {"type": "object", "additionalProperties": false, "required": ["delivery_path"], "properties": {"delivery_path": {"enum": ["one_pass_pruned_candidate", "two_pass_rerun_selected"]}}}
   },
   "$defs": {
     "sha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
@@ -28,8 +45,28 @@
         "inventory_binding": {"type": "string", "minLength": 1},
         "encoding": {"enum": ["json", "jsonl", "npy", "npz"]},
         "classification": {"enum": ["batch", "validation", "diagnostic", "provenance"]},
-        "consumption": {"type": "object"}
-      }
+        "consumption": {"type": "object", "minProperties": 1}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"role": {"const": "target_shard"}}, "required": ["role"]},
+          "then": {"properties": {"consumption": {"required": ["row_start", "row_end"], "properties": {"row_start": {"type": "integer", "minimum": 0}, "row_end": {"type": "integer", "minimum": 1}}}}}
+        },
+        {
+          "if": {"properties": {"role": {"const": "example_registry"}}, "required": ["role"]},
+          "then": {"properties": {"consumption": {"required": ["ordering"], "properties": {"ordering": {"const": "global_example_index"}}}}}
+        },
+        {
+          "if": {"properties": {"role": {"const": "corridor_assignment"}}, "required": ["role"]},
+          "then": {"properties": {"consumption": {"required": ["ordering"], "properties": {"ordering": {"const": "global_example_index_position"}}}}}
+        }
+      ]
+    },
+    "join": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {"kind": {"enum": ["assignment_to_logit_position", "exemplar_to_passport", "exemplar_to_corridor"]}}
     }
   }
 }

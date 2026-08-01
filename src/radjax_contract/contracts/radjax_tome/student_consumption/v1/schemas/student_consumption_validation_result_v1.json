@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "radjax_student_consumption_validation_result_v1",
+  "$id": "https://radjax.dev/contracts/radjax_tome/student_consumption/v1/schemas/student_consumption_validation_result_v1.json",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "ok", "profile_id", "issues", "warnings", "descriptor"],

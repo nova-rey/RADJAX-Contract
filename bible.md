@@ -111,3 +111,22 @@ This file is append-only institutional memory for shared Contract decisions.
   adversarial-code catalog.  It does not implement a resolver, publish an
   asset, modify Tome, or claim Student batch/training behavior.  C2 remains
   behind independent C1 review.
+
+## 2026-08-01 - C1 review hardening
+
+- The normative assets are now checksum-closed after review changes and are
+  declared as package data.  The valid manifest is validated through its
+  external semantic-identity schema reference, while negative schema checks
+  cover a missing required role, a duplicate resource declaration, and a
+  target-shard row-range omission.
+- The cover-family extension requires the consumption-manifest inventory
+  declaration, and the adversarial catalog binds every declared rejection code
+  to one named deterministic mutation with its primary issue tuple.  Wheel
+  inventory coverage is exercised where the configured setuptools build backend
+  is available; the current Python 3.14 runner lacks that backend and skips
+  only that environment-dependent assertion.
+- `row_range_declaration` is explicitly required validation evidence.  The C1
+  fixture now proves the ordered identity-to-manifest resource projection,
+  resource/role-instance uniqueness, and one-to-one inventory bindings.  C2
+  must make those cross-document relations and the cover manifest-hash to
+  inventory-hash equality executable before resolving any descriptor.

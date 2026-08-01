@@ -1,10 +1,18 @@
 from __future__ import annotations
 
+import copy
 import hashlib
+import importlib.util
 import json
+import subprocess
+import sys
+import zipfile
 from pathlib import Path
 
+import pytest
 from jsonschema import Draft202012Validator
+from jsonschema.exceptions import ValidationError
+from referencing import Registry, Resource
 
 ROOT = (
     Path(__file__).parents[1]
@@ -55,6 +63,12 @@ def test_c1_contract_profile_and_schema_identifiers_are_closed() -> None:
         "selected_passport_index",
         "selected_exemplar_payload",
     }
+    assert set(profile["required_validation_roles"]) == {
+        "corridor_observed_statistics",
+        "row_range_declaration",
+        "delivery_receipt",
+        "authority_reference",
+    }
 
 
 def test_c1_schemas_are_valid_and_profile_validates() -> None:
@@ -67,6 +81,43 @@ def test_c1_schemas_are_valid_and_profile_validates() -> None:
     Draft202012Validator(profile_schema).validate(
         _json("profiles/native_v3_student_v1.json")
     )
+    identity_schema = _json("schemas/student_consumption_semantic_identity_v1.json")
+    manifest_schema = _json("schemas/student_consumption_manifest_v1.json")
+    registry = Registry().with_resources(
+        [
+            (
+                identity_schema["$id"],
+                Resource.from_contents(identity_schema),
+            )
+        ]
+    )
+    validator = Draft202012Validator(manifest_schema, registry=registry)
+    fixture = _json("fixtures/valid/native_v3_student_v1.json")
+    validator.validate(fixture)
+
+    missing_role = copy.deepcopy(fixture)
+    missing_role["resources"] = [
+        resource
+        for resource in missing_role["resources"]
+        if resource["role"] != "target_shard"
+    ]
+    with pytest.raises(ValidationError):
+        validator.validate(missing_role)
+
+    duplicate_resource = copy.deepcopy(fixture)
+    duplicate_resource["resources"].append(duplicate_resource["resources"][0])
+    with pytest.raises(ValidationError):
+        validator.validate(duplicate_resource)
+
+    missing_row_range = copy.deepcopy(fixture)
+    target = next(
+        resource
+        for resource in missing_row_range["resources"]
+        if resource["role"] == "target_shard"
+    )
+    del target["consumption"]["row_start"]
+    with pytest.raises(ValidationError):
+        validator.validate(missing_row_range)
 
 
 def test_c1_fixture_declares_path_independent_role_bindings() -> None:
@@ -78,6 +129,28 @@ def test_c1_fixture_declares_path_independent_role_bindings() -> None:
     assert fixture["semantic_identity"]["sequence"]["alignment"] == (
         "teacher_logit_position"
     )
+    identity_projection = [
+        (
+            resource["resource_id"],
+            resource["role"],
+            resource["instance_id"],
+            resource["semantic_digest"],
+        )
+        for resource in fixture["semantic_identity"]["resources"]
+    ]
+    manifest_projection = [
+        (
+            resource["resource_id"],
+            resource["role"],
+            resource["instance_id"],
+            resource["semantic_digest"],
+        )
+        for resource in fixture["resources"]
+    ]
+    assert identity_projection == manifest_projection
+    assert len({row[0] for row in manifest_projection}) == len(manifest_projection)
+    assert len({row[1:3] for row in manifest_projection}) == len(manifest_projection)
+    assert len({item["inventory_binding"] for item in bindings}) == len(bindings)
 
 
 def test_c1_issue_registry_has_complete_named_corpus_coverage() -> None:
@@ -88,3 +161,63 @@ def test_c1_issue_registry_has_complete_named_corpus_coverage() -> None:
     assert registry["dependent_failure_policy"] == (
         "suppress_dependent_checks_accumulate_independent_checks"
     )
+    cases = adversarial["cases"]
+    assert {case["primary_issue"] for case in cases} == set(registry["codes"])
+    assert all(case["expected_issues"] == [case["primary_issue"]] for case in cases)
+    assert {
+        case_id for case_ids in adversarial["coverage"].values() for case_id in case_ids
+    } == {case["id"] for case in cases}
+
+
+def test_c1_cover_extension_is_a_closed_v3_family_extension() -> None:
+    cover = _json("schemas/tome_cover_v3_student_consumption_v1.json")
+    assert cover["properties"]["schema_version"] == {
+        "const": "radjax_tome_cover_v3_student_consumption_v1"
+    }
+    assert cover["additionalProperties"] is False
+    assert set(cover["required"]) >= {
+        "identity",
+        "training",
+        "package",
+        "manifests",
+        "authority",
+        "provenance",
+        "validation",
+        "student_consumption",
+    }
+    inventory = cover["properties"]["manifests"]["properties"]["content"]["properties"][
+        "inventory"
+    ]
+    assert inventory["contains"]["properties"]["path"] == {
+        "const": "manifests/student_consumption_v1.json"
+    }
+
+
+@pytest.mark.skipif(
+    importlib.util.find_spec("setuptools") is None,
+    reason="wheel build requires the configured setuptools backend",
+)
+def test_c1_assets_are_in_the_built_wheel(tmp_path: Path) -> None:
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "pip",
+            "wheel",
+            "--no-deps",
+            "--no-build-isolation",
+            "--wheel-dir",
+            str(tmp_path),
+            ".",
+        ],
+        cwd=ROOT.parents[5],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    wheel = next(tmp_path.glob("radjax_contract-*.whl"))
+    with zipfile.ZipFile(wheel) as archive:
+        names = set(archive.namelist())
+    asset_prefix = "radjax_contract/contracts/radjax_tome/student_consumption/v1/"
+    assert asset_prefix + "contract.json" in names
+    assert asset_prefix + "SHA256SUMS" in names

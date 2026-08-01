@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "radjax_student_consumption_descriptor_v1",
+  "$id": "https://radjax.dev/contracts/radjax_tome/student_consumption/v1/schemas/student_consumption_descriptor_v1.json",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "contract_id", "profile_id", "base_artifact_semantic_digest", "consumption_semantic_digest", "vocabulary", "sequence", "corridor_resources", "exemplar_resources", "joins", "delivery", "provenance", "warnings", "nonclaims"],

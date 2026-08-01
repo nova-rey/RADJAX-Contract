@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "radjax_tome_student_consumption_profile_v1",
+  "$id": "https://radjax.dev/contracts/radjax_tome/student_consumption/v1/schemas/student_consumption_profile_v1.json",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "profile_id", "requires_surfaces", "accepted_package_profiles", "accepted_transports", "role_authority", "required_batch_roles", "required_validation_roles", "optional_diagnostic_roles", "numeric_policy"],
