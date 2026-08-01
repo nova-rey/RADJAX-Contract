@@ -470,3 +470,23 @@ This file is append-only institutional memory for shared Contract decisions.
   The release API reports those same digests. Tome may pin only this tag,
   commit, and verified publication assets; it must not pin the former untagged
   `0.3.2` candidate.
+
+## 2026-08-01 - C4 native-v3 Student-consumption v2 repair candidate
+
+- The released `native_v3_student_v1` sidecar binding is preserved as
+  historical v0.4.0 behavior. Its requirement that every derived resource
+  appear in native-v3 `identity.training_payload` cannot truthfully represent
+  new sidecar material without changing the base semantic root. The v2 profile
+  therefore binds independently digested derived resources by stable role,
+  instance, resource identity, semantic digest, and raw inventory locator;
+  it deliberately forbids a legacy training-payload binding.
+- V2 preserves the native-v3 base semantic digest while separately hashing the
+  complete ordered consumption projection. Canonical JSON/JSONL and framed,
+  little-endian NPZ member semantics are normative. Exact NPZ axes use the
+  real assignment members (`position_example_index`, `position`, `mode_id`,
+  `weight`) and assignment-aligned observed statistics. Physical relocation
+  changes delivery/cover integrity but not the v2 consumption digest.
+- Focused v2 resolver, schema, vector, materialization, and historical-v1
+  compatibility tests passed: 40 passed, 1 environment-skipped. No v0.4.0
+  asset or tag was changed. Release version metadata and publication are
+  intentionally deferred until the complete v0.4.1 verification gate.

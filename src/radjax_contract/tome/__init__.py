@@ -11,12 +11,15 @@ from radjax_contract.tome.contract_publication import (
     TOME_STREAMING_CONTRACT_PUBLICATION_VERSION,
     TOME_STUDENT_CONSUMPTION_CONTRACT_ID,
     TOME_STUDENT_CONSUMPTION_CONTRACT_PUBLICATION_VERSION,
+    TOME_STUDENT_CONSUMPTION_V2_CONTRACT_PUBLICATION_VERSION,
     tome_contract_asset_path,
     tome_contract_root,
     tome_streaming_contract_asset_path,
     tome_streaming_contract_root,
     tome_student_consumption_contract_asset_path,
     tome_student_consumption_contract_root,
+    tome_student_consumption_v2_contract_asset_path,
+    tome_student_consumption_v2_contract_root,
 )
 from radjax_contract.tome.cover_page import (
     TomeBehavioralSummary,
@@ -71,6 +74,13 @@ from radjax_contract.tome.student_consumption import (
     open_verified_student_resource,
     validate_and_resolve_student_consumption,
 )
+from radjax_contract.tome.student_consumption_v2 import (
+    ResolvedStudentConsumptionV2Resource,
+    StudentConsumptionV2Descriptor,
+    StudentConsumptionV2ValidationResult,
+    open_verified_student_resource_v2,
+    validate_and_resolve_student_consumption_v2,
+)
 from radjax_contract.tome.validation import (
     TomeValidationResult,
     validate_tome,
@@ -85,6 +95,7 @@ __all__ = [
     "TOME_STREAMING_CONTRACT_PUBLICATION_VERSION",
     "TOME_STUDENT_CONSUMPTION_CONTRACT_ID",
     "TOME_STUDENT_CONSUMPTION_CONTRACT_PUBLICATION_VERSION",
+    "TOME_STUDENT_CONSUMPTION_V2_CONTRACT_PUBLICATION_VERSION",
     "ProductionTomeArtifact",
     "ProductionTomeInspection",
     "ProductionTomeValidationResult",
@@ -92,7 +103,11 @@ __all__ = [
     "StudentConsumptionDescriptor",
     "StudentConsumptionIssue",
     "StudentConsumptionValidationResult",
+    "ResolvedStudentConsumptionV2Resource",
+    "StudentConsumptionV2Descriptor",
+    "StudentConsumptionV2ValidationResult",
     "open_verified_student_resource",
+    "open_verified_student_resource_v2",
     "TomeBehavioralSummary",
     "TomeCompression",
     "TomeCompressionFamily",
@@ -128,6 +143,8 @@ __all__ = [
     "tome_streaming_contract_root",
     "tome_student_consumption_contract_asset_path",
     "tome_student_consumption_contract_root",
+    "tome_student_consumption_v2_contract_asset_path",
+    "tome_student_consumption_v2_contract_root",
     "load_production_tome",
     "valid_compression_for_payload",
     "validate_tome",
@@ -135,4 +152,5 @@ __all__ = [
     "validate_tome_split_disjointness",
     "validate_production_tome",
     "validate_and_resolve_student_consumption",
+    "validate_and_resolve_student_consumption_v2",
 ]

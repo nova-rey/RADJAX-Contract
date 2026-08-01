@@ -160,7 +160,7 @@ class StudentConsumptionValidationResult:
 
 def validate_and_resolve_student_consumption(
     artifact: str | Path, *, profile_id: str = PROFILE_ID, strict: bool = False
-) -> StudentConsumptionValidationResult:
+) -> StudentConsumptionValidationResult | Any:
     """Validate an explicitly extended native-v3 artifact and resolve its roles.
 
     Archive transport is normalized into a private temporary directory only
@@ -168,6 +168,14 @@ def validate_and_resolve_student_consumption(
     and resource semantics are all admitted before a descriptor is returned.
     """
 
+    if profile_id == "native_v3_student_v2":
+        # Keep the published V1 implementation immutable while exposing the
+        # additive profile through the established public admission entrypoint.
+        from radjax_contract.tome.student_consumption_v2 import (
+            validate_and_resolve_student_consumption_v2,
+        )
+
+        return validate_and_resolve_student_consumption_v2(artifact, strict=strict)
     issues: list[StudentConsumptionIssue] = []
     warnings: list[StudentConsumptionIssue] = []
     if profile_id != PROFILE_ID:
@@ -302,6 +310,16 @@ def open_verified_student_resource(
     looked up only after full admission; it is never accepted from a caller.
     """
 
+    if profile_id == "native_v3_student_v2":
+        from radjax_contract.tome.student_consumption_v2 import (
+            open_verified_student_resource_v2,
+        )
+
+        with open_verified_student_resource_v2(
+            artifact, resource_id, strict=strict
+        ) as handle:
+            yield handle
+        return
     result = validate_and_resolve_student_consumption(
         artifact, profile_id=profile_id, strict=strict
     )
