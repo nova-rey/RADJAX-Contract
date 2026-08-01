@@ -311,6 +311,12 @@ def _resolve_base_v2(
             }
         )
         stage_cover["schema_version"] = "radjax_tome_cover_v3_student_consumption_v2"
+        # V2 validates the extracted compatibility staging directory.  Its
+        # transport declaration must describe that directory, while v3 has
+        # already validated the original archive/container declaration before
+        # entering this adapter.
+        stage_cover["package"] = dict(stage_cover["package"])
+        stage_cover["package"]["transport"] = "directory"
         inventory = stage_cover["manifests"]["content"]["inventory"]
         inventory[:] = [
             row

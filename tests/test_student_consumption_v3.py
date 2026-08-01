@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import tarfile
 from pathlib import Path
 
 from test_student_consumption_v2 import _canonical_identity, _sha256, _v2_artifact
@@ -159,6 +160,26 @@ def test_v3_artifact_is_never_reinterpreted_as_v2(tmp_path: Path) -> None:
     assert [issue.code for issue in result.issues] == [
         "TSC002_COVER_VERSION_UNSUPPORTED"
     ]
+
+
+def test_v3_archive_delivery_preserves_the_explicit_tgz_contract(
+    tmp_path: Path,
+) -> None:
+    """The v3-to-v2 compatibility adapter must not reject its own staging dir."""
+
+    directory = _v3_artifact(tmp_path / "directory")
+    cover_path = directory / "cover_page.json"
+    cover = json.loads(cover_path.read_text(encoding="utf-8"))
+    cover["package"]["transport"] = "tgz"
+    cover_path.write_text(json.dumps(cover, sort_keys=True), encoding="utf-8")
+    archive = tmp_path / "student.tgz"
+    with tarfile.open(archive, "w:gz") as handle:
+        for path in sorted(item for item in directory.rglob("*") if item.is_file()):
+            handle.add(path, arcname=path.relative_to(directory).as_posix())
+    result = validate_and_resolve_student_consumption(
+        archive, profile_id="native_v3_student_v3"
+    )
+    assert result.ok, result.issues
 
 
 def test_v3_authority_hash_requires_exact_lowercase_sha256_syntax() -> None:

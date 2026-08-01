@@ -527,3 +527,14 @@ next minor publication is planned as `v0.5.0` after complete verification.
   and `radjax_contract-0.5.0-py3-none-any.whl`
   (`sha256:816946f150fba4a2eaadff4ce72708ca1295b4ce1b9228962eedc0a5e8e142af`).
   Tome may pin this immutable release and verify its checked-in offline mirror.
+
+## 2026-08-01 - C5 v0.5.1 archive compatibility candidate
+
+- V3's extracted-directory compatibility adapter preserved an original `tgz`
+  declaration while delegating to v2, which correctly validates only the
+  temporary directory and therefore rejected a valid archive as a transport
+  mismatch. The candidate records the original archive validation at v3 then
+  declares the temporary compatibility stage as a directory for v2 only.
+- This is an additive patch to v3 delivery resolution: profile IDs, schemas,
+  semantic identity, published `v0.5.0`, and historical v1/v2 validation are
+  unchanged. Focused directory and tgz v3 resolver tests passed before review.
