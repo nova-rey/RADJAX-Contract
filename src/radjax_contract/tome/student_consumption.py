@@ -43,7 +43,7 @@ _PHASES = (
     "provenance",
     "semantic_digest",
 )
-_REQUIRED_ROLES = {
+_ROLE_ORDER = (
     "target_shard",
     "example_registry",
     "corridor_mode_table",
@@ -54,7 +54,8 @@ _REQUIRED_ROLES = {
     "row_range_declaration",
     "delivery_receipt",
     "authority_reference",
-}
+)
+_REQUIRED_ROLES = frozenset(_ROLE_ORDER)
 _ROLE_CLASSIFICATIONS = {
     "target_shard": "batch",
     "example_registry": "batch",
@@ -163,8 +164,8 @@ def validate_and_resolve_student_consumption(
     """Validate an explicitly extended native-v3 artifact and resolve its roles.
 
     Archive transport is normalized into a private temporary directory only
-    after member safety checks.  C2 currently establishes cover/sidecar,
-    inventory, and identity binding; later C2 checks validate resource contents.
+    after member safety checks.  Source cover, sidecar, inventory, identity,
+    and resource semantics are all admitted before a descriptor is returned.
     """
 
     issues: list[StudentConsumptionIssue] = []
@@ -186,6 +187,9 @@ def validate_and_resolve_student_consumption(
             issues.append(_issue("TSC001_PROFILE_UNSUPPORTED", "profile_cover"))
             return _result(profile_id, issues, warnings)
         if cover.get("schema_version") != "radjax_tome_cover_v3_student_consumption_v1":
+            issues.append(_issue("TSC002_COVER_VERSION_UNSUPPORTED", "profile_cover"))
+            return _result(profile_id, issues, warnings)
+        if not _validate_cover_schema(cover):
             issues.append(_issue("TSC002_COVER_VERSION_UNSUPPORTED", "profile_cover"))
             return _result(profile_id, issues, warnings)
         declared_transport = _nested(cover, "package", "transport")
@@ -364,12 +368,19 @@ def _resolve(
         for row in resources
         if isinstance(row, dict)
     ]
-    if (
-        projection != actual
-        or len({row[0] for row in actual}) != len(actual)
-        or len({row[1:3] for row in actual}) != len(actual)
-    ):
+    if projection != actual:
         issues.append(_issue("TSC015_BINDING_INCONSISTENT", "binding"))
+        return None
+    if len({row[0] for row in actual}) != len(actual) or len(
+        {row[1:3] for row in actual}
+    ) != len(actual):
+        issues.append(_issue("TSC011_ROLE_DUPLICATE", "binding"))
+        return None
+    role_rank = {role: index for index, role in enumerate(_ROLE_ORDER)}
+    if actual != sorted(
+        actual, key=lambda row: (role_rank.get(row[1], len(role_rank)), row[2], row[0])
+    ):
+        issues.append(_issue("TSC012_ROLE_INSTANCE_ORDER", "binding"))
         return None
     if {row[1] for row in actual} < _REQUIRED_ROLES:
         issues.append(_issue("TSC010_ROLE_MISSING", "binding"))
@@ -550,6 +561,26 @@ def _validate_manifest_schema(manifest: dict[str, Any]) -> bool:
     return True
 
 
+def _validate_cover_schema(cover: dict[str, Any]) -> bool:
+    """Validate the published closed cover extension before resolving it."""
+
+    root = tome_student_consumption_contract_root() / "schemas"
+    try:
+        schema = json.loads(
+            (root / "tome_cover_v3_student_consumption_v1.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        Draft202012Validator(schema).validate(cover)
+    except (OSError, ValueError, KeyError):
+        return False
+    except Exception as exc:
+        if exc.__class__.__module__.startswith("jsonschema"):
+            return False
+        raise
+    return True
+
+
 def _validate_corridor_and_exemplar_resources(
     resources: list[ResolvedStudentResource],
     root: Path,
@@ -620,14 +651,24 @@ def _validate_target_resources(
             input_ids.dtype != np.dtype("int32")
             or mask.dtype != np.dtype("int32")
             or lengths.dtype != np.dtype("int32")
-            or input_ids.ndim != 2
+        ):
+            issues.append(
+                _issue(
+                    "TSC031_DTYPE_MISMATCH",
+                    "encoding",
+                    resource_id=resource.resource_id,
+                )
+            )
+            continue
+        if (
+            input_ids.ndim != 2
             or mask.shape != input_ids.shape
             or lengths.shape != (input_ids.shape[0],)
             or (isinstance(sequence, int) and input_ids.shape[1] != sequence)
         ):
             issues.append(
                 _issue(
-                    "TSC031_DTYPE_MISMATCH",
+                    "TSC032_SHAPE_AXIS_MISMATCH",
                     "encoding",
                     resource_id=resource.resource_id,
                 )
@@ -713,7 +754,14 @@ class _safe_archive_root:
                     source = archive.extractfile(member)
                     if source is None:
                         raise ValueError
-                    target.write_bytes(source.read())
+                    with target.open("wb") as destination:
+                        remaining = member.size
+                        while remaining:
+                            block = source.read(min(1 << 16, remaining))
+                            if not block:
+                                raise ValueError
+                            destination.write(block)
+                            remaining -= len(block)
             return root
         except (OSError, tarfile.TarError, ValueError):
             self.issues.append(_issue("TSC021_TRANSPORT_UNSAFE", "archive_safety"))

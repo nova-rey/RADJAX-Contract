@@ -266,3 +266,14 @@ This file is append-only institutional memory for shared Contract decisions.
   identity schemas and validates the source sidecar before cross-document
   resolution.  `jsonschema` is a runtime Contract dependency because this is a
   portable validation guarantee, not a test-only assertion.
+
+## 2026-08-01 - C2 closed-cover and binding-order hardening
+
+- Resolver admission now validates the complete published closed cover schema
+  before resolving its sidecar.  The source fixture carries the required v3
+  cover-family sections and complete inventory entry shape, so a partial cover
+  cannot masquerade as a supported Student-consumption artifact.
+- Duplicate role/instance bindings and noncanonical role/instance order now
+  produce their distinct published `TSC011` and `TSC012` outcomes.  Archive
+  extraction copies bounded blocks and rejects premature member EOF instead of
+  materializing each tar member with an unbounded `read()`.

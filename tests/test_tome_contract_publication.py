@@ -146,6 +146,8 @@ def _student_artifact(root: Path) -> Path:
                 "path": relative,
                 "sha256": _sha256(path),
                 "size_bytes": path.stat().st_size,
+                "classification": "training_payload",
+                "training_authoritative": True,
             }
         )
     identity = {
@@ -194,6 +196,8 @@ def _student_artifact(root: Path) -> Path:
             "path": "manifests/student_consumption_v1.json",
             "sha256": _sha256(manifest_path),
             "size_bytes": manifest_path.stat().st_size,
+            "classification": "manifest",
+            "training_authoritative": False,
         }
     )
     cover = {
@@ -202,13 +206,20 @@ def _student_artifact(root: Path) -> Path:
             "semantic_digest": "sha256:" + "a" * 64,
             "training_payload": training,
         },
+        "training": {},
         "package": {"transport": "directory"},
         "manifests": {
             "content": {
+                "schema_version": "tome_content_manifest_v2",
+                "profile": "student",
                 "semantic_identity_digest": "sha256:" + "a" * 64,
                 "inventory": inventory,
+                "manifest_digest": "sha256:" + "b" * 64,
             }
         },
+        "authority": {},
+        "provenance": {},
+        "validation": {},
         "student_consumption": {
             "profile_id": "native_v3_student_v1",
             "manifest_path": "manifests/student_consumption_v1.json",
@@ -243,6 +254,31 @@ def _refresh_sidecar_inventory(root: Path) -> None:
     manifest_entry["size_bytes"] = manifest_path.stat().st_size
     cover["student_consumption"]["manifest_sha256"] = manifest_entry["sha256"]
     cover_path.write_text(json.dumps(cover), encoding="utf-8")
+
+
+def _refresh_semantic_projection(root: Path) -> None:
+    """Refresh a deliberate semantic mutation without changing its raw binding."""
+
+    manifest_path = root / "manifests/student_consumption_v1.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    identity = manifest["semantic_identity"]
+    identity["resources"] = [
+        {
+            key: row[key]
+            for key in ("resource_id", "role", "instance_id", "semantic_digest")
+        }
+        for row in manifest["resources"]
+    ]
+    identity.pop("semantic_digest", None)
+    identity["semantic_digest"] = "sha256:" + hashlib.sha256(
+        json.dumps(identity, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    manifest_path.write_text(json.dumps(manifest, sort_keys=True), encoding="utf-8")
+    cover_path = root / "cover_page.json"
+    cover = json.loads(cover_path.read_text(encoding="utf-8"))
+    cover["student_consumption"]["semantic_digest"] = identity["semantic_digest"]
+    cover_path.write_text(json.dumps(cover), encoding="utf-8")
+    _refresh_sidecar_inventory(root)
 
 
 def test_v3_contract_resources_are_packaged_and_checksum_pinned() -> None:
@@ -524,6 +560,47 @@ def test_student_consumption_rejects_incomplete_join_declaration(
     assert [issue.code for issue in result.issues] == ["TSC013_BINDING_ABSENT"]
 
 
+def test_student_consumption_rejects_duplicate_role_instance_binding(
+    tmp_path: Path,
+) -> None:
+    artifact = _student_artifact(tmp_path)
+    manifest_path = artifact / "manifests/student_consumption_v1.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    duplicate = dict(manifest["resources"][0])
+    duplicate["resource_id"] = "target_shard/duplicate"
+    manifest["resources"].append(duplicate)
+    manifest_path.write_text(json.dumps(manifest, sort_keys=True), encoding="utf-8")
+    _refresh_semantic_projection(artifact)
+    result = validate_and_resolve_student_consumption(artifact)
+    assert [issue.code for issue in result.issues] == ["TSC011_ROLE_DUPLICATE"]
+
+
+def test_student_consumption_rejects_unsorted_role_instance_binding(
+    tmp_path: Path,
+) -> None:
+    artifact = _student_artifact(tmp_path)
+    manifest_path = artifact / "manifests/student_consumption_v1.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["resources"][0], manifest["resources"][1] = (
+        manifest["resources"][1],
+        manifest["resources"][0],
+    )
+    manifest_path.write_text(json.dumps(manifest, sort_keys=True), encoding="utf-8")
+    _refresh_semantic_projection(artifact)
+    result = validate_and_resolve_student_consumption(artifact)
+    assert [issue.code for issue in result.issues] == ["TSC012_ROLE_INSTANCE_ORDER"]
+
+
+def test_student_consumption_rejects_closed_cover_shape_violation(tmp_path: Path) -> None:
+    artifact = _student_artifact(tmp_path)
+    cover_path = artifact / "cover_page.json"
+    cover = json.loads(cover_path.read_text(encoding="utf-8"))
+    del cover["training"]
+    cover_path.write_text(json.dumps(cover), encoding="utf-8")
+    result = validate_and_resolve_student_consumption(artifact)
+    assert [issue.code for issue in result.issues] == ["TSC002_COVER_VERSION_UNSUPPORTED"]
+
+
 def test_verified_student_resource_uses_stable_resource_id(tmp_path: Path) -> None:
     artifact = _student_artifact(tmp_path)
     with open_verified_student_resource(artifact, "target_shard/default") as handle:
@@ -536,16 +613,15 @@ def test_verified_student_resource_uses_stable_resource_id(tmp_path: Path) -> No
 def test_student_consumption_resolver_rejects_transport_declaration_mismatch(
     tmp_path: Path,
 ) -> None:
+    artifact = _student_artifact(tmp_path / "directory")
+    cover_path = artifact / "cover_page.json"
+    cover = json.loads(cover_path.read_text(encoding="utf-8"))
+    cover["package"]["transport"] = "directory"
+    cover_path.write_text(json.dumps(cover), encoding="utf-8")
     archive_path = tmp_path / "mismatch.tgz"
-    cover = {
-        "schema_version": "radjax_tome_cover_v3_student_consumption_v1",
-        "package": {"transport": "directory"},
-    }
     with tarfile.open(archive_path, "w:gz") as archive:
-        payload = json.dumps(cover).encode("utf-8")
-        member = tarfile.TarInfo("cover_page.json")
-        member.size = len(payload)
-        archive.addfile(member, io.BytesIO(payload))
+        for path in sorted(item for item in artifact.rglob("*") if item.is_file()):
+            archive.add(path, arcname=path.relative_to(artifact).as_posix())
     result = validate_and_resolve_student_consumption(archive_path)
     assert [issue.code for issue in result.issues] == ["TSC020_TRANSPORT_UNSUPPORTED"]
 
