@@ -36,6 +36,7 @@ radjax_contract = [
   "contracts/radjax_tome/student_consumption/v2/**/*",
   "contracts/radjax_tome/student_consumption/v3/**/*",
   "contracts/radjax_tome/student_consumption/v4/**/*",
+  "contracts/radjax_tome/student_consumption/v5/**/*",
   "testing/fixtures/production_multi_surface_v1/FIXTURE_PROVENANCE.json",
   "testing/fixtures/production_multi_surface_v1/artifact/**/*",
 ]

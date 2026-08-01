@@ -572,3 +572,16 @@ next minor publication is planned as `v0.5.0` after complete verification.
   (`sha256:c237f6b8be3bb0b8dc95181a80350c7a5dddf4d2dcb23be8ad1ef0b6f8c620c2`)
   and `radjax_contract-0.6.0.tar.gz`
   (`sha256:52899b277763d3325467f34eb0a482445af621fe1f712d1da461061882d7720d`).
+
+## 2026-08-01 - Phase 5 C1 language/tokenizer binding normative candidate
+
+- Added the closed `native_v3_student_v5` normative asset tree. Its sole new
+  semantic declaration is `LanguageTokenizerBindingV1`: immutable tokenizer
+  identity, complete content inventory, inventory-bound canonical vocabulary
+  JSONL, vocabulary identity/domain, and deterministic token declarations.
+- V5 canonical digests exclude delivery paths, transport, raw inventory
+  metadata, wrapping, archive metadata, and timestamps. Sequence length,
+  architecture descriptors, plugin descriptors, loaders, and training policy
+  are explicitly outside the Contract binding.
+- V1--v4 source assets and behavior were not modified. This is a candidate
+  checkpoint only: no release, tag, merge, or publication has occurred.
