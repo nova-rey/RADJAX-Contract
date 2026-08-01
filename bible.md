@@ -235,3 +235,10 @@ This file is append-only institutional memory for shared Contract decisions.
   its legacy logical/inventory locators requires fresh raw-manifest binding but
   preserves the separate consumption semantic digest.  This proves role and
   instance remain the semantic authority rather than physical placement.
+
+## 2026-08-01 - C2 Path A/B provenance equivalence
+
+- Added the paired delivery-path proof: changing the resolved artifact's Path
+  A/Path B provenance and refreshing raw sidecar binding preserves consumption
+  semantic identity.  Delivery provenance remains auditable but is not batch
+  meaning.
