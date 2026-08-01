@@ -829,6 +829,7 @@ class _safe_archive_root:
                 )
             with tarfile.open(self.path, "r:*") as archive:
                 names: set[str] = set()
+                previous_name = ""
                 total = 0
                 count = 0
                 for member in archive:
@@ -845,6 +846,16 @@ class _safe_archive_root:
                     ):
                         raise ValueError
                     names.add(member.name)
+                    if previous_name and member.name <= previous_name:
+                        self.warnings.append(
+                            _issue(
+                                "TSC020_TRANSPORT_NONCANONICAL",
+                                "archive_safety",
+                                locator=member.name,
+                                reason="member_order",
+                            )
+                        )
+                    previous_name = member.name
                     if not _canonical_member_metadata(member):
                         self.warnings.append(
                             _issue(

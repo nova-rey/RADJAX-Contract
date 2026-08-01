@@ -321,3 +321,13 @@ This file is append-only institutional memory for shared Contract decisions.
   current local interpreter.  Static validation follows the repository Ruff,
   formatting, compile, and diff checks; the skipped installed-wheel test is
   environment-specific and remains an explicit release-gate check.
+
+## 2026-08-01 - C2 archive canonicality and hostile transport proof
+
+- Archive canonicality now includes strictly ascending member paths as well as
+  deterministic gzip and tar metadata.  A canonical archive passes strict
+  admission; a safe reordered archive reports noncanonical transport
+  permissively and fails strict admission.
+- Public material cases now prove unsafe link rejection and a raw-integrity
+  refreshed but wrong target container rejection, closing two formerly
+  catalog-only adversarial outcomes.

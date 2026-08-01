@@ -4,6 +4,7 @@ import hashlib
 import io
 import json
 import tarfile
+from gzip import GzipFile
 from pathlib import Path
 
 import numpy as np
@@ -31,6 +32,25 @@ from radjax_contract.tome import (
 
 def _sha256(path: Path) -> str:
     return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _canonical_tgz(root: Path, destination: Path) -> None:
+    """Write a compact canonical archive solely for transport-admission tests."""
+
+    with (
+        destination.open("wb") as raw,
+        GzipFile(filename="", fileobj=raw, mode="wb", mtime=0) as gz,
+    ):
+        with tarfile.open(fileobj=gz, mode="w") as archive:
+            for path in sorted(item for item in root.rglob("*") if item.is_file()):
+                payload = path.read_bytes()
+                member = tarfile.TarInfo(path.relative_to(root).as_posix())
+                member.size = len(payload)
+                member.mtime = 0
+                member.uid = member.gid = 0
+                member.uname = member.gname = ""
+                member.mode = 0o644
+                archive.addfile(member, io.BytesIO(payload))
 
 
 def _student_artifact(root: Path) -> Path:
@@ -551,6 +571,47 @@ def test_student_consumption_reports_safe_noncanonical_archive_and_strict_reject
     ] * len(strict.issues)
 
 
+def test_student_consumption_strict_accepts_canonical_archive_and_rejects_order(
+    tmp_path: Path,
+) -> None:
+    artifact = _student_artifact(tmp_path / "directory")
+    cover_path = artifact / "cover_page.json"
+    cover = json.loads(cover_path.read_text(encoding="utf-8"))
+    cover["package"]["transport"] = "tgz"
+    cover_path.write_text(json.dumps(cover), encoding="utf-8")
+    canonical = tmp_path / "canonical.tgz"
+    _canonical_tgz(artifact, canonical)
+    assert validate_and_resolve_student_consumption(canonical, strict=True).ok
+
+    reordered = tmp_path / "reordered.tgz"
+    with (
+        reordered.open("wb") as raw,
+        GzipFile(filename="", fileobj=raw, mode="wb", mtime=0) as gz,
+    ):
+        with tarfile.open(fileobj=gz, mode="w") as archive:
+            paths = sorted(
+                (item for item in artifact.rglob("*") if item.is_file()), reverse=True
+            )
+            for path in paths:
+                payload = path.read_bytes()
+                member = tarfile.TarInfo(path.relative_to(artifact).as_posix())
+                member.size = len(payload)
+                member.mtime = 0
+                member.uid = member.gid = 0
+                member.uname = member.gname = ""
+                member.mode = 0o644
+                archive.addfile(member, io.BytesIO(payload))
+    permissive = validate_and_resolve_student_consumption(reordered)
+    strict = validate_and_resolve_student_consumption(reordered, strict=True)
+    assert permissive.ok
+    assert any(
+        warning.context.get("reason") == "member_order"
+        for warning in permissive.warnings
+    )
+    assert strict.ok is False
+    assert {issue.code for issue in strict.issues} == {"TSC020_TRANSPORT_NONCANONICAL"}
+
+
 def test_student_consumption_resolver_accepts_transport_neutral_rtome(
     tmp_path: Path,
 ) -> None:
@@ -796,6 +857,28 @@ def test_student_consumption_rejects_missing_manifest_and_corrupt_resource(
     assert [
         issue.code for issue in validate_and_resolve_student_consumption(corrupt).issues
     ] == ["TSC023_RESOURCE_INTEGRITY_MISMATCH"]
+
+
+def test_student_consumption_rejects_unsafe_archive_and_wrong_target_container(
+    tmp_path: Path,
+) -> None:
+    unsafe = tmp_path / "unsafe.tgz"
+    with tarfile.open(unsafe, "w:gz") as archive:
+        member = tarfile.TarInfo("unsafe-link")
+        member.type = tarfile.SYMTYPE
+        member.linkname = "outside"
+        archive.addfile(member)
+    assert [
+        issue.code for issue in validate_and_resolve_student_consumption(unsafe).issues
+    ] == ["TSC021_TRANSPORT_UNSAFE"]
+
+    wrong_container = _student_artifact(tmp_path / "wrong-container")
+    (wrong_container / "resources/00.npz").write_text("{}", encoding="utf-8")
+    _refresh_sidecar_inventory(wrong_container)
+    assert [
+        issue.code
+        for issue in validate_and_resolve_student_consumption(wrong_container).issues
+    ] == ["TSC030_CONTAINER_ENCODING_MISMATCH"]
 
 
 def test_student_consumption_rejects_stale_semantic_and_base_identity_digests(
