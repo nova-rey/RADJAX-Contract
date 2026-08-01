@@ -5,6 +5,11 @@
   "accepted_package_profiles": ["unpacked", "student", "full_debug_provenance"],
   "accepted_transports": ["directory", "rtome", "tgz"],
   "role_authority": "role_and_instance_not_physical_path",
+  "required_resource_encodings": {
+    "target_shard": "npz",
+    "corridor_assignment": "npz",
+    "corridor_observed_statistics": "npz"
+  },
   "required_batch_roles": [
     "target_shard",
     "example_registry",

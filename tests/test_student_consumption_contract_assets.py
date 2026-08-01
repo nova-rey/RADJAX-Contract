@@ -55,6 +55,11 @@ def test_c1_contract_profile_and_schema_identifiers_are_closed() -> None:
     }
     assert profile["requires_surfaces"] == ["corridor", "exemplar"]
     assert profile["role_authority"] == "role_and_instance_not_physical_path"
+    assert profile["required_resource_encodings"] == {
+        "target_shard": "npz",
+        "corridor_assignment": "npz",
+        "corridor_observed_statistics": "npz",
+    }
     assert set(profile["required_batch_roles"]) == {
         "target_shard",
         "example_registry",
@@ -119,18 +124,41 @@ def test_c1_schemas_are_valid_and_profile_validates() -> None:
     with pytest.raises(ValidationError):
         validator.validate(missing_row_range)
 
+    legacy_json_assignment = copy.deepcopy(fixture)
+    assignment = next(
+        resource
+        for resource in legacy_json_assignment["resources"]
+        if resource["role"] == "corridor_assignment"
+    )
+    assignment["encoding"] = "json"
+    with pytest.raises(ValidationError):
+        validator.validate(legacy_json_assignment)
+
 
 def test_c1_fixture_declares_path_independent_role_bindings() -> None:
     fixture = _json("fixtures/valid/native_v3_student_v1.json")
     assert fixture["schema_version"] == "radjax_tome_student_consumption_manifest_v1"
     bindings = fixture["resources"]
     assert all(item["resource_id"] != item["inventory_binding"] for item in bindings)
-    assignment = next(item for item in bindings if item["role"] == "corridor_assignment")
+    assignment = next(
+        item for item in bindings if item["role"] == "corridor_assignment"
+    )
     assert assignment["encoding"] == "npz"
     assert assignment["inventory_binding"] == "resources/03.npz"
     assert assignment["training_payload_binding"] == "resources/03.npz"
     assert fixture["semantic_identity"]["sequence"]["alignment"] == (
         "teacher_logit_position"
+    )
+    identity_for_digest = copy.deepcopy(fixture["semantic_identity"])
+    declared_digest = identity_for_digest.pop("semantic_digest")
+    assert (
+        declared_digest
+        == "sha256:"
+        + hashlib.sha256(
+            json.dumps(
+                identity_for_digest, sort_keys=True, separators=(",", ":")
+            ).encode()
+        ).hexdigest()
     )
     identity_projection = [
         (

@@ -29,6 +29,15 @@ native-v3 `training_payload.logical_id` binding, but an NPZ resource may have
 many named array members.  Roles and instances are the semantic authority;
 paths are delivery locators only.
 
+The canonical `native_v3_student_consumption_v1` vector declares packed
+`corridor_assignment` as an `npz` resource. Its
+`training_payload_binding` and `inventory_binding` are explicit, equal
+inventory-backed delivery locators; neither field is inferred from a role or a
+path convention. Legacy JSON corridor-assignment representations are
+historical/adversarial inputs and fail with the deterministic container/encoding
+rejection; they are not an alternative canonical representation for this
+profile.
+
 The consumption manifest and consumption semantic identity contain the same
 ordered tuple for every resource: `(resource_id, role, instance_id,
 semantic_digest)`.  `resource_id` and `(role, instance_id)` are each unique;

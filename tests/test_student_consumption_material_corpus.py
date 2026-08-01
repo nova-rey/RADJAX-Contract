@@ -17,6 +17,7 @@ import pytest
 from test_tome_contract_publication import (
     _canonical_tgz,
     _refresh_sidecar_inventory,
+    _sha256,
     _student_artifact,
     _write_manifest_then_refresh,
 )
@@ -78,6 +79,103 @@ def test_material_corpus_catalog_declares_its_pinned_source_and_runner() -> None
     assert (
         catalog["materializer"] == "tests/test_student_consumption_material_corpus.py"
     )
+
+
+def test_material_corpus_materializes_the_complete_normative_vector(
+    tmp_path: Path,
+) -> None:
+    source = FIXTURE_ROOT / "valid/native_v3_student_v1.json"
+    expected_manifest = json.loads(source.read_text(encoding="utf-8"))
+    expected = json.loads(
+        (FIXTURE_ROOT.parent / "vectors/descriptor_serialization_v1.json").read_text(
+            encoding="utf-8"
+        )
+    )["normative_material_descriptor"]
+    artifact = _corpus_artifact(tmp_path)
+    manifest = json.loads(
+        (artifact / "manifests/student_consumption_v1.json").read_text(encoding="utf-8")
+    )
+    result = validate_and_resolve_student_consumption(artifact)
+    assert result.ok and result.descriptor is not None
+    assert manifest["resources"] == expected_manifest["resources"]
+    assert manifest["semantic_identity"] == expected_manifest["semantic_identity"]
+    assert manifest["joins"] == expected_manifest["joins"]
+    assert manifest["provenance"] == expected_manifest["provenance"]
+    assert result.descriptor.profile_id == expected["profile_id"]
+    assert (
+        result.descriptor.base_artifact_semantic_digest
+        == expected["base_artifact_semantic_digest"]
+    )
+    assert (
+        result.descriptor.consumption_semantic_digest
+        == expected["consumption_semantic_digest"]
+    )
+    assert result.descriptor.vocabulary == expected["vocabulary"]
+    assert result.descriptor.sequence == expected["sequence"]
+    resolved_ids = [
+        resource.resource_id
+        for group in (
+            result.descriptor.corridor_resources,
+            result.descriptor.exemplar_resources,
+            result.descriptor.validation_resources,
+        )
+        for resource in group
+    ]
+    assert sorted(resolved_ids) == sorted(expected["resource_ids"])
+
+
+def test_material_corpus_rejects_legacy_json_corridor_assignment(
+    tmp_path: Path,
+) -> None:
+    artifact = _corpus_artifact(tmp_path)
+    legacy_locator = "resources/legacy-corridor-assignment.json"
+    legacy_path = artifact / legacy_locator
+    legacy_path.write_text(
+        json.dumps(
+            {
+                "position_example_index": [0, 0],
+                "position": [0, 1],
+                "mode_id": [0, 0],
+                "weight": [1.0, 1.0],
+            }
+        ),
+        encoding="utf-8",
+    )
+    manifest_path = artifact / "manifests/student_consumption_v1.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assignment = next(
+        resource
+        for resource in manifest["resources"]
+        if resource["role"] == "corridor_assignment"
+    )
+    assignment["training_payload_binding"] = legacy_locator
+    assignment["inventory_binding"] = legacy_locator
+    assignment["encoding"] = "json"
+    cover_path = artifact / "cover_page.json"
+    cover = json.loads(cover_path.read_text(encoding="utf-8"))
+    training = cover["identity"]["training_payload"]
+    training_entry = next(
+        item
+        for item in training
+        if item["semantic_digest"] == assignment["semantic_digest"]
+    )
+    training_entry["logical_id"] = legacy_locator
+    cover["manifests"]["content"]["inventory"].append(
+        {
+            "path": legacy_locator,
+            "sha256": _sha256(legacy_path),
+            "size_bytes": legacy_path.stat().st_size,
+            "classification": "training_payload",
+            "training_authoritative": True,
+        }
+    )
+    manifest_path.write_text(json.dumps(manifest, sort_keys=True), encoding="utf-8")
+    cover_path.write_text(json.dumps(cover), encoding="utf-8")
+    _refresh_sidecar_inventory(artifact)
+    result = validate_and_resolve_student_consumption(artifact)
+    assert [issue.code for issue in result.issues] == [
+        "TSC030_CONTAINER_ENCODING_MISMATCH"
+    ]
 
 
 @pytest.mark.parametrize(

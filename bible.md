@@ -428,3 +428,22 @@ This file is append-only institutional memory for shared Contract decisions.
   Contract fixture checks reject the former legacy JSON/path assumption; legacy
   JSON remains a negative compatibility surface rather than canonical payload
   meaning.
+
+## 2026-08-01 - C2 truthful material vector correction
+
+- The checksum-pinned native-v3 Student conformance vector now describes the
+  actual deterministic material corpus: explicit inventory-backed locators,
+  NPZ packed corridor assignments, resource identities, encodings,
+  classifications, consumption declarations, vocabulary, sequence contract,
+  joins, authority, provenance, and recomputed consumption semantic digest.
+  The public materializer consumes and asserts that complete declaration rather
+  than deriving only its role list. The expected descriptor vector pins the
+  resulting profile, base identity, vocabulary, sequence, resource identities,
+  and consumption digest.
+- `corridor_assignment` is schema/profile constrained to NPZ. A legacy JSON
+  assignment remains an executable adversarial case and deterministically
+  returns `TSC030_CONTAINER_ENCODING_MISMATCH`; dependent exemplar checks are
+  suppressed after that prerequisite encoding failure.
+- Focused vector, digest, materialization, resolver, and adversarial tests
+  passed (87 passed, 1 environment-skipped). The isolated installed-wheel
+  package-data test also passed with the configured setuptools build backend.

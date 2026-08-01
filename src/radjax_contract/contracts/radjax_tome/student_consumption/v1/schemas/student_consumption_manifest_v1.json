@@ -58,7 +58,7 @@
         },
         {
           "if": {"properties": {"role": {"const": "corridor_assignment"}}, "required": ["role"]},
-          "then": {"properties": {"consumption": {"required": ["ordering"], "properties": {"ordering": {"const": "global_example_index_position"}}}}}
+          "then": {"properties": {"encoding": {"const": "npz"}, "consumption": {"required": ["ordering"], "properties": {"ordering": {"const": "global_example_index_position"}}}}}
         }
       ]
     },

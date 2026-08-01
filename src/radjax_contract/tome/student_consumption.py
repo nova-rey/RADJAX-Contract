@@ -268,6 +268,14 @@ def validate_and_resolve_student_consumption(
         ):
             issues.append(_issue("TSC010_ROLE_MISSING", "binding"))
             return _result(profile_id, issues, warnings)
+        if any(
+            isinstance(row, dict)
+            and row.get("role") == "corridor_assignment"
+            and row.get("encoding") != "npz"
+            for row in resource_rows
+        ):
+            issues.append(_issue("TSC030_CONTAINER_ENCODING_MISMATCH", "encoding"))
+            return _result(profile_id, issues, warnings)
         if not _validate_manifest_schema(manifest):
             issues.append(_issue("TSC013_BINDING_ABSENT", "binding"))
             return _result(profile_id, issues, warnings)
@@ -597,9 +605,15 @@ def _validate_corridor_and_exemplar_resources(
     identity: dict[str, Any],
     issues: list[StudentConsumptionIssue],
 ) -> None:
+    issue_count = len(issues)
     for finding in validate_corridor_resources(resources, root):
         phase = "corridor" if finding.code.startswith("TSC04") else "encoding"
         issues.append(_issue(finding.code, phase, **finding.context))
+    # Exemplar linkage depends on a valid assignment resource.  Suppress
+    # dependent cascade findings so a malformed legacy JSON assignment has one
+    # deterministic primary rejection rather than an unrelated passport error.
+    if len(issues) != issue_count:
+        return
     by_role = {resource.role: resource for resource in resources}
     passport = by_role.get("selected_passport_index")
     exemplar = by_role.get("selected_exemplar_payload")

@@ -4,6 +4,7 @@ import hashlib
 import io
 import json
 import tarfile
+from copy import deepcopy
 from gzip import GzipFile
 from pathlib import Path
 
@@ -67,9 +68,14 @@ def _student_artifact(root: Path, *, source_vector: Path | None = None) -> Path:
         "delivery_receipt",
         "authority_reference",
     ]
+    vector: dict[str, object] | None = None
+    vector_resources: list[dict[str, object]] | None = None
+    vector_identity: dict[str, object] | None = None
     if source_vector is not None:
         vector = json.loads(source_vector.read_text(encoding="utf-8"))
-        roles = [row["role"] for row in vector["resources"]]
+        vector_resources = deepcopy(vector["resources"])
+        vector_identity = deepcopy(vector["semantic_identity"])
+        roles = [row["role"] for row in vector_resources]
     resources = []
     training = []
     inventory = []
@@ -83,6 +89,12 @@ def _student_artifact(root: Path, *, source_vector: Path | None = None) -> Path:
         }:
             relative = f"resources/{index:02d}.npz"
             encoding = "npz"
+        resource = vector_resources[index] if vector_resources is not None else None
+        if resource is not None:
+            assert resource["role"] == role
+            relative = str(resource["inventory_binding"])
+            encoding = str(resource["encoding"])
+            assert resource["training_payload_binding"] == relative
         path = root / relative
         path.parent.mkdir(parents=True, exist_ok=True)
         if role == "target_shard":
@@ -172,8 +184,8 @@ def _student_artifact(root: Path, *, source_vector: Path | None = None) -> Path:
         else:
             path.write_text("{}", encoding="utf-8")
         semantic = f"sha256:{index + 1:064x}"
-        resources.append(
-            {
+        if resource is None:
+            resource = {
                 "resource_id": f"{role}/default",
                 "role": role,
                 "instance_id": "default",
@@ -206,8 +218,13 @@ def _student_artifact(root: Path, *, source_vector: Path | None = None) -> Path:
                     else {"kind": role}
                 ),
             }
+        resources.append(resource)
+        training.append(
+            {
+                "logical_id": resource["training_payload_binding"],
+                "semantic_digest": resource["semantic_digest"],
+            }
         )
-        training.append({"logical_id": relative, "semantic_digest": semantic})
         inventory.append(
             {
                 "path": relative,
@@ -217,7 +234,7 @@ def _student_artifact(root: Path, *, source_vector: Path | None = None) -> Path:
                 "training_authoritative": True,
             }
         )
-    identity = {
+    identity: dict[str, object] = {
         "schema_version": "radjax_tome_student_consumption_semantic_identity_v1",
         "profile_id": "native_v3_student_v1",
         "vocabulary": {"vocab_size": 8, "tokenizer_identity": "test-tokenizer"},
@@ -236,24 +253,48 @@ def _student_artifact(root: Path, *, source_vector: Path | None = None) -> Path:
         ],
         "authority": {"selection_integration_config_hash": "sha256:" + "e" * 64},
     }
+    if vector_identity is not None:
+        identity = vector_identity
+        assert identity["resources"] == [
+            {
+                key: item[key]
+                for key in ("resource_id", "role", "instance_id", "semantic_digest")
+            }
+            for item in resources
+        ]
+    declared_identity_digest = identity.pop("semantic_digest", None)
     identity["semantic_digest"] = (
         "sha256:"
         + hashlib.sha256(
             json.dumps(identity, sort_keys=True, separators=(",", ":")).encode()
         ).hexdigest()
     )
+    if declared_identity_digest is not None:
+        assert identity["semantic_digest"] == declared_identity_digest
     manifest = {
         "schema_version": "radjax_tome_student_consumption_manifest_v1",
         "profile_id": "native_v3_student_v1",
-        "base_artifact_semantic_digest": "sha256:" + "a" * 64,
+        "base_artifact_semantic_digest": (
+            vector["base_artifact_semantic_digest"]
+            if vector is not None
+            else "sha256:" + "a" * 64
+        ),
         "semantic_identity": identity,
         "resources": resources,
-        "joins": [
-            {"kind": "assignment_to_logit_position"},
-            {"kind": "exemplar_to_passport"},
-            {"kind": "exemplar_to_corridor"},
-        ],
-        "provenance": {"delivery_path": "two_pass_rerun_selected"},
+        "joins": (
+            deepcopy(vector["joins"])
+            if vector is not None
+            else [
+                {"kind": "assignment_to_logit_position"},
+                {"kind": "exemplar_to_passport"},
+                {"kind": "exemplar_to_corridor"},
+            ]
+        ),
+        "provenance": (
+            deepcopy(vector["provenance"])
+            if vector is not None
+            else {"delivery_path": "two_pass_rerun_selected"}
+        ),
     }
     manifest_path = root / "manifests/student_consumption_v1.json"
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
@@ -270,7 +311,7 @@ def _student_artifact(root: Path, *, source_vector: Path | None = None) -> Path:
     cover = {
         "schema_version": "radjax_tome_cover_v3_student_consumption_v1",
         "identity": {
-            "semantic_digest": "sha256:" + "a" * 64,
+            "semantic_digest": manifest["base_artifact_semantic_digest"],
             "training_payload": training,
         },
         "training": {},
@@ -279,7 +320,7 @@ def _student_artifact(root: Path, *, source_vector: Path | None = None) -> Path:
             "content": {
                 "schema_version": "tome_content_manifest_v2",
                 "profile": "student",
-                "semantic_identity_digest": "sha256:" + "a" * 64,
+                "semantic_identity_digest": manifest["base_artifact_semantic_digest"],
                 "inventory": inventory,
                 "manifest_digest": "sha256:" + "b" * 64,
             }
