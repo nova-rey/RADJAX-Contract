@@ -10,6 +10,7 @@ import hashlib
 import json
 import tarfile
 import tempfile
+from contextlib import contextmanager
 from dataclasses import asdict, dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any
@@ -222,6 +223,49 @@ def validate_and_resolve_student_consumption(
             issues.extend(warnings)
             warnings.clear()
         return _result(profile_id, issues, warnings, descriptor)
+
+
+@contextmanager
+def open_verified_student_resource(
+    artifact: str | Path,
+    resource_id: str,
+    *,
+    profile_id: str = PROFILE_ID,
+    strict: bool = False,
+):
+    """Yield one verified resource stream within a deterministic cleanup scope.
+
+    The resource id is the stable sidecar identity.  A physical locator is
+    looked up only after full admission; it is never accepted from a caller.
+    """
+
+    result = validate_and_resolve_student_consumption(
+        artifact, profile_id=profile_id, strict=strict
+    )
+    if not result.ok or result.descriptor is None:
+        codes = ",".join(issue.code for issue in result.issues)
+        raise ValueError(f"Student-consumption validation failed: {codes}")
+    resources = (
+        result.descriptor.corridor_resources
+        + result.descriptor.exemplar_resources
+        + result.descriptor.validation_resources
+    )
+    match = next((item for item in resources if item.resource_id == resource_id), None)
+    if match is None:
+        raise ValueError(f"unknown Student-consumption resource: {resource_id}")
+    path = Path(artifact)
+    with _artifact_root(path, []) as root:
+        if root is None:
+            raise ValueError("Student-consumption resource transport is unavailable")
+        resource_path = root / match.locator
+        if (
+            not resource_path.is_file()
+            or resource_path.stat().st_size != match.raw_size_bytes
+            or _digest(resource_path) != match.raw_sha256
+        ):
+            raise ValueError("Student-consumption resource integrity changed at open")
+        with resource_path.open("rb") as handle:
+            yield handle
 
 
 def _resolve(
@@ -537,7 +581,11 @@ def _nested(value: Any, *keys: str) -> Any:
 
 
 def _digest(path: Path) -> str:
-    return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        while block := handle.read(1 << 16):
+            digest.update(block)
+    return "sha256:" + digest.hexdigest()
 
 
 def _semantic_identity_matches(identity: dict[str, Any], cover: dict[str, Any]) -> bool:

@@ -169,3 +169,10 @@ This file is append-only institutional memory for shared Contract decisions.
   total-size, compression-ratio, safe-path, regular-file, and duplicate-member
   checks.  It rejects a container whose declared transport does not match its
   actual directory, `.rtome`, or gzip-wrapped tar form.
+
+## 2026-08-01 - C2 verified resource opening
+
+- Added a context-managed verified-resource interface keyed by stable sidecar
+  `resource_id`, never caller-provided paths.  It completes admission first and
+  rechecks the selected member's raw size and streaming SHA-256 before yielding
+  bytes, with deterministic cleanup for directory and archive transports.

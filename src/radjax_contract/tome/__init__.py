@@ -68,6 +68,7 @@ from radjax_contract.tome.student_consumption import (
     StudentConsumptionDescriptor,
     StudentConsumptionIssue,
     StudentConsumptionValidationResult,
+    open_verified_student_resource,
     validate_and_resolve_student_consumption,
 )
 from radjax_contract.tome.validation import (
@@ -91,6 +92,7 @@ __all__ = [
     "StudentConsumptionDescriptor",
     "StudentConsumptionIssue",
     "StudentConsumptionValidationResult",
+    "open_verified_student_resource",
     "TomeBehavioralSummary",
     "TomeCompression",
     "TomeCompressionFamily",

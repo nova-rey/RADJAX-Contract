@@ -15,6 +15,7 @@ from radjax_contract.tome import (
     TOME_STUDENT_CONSUMPTION_CONTRACT_ID,
     TOME_STUDENT_CONSUMPTION_CONTRACT_PUBLICATION_VERSION,
     open_streaming_tome,
+    open_verified_student_resource,
     tome_contract_asset_path,
     tome_contract_root,
     tome_streaming_contract_asset_path,
@@ -231,6 +232,15 @@ def test_student_consumption_resolver_validates_real_sidecar_bindings(
     assert result.descriptor is not None
     assert result.descriptor.sequence["alignment"] == "teacher_logit_position"
     assert len(result.descriptor.validation_resources) == 4
+
+
+def test_verified_student_resource_uses_stable_resource_id(tmp_path: Path) -> None:
+    artifact = _student_artifact(tmp_path)
+    with open_verified_student_resource(artifact, "target_shard/default") as handle:
+        assert handle.read() == b"{}"
+    with pytest.raises(ValueError, match="unknown Student-consumption resource"):
+        with open_verified_student_resource(artifact, "resources/00.json"):
+            pass
 
 
 def test_student_consumption_resolver_rejects_transport_declaration_mismatch(
