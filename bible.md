@@ -340,3 +340,10 @@ This file is append-only institutional memory for shared Contract decisions.
   cover extension also requires the native identity bindings and a supported
   delivery transport rather than accepting an arbitrary object at those
   consumer-relevant boundaries.
+
+## 2026-08-01 - C2 hostile archive matrix expansion
+
+- Public archive admission now has material traversal, duplicate-member,
+  hard-link, truncated gzip, and configured member-limit cases.  Truncated
+  gzip EOF is normalized to the documented unsafe-transport outcome rather
+  than escaping the portable validation result.

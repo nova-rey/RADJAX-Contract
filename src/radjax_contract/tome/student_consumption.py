@@ -881,7 +881,7 @@ class _safe_archive_root:
                             destination.write(block)
                             remaining -= len(block)
             return root
-        except (OSError, tarfile.TarError, ValueError):
+        except (EOFError, OSError, tarfile.TarError, ValueError):
             self.issues.append(_issue("TSC021_TRANSPORT_UNSAFE", "archive_safety"))
             return None
 

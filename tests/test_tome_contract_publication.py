@@ -28,6 +28,7 @@ from radjax_contract.tome import (
     validate_and_resolve_student_consumption,
     validate_streaming_tome,
 )
+from radjax_contract.tome import student_consumption as student_consumption_module
 
 
 def _sha256(path: Path) -> str:
@@ -879,6 +880,52 @@ def test_student_consumption_rejects_unsafe_archive_and_wrong_target_container(
         issue.code
         for issue in validate_and_resolve_student_consumption(wrong_container).issues
     ] == ["TSC030_CONTAINER_ENCODING_MISMATCH"]
+
+
+@pytest.mark.parametrize(
+    "mutation", ["traversal", "duplicate", "hard_link", "truncated"]
+)
+def test_student_consumption_rejects_hostile_archive_member_variants(
+    tmp_path: Path, mutation: str
+) -> None:
+    archive_path = tmp_path / f"{mutation}.tgz"
+    with tarfile.open(archive_path, "w:gz") as archive:
+        if mutation == "traversal":
+            member = tarfile.TarInfo("../outside")
+            member.size = 1
+            archive.addfile(member, io.BytesIO(b"x"))
+        elif mutation == "duplicate":
+            for _ in range(2):
+                member = tarfile.TarInfo("duplicate")
+                member.size = 1
+                archive.addfile(member, io.BytesIO(b"x"))
+        elif mutation == "hard_link":
+            member = tarfile.TarInfo("hard-link")
+            member.type = tarfile.LNKTYPE
+            member.linkname = "outside"
+            archive.addfile(member)
+        else:
+            member = tarfile.TarInfo("partial")
+            member.size = 4096
+            archive.addfile(member, io.BytesIO(b"x" * 4096))
+    if mutation == "truncated":
+        archive_path.write_bytes(archive_path.read_bytes()[:-32])
+    result = validate_and_resolve_student_consumption(archive_path)
+    assert [issue.code for issue in result.issues] == ["TSC021_TRANSPORT_UNSAFE"]
+
+
+def test_student_consumption_rejects_configured_archive_member_limit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    archive_path = tmp_path / "member-limit.tgz"
+    with tarfile.open(archive_path, "w:gz") as archive:
+        for name in ("a", "b"):
+            member = tarfile.TarInfo(name)
+            member.size = 1
+            archive.addfile(member, io.BytesIO(b"x"))
+    monkeypatch.setattr(student_consumption_module, "_MAX_ARCHIVE_MEMBERS", 1)
+    result = validate_and_resolve_student_consumption(archive_path)
+    assert [issue.code for issue in result.issues] == ["TSC021_TRANSPORT_UNSAFE"]
 
 
 def test_student_consumption_rejects_stale_semantic_and_base_identity_digests(
