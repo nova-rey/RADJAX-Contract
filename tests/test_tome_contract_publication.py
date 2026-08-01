@@ -382,6 +382,48 @@ def test_student_consumption_resolver_accepts_transport_neutral_rtome(
     assert result.descriptor.delivery["transport"] == "rtome"
 
 
+def test_student_consumption_identity_survives_physical_relocation(
+    tmp_path: Path,
+) -> None:
+    artifact = _student_artifact(tmp_path)
+    before = validate_and_resolve_student_consumption(artifact)
+    assert before.ok and before.descriptor is not None
+    old = artifact / "resources/00.npz"
+    new = artifact / "relocated/target.npz"
+    new.parent.mkdir()
+    old.replace(new)
+    cover_path = artifact / "cover_page.json"
+    cover = json.loads(cover_path.read_text(encoding="utf-8"))
+    manifest_path = artifact / "manifests/student_consumption_v1.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    target = next(
+        item for item in manifest["resources"] if item["role"] == "target_shard"
+    )
+    target["training_payload_binding"] = "relocated/target.npz"
+    target["inventory_binding"] = "relocated/target.npz"
+    training = cover["identity"]["training_payload"]
+    training[0]["logical_id"] = "relocated/target.npz"
+    inventory = cover["manifests"]["content"]["inventory"]
+    entry = next(item for item in inventory if item["path"] == "resources/00.npz")
+    entry["path"] = "relocated/target.npz"
+    manifest_path.write_text(json.dumps(manifest, sort_keys=True), encoding="utf-8")
+    manifest_entry = next(
+        item
+        for item in inventory
+        if item["path"] == "manifests/student_consumption_v1.json"
+    )
+    manifest_entry["sha256"] = _sha256(manifest_path)
+    manifest_entry["size_bytes"] = manifest_path.stat().st_size
+    cover["student_consumption"]["manifest_sha256"] = manifest_entry["sha256"]
+    cover_path.write_text(json.dumps(cover), encoding="utf-8")
+    after = validate_and_resolve_student_consumption(artifact)
+    assert after.ok and after.descriptor is not None
+    assert (
+        after.descriptor.consumption_semantic_digest
+        == before.descriptor.consumption_semantic_digest
+    )
+
+
 def test_verified_student_resource_uses_stable_resource_id(tmp_path: Path) -> None:
     artifact = _student_artifact(tmp_path)
     with open_verified_student_resource(artifact, "target_shard/default") as handle:

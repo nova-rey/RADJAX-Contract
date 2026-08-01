@@ -228,3 +228,10 @@ This file is append-only institutional memory for shared Contract decisions.
   transport proof.  Directory, gzip-wrapped tar, and RTome now each exercise
   the same explicit sidecar resolver path with physical transport facts kept
   outside consumption identity.
+
+## 2026-08-01 - C2 physical-relocation identity proof
+
+- Added a materialized relocation test: moving a target resource and updating
+  its legacy logical/inventory locators requires fresh raw-manifest binding but
+  preserves the separate consumption semantic digest.  This proves role and
+  instance remain the semantic authority rather than physical placement.
