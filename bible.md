@@ -514,3 +514,16 @@ separate derived consumption identity while requiring closed evidence bodies
 and cross-checking their counts, delivery semantics, and authority reference.
 There is no v3-to-v2 fallback.  This candidate has not been released; the
 next minor publication is planned as `v0.5.0` after complete verification.
+
+## 2026-08-01 - C5 v0.5.0 immutable publication receipt
+
+- `main` contains the reviewed v3 profile at
+  `e5f2c3ed79cfc0e6eebf64a22b96a656818b5f39`; annotated tag `v0.5.0`
+  dereferences to exactly that commit. Existing profiles and tags, including
+  `native_v3_student_v2` at `v0.4.1`, were not changed.
+- GitHub release `v0.5.0` publishes
+  `radjax_contract-0.5.0.tar.gz`
+  (`sha256:227e64a3b1089d4ccca101353bfd7d7f2e4fbd7ca67ef39c4930958600866bea`)
+  and `radjax_contract-0.5.0-py3-none-any.whl`
+  (`sha256:816946f150fba4a2eaadff4ce72708ca1295b4ce1b9228962eedc0a5e8e142af`).
+  Tome may pin this immutable release and verify its checked-in offline mirror.
