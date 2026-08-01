@@ -2,8 +2,8 @@
 
 Status: **pass**
 
-- Contract assets: `be034aee296fb3f32cf6534a60676ca597743e98`
-- Tome producer: `fdb2bd4b4a2be7b4398bfb95d35e8a2bca5cba94`
+- Contract assets: `abfc8d0c59f9345dab4edd36918487bb68ca9164`
+- Tome producer: `5981e66ba5dfb37391e350752f64eb29a430c811`
 - Profile: `native_v3_student_v1` / publication `1.0.0`
 - Fixture tree digest: `44e2f32e1665bcce2f0853d1ba247bf423250d9c7b173f8af5b9007329d8df05`
 - Fixture semantic digest: `sha256:c7eb093e3481504197018209e94eca41a5b31efc16588d54cc6b453ac1e91d72`
