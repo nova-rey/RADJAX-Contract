@@ -183,3 +183,13 @@ This file is append-only institutional memory for shared Contract decisions.
   `int32` input, mask, and length arrays; rank/shape agreement; vocabulary
   domain; prefix masks; and mask-to-length equality.  This preserves the
   declared teacher-logit-position alignment without applying a loader shift.
+
+## 2026-08-01 - C2 corridor and exemplar semantic primitives
+
+- Added Builder-independent, path-neutral Contract primitives for corridor
+  assignment/mode validation and exemplar/passport validation.  They own
+  Contract tolerance constants and deterministic TSC findings, while the public
+  resolver continues to own transport, integrity, and descriptor assembly.
+- The descriptor schema now explicitly separates `validation_resources` from
+  corridor and exemplar batch resources so a consumer cannot mistake evidence
+  for a training input.
