@@ -470,6 +470,31 @@ def test_student_consumption_resolver_accepts_transport_neutral_tgz(
     assert archive_result.descriptor.delivery["transport"] == "tgz"
 
 
+def test_student_consumption_reports_safe_noncanonical_archive_and_strict_rejects(
+    tmp_path: Path,
+) -> None:
+    artifact = _student_artifact(tmp_path / "directory")
+    cover_path = artifact / "cover_page.json"
+    cover = json.loads(cover_path.read_text(encoding="utf-8"))
+    cover["package"]["transport"] = "tgz"
+    cover_path.write_text(json.dumps(cover), encoding="utf-8")
+    archive_path = tmp_path / "noncanonical.tgz"
+    with tarfile.open(archive_path, "w:gz") as archive:
+        for path in sorted(item for item in artifact.rglob("*") if item.is_file()):
+            archive.add(path, arcname=path.relative_to(artifact).as_posix())
+    permissive = validate_and_resolve_student_consumption(archive_path)
+    strict = validate_and_resolve_student_consumption(archive_path, strict=True)
+    assert permissive.ok
+    assert [warning.code for warning in permissive.warnings] == [
+        "TSC020_TRANSPORT_NONCANONICAL"
+    ] * len(permissive.warnings)
+    assert permissive.warnings
+    assert strict.ok is False
+    assert [issue.code for issue in strict.issues] == [
+        "TSC020_TRANSPORT_NONCANONICAL"
+    ] * len(strict.issues)
+
+
 def test_student_consumption_resolver_accepts_transport_neutral_rtome(
     tmp_path: Path,
 ) -> None:

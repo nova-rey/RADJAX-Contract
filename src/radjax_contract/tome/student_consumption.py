@@ -177,7 +177,7 @@ def validate_and_resolve_student_consumption(
             warnings,
         )
     path = Path(artifact)
-    with _artifact_root(path, issues) as root:
+    with _artifact_root(path, issues, warnings) as root:
         if root is None:
             return _result(profile_id, issues, warnings)
         cover = _read_object(root / "cover_page.json", issues, "profile_cover")
@@ -301,7 +301,7 @@ def open_verified_student_resource(
     if match is None:
         raise ValueError(f"unknown Student-consumption resource: {resource_id}")
     path = Path(artifact)
-    with _artifact_root(path, []) as root:
+    with _artifact_root(path, [], []) as root:
         if root is None:
             raise ValueError("Student-consumption resource transport is unavailable")
         resource_path = root / match.locator
@@ -752,13 +752,17 @@ def _validate_target_resources(
             )
 
 
-def _artifact_root(path: Path, issues: list[StudentConsumptionIssue]):
+def _artifact_root(
+    path: Path,
+    issues: list[StudentConsumptionIssue],
+    warnings: list[StudentConsumptionIssue],
+):
     if path.is_dir():
         return _temporary_root(path)
     if not path.is_file():
         issues.append(_issue("TSC020_TRANSPORT_UNSUPPORTED", "archive_safety"))
         return _temporary_root(None)
-    return _safe_archive_root(path, issues)
+    return _safe_archive_root(path, issues, warnings)
 
 
 class _temporary_root:
@@ -773,16 +777,26 @@ class _temporary_root:
 
 
 class _safe_archive_root:
-    def __init__(self, path: Path, issues: list[StudentConsumptionIssue]):
-        self.path, self.issues, self.temp = (
+    def __init__(
+        self,
+        path: Path,
+        issues: list[StudentConsumptionIssue],
+        warnings: list[StudentConsumptionIssue],
+    ):
+        self.path, self.issues, self.warnings, self.temp = (
             path,
             issues,
+            warnings,
             tempfile.TemporaryDirectory(prefix="radjax-tsc-"),
         )
 
     def __enter__(self) -> Path | None:
         root = Path(self.temp.name)
         try:
+            if not _canonical_gzip_wrapper(self.path):
+                self.warnings.append(
+                    _issue("TSC020_TRANSPORT_NONCANONICAL", "archive_safety")
+                )
             with tarfile.open(self.path, "r:*") as archive:
                 names: set[str] = set()
                 total = 0
@@ -801,6 +815,14 @@ class _safe_archive_root:
                     ):
                         raise ValueError
                     names.add(member.name)
+                    if not _canonical_member_metadata(member):
+                        self.warnings.append(
+                            _issue(
+                                "TSC020_TRANSPORT_NONCANONICAL",
+                                "archive_safety",
+                                locator=member.name,
+                            )
+                        )
                     compressed = max(self.path.stat().st_size, 1)
                     if total / compressed > _MAX_COMPRESSION_RATIO:
                         raise ValueError
@@ -871,6 +893,32 @@ def _archive_transport(path: Path) -> str:
     return "tgz" if header == b"\x1f\x8b" else "rtome"
 
 
+def _canonical_gzip_wrapper(path: Path) -> bool:
+    """Return canonicality of a gzip wrapper; plain tar needs no wrapper check."""
+
+    try:
+        with path.open("rb") as handle:
+            header = handle.read(10)
+    except OSError:
+        return False
+    if header[:2] != b"\x1f\x8b":
+        return True
+    if len(header) < 10:
+        return False
+    return header[4:8] == b"\0\0\0\0" and not header[3] & 0x1C
+
+
+def _canonical_member_metadata(member: tarfile.TarInfo) -> bool:
+    return (
+        member.mtime == 0
+        and member.uid == 0
+        and member.gid == 0
+        and member.uname == ""
+        and member.gname == ""
+        and member.mode == 0o644
+    )
+
+
 def _nested(value: Any, *keys: str) -> Any:
     for key in keys:
         if not isinstance(value, dict):
@@ -932,10 +980,20 @@ def _result(
             ),
         )
     )
+    ordered_warnings = tuple(
+        sorted(
+            warnings,
+            key=lambda item: (
+                order[item.phase],
+                str(item.context.get("resource_id", item.context.get("locator", ""))),
+                item.code,
+            ),
+        )
+    )
     return StudentConsumptionValidationResult(
         not ordered,
         profile_id,
         ordered,
-        tuple(warnings),
+        ordered_warnings,
         None if ordered else descriptor,
     )

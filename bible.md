@@ -288,3 +288,11 @@ This file is append-only institutional memory for shared Contract decisions.
 - Dynamic top-k validation now enforces active token uniqueness and vocabulary
   membership, descending active probabilities, and canonical inactive token ID
   zero in addition to Contract-owned probability and log-probability rules.
+
+## 2026-08-01 - C2 executable transport canonicality
+
+- Safe archive admission now classifies noncanonical gzip wrapper or tar member
+  metadata as the documented `TSC020_TRANSPORT_NONCANONICAL` warning.  Strict
+  validation promotes that warning to rejection; permissive validation remains
+  safe and explicit.  The warning is intentionally separate from the closed
+  rejection-code corpus rather than pretending that a repack is unsafe.
