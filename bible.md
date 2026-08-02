@@ -735,3 +735,10 @@ next minor publication is planned as `v0.5.0` after complete verification.
   resolver applies it before registry resolution, so unknown binding/resource
   fields and malformed integrity declarations fail deterministically instead
   of entering semantic identity computation.
+
+## 2026-08-02 - B2 Contract v0.8.0 preparation
+
+- Prepared local package metadata for v0.8.0 and recorded the release
+  nonclaims: no tag or publication, no default migration, no Tome or Student
+  change, and no assertion that a canonical v6 producer yet exists. The full
+  Contract test suite passed with 217 tests.
