@@ -631,3 +631,15 @@ next minor publication is planned as `v0.5.0` after complete verification.
   the authority reference retains closed selection, score-pass, and delivery
   authority hashes. Unsupported conceptual fields and legacy aliases are
   excluded before v6 schema or digest implementation.
+
+## 2026-08-02 - B2 v6 behavioral authority identity foundations
+
+- Began the explicitly approved additive `native_v3_student_v6` Contract work
+  on an unpublished B2 branch. The first foundation establishes distinct,
+  framed identities for NPY components and multipart NPY resources, canonical
+  JSONL logical record sequences, behavioral-source authority, behavioral
+  replay authority, and exact composition provenance.
+- Delivery registry entries are mechanically excluded from the behavioral
+  authority digest but included in the composition digest. No v1--v5 code,
+  profile behavior, or packaged contract asset was changed, and this is not a
+  release or a Tome/Student migration claim.
