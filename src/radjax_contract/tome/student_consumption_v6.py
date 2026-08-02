@@ -26,6 +26,9 @@ from radjax_contract.tome.language_tokenizer_binding_v1 import (
     canonical_json_bytes,
     validate_and_resolve_language_tokenizer_binding,
 )
+from radjax_contract.tome.student_exemplar_semantics import (
+    validate_exemplar_passport_semantics,
+)
 
 PROFILE_ID = "native_v3_student_v6"
 CONTRACT_ID = "radjax_tome_student_consumption_contract"
@@ -457,7 +460,15 @@ def validate_and_resolve_student_consumption_v6(
         )
         passports = _read_jsonl(root, by_role.get("selected_passport_index"), issues)
         exemplars = _read_jsonl(root, by_role.get("selected_exemplar_payload"), issues)
-        _validate_selected_coordinates(target, examples, passports, exemplars, issues)
+        _validate_selected_coordinates(
+            target,
+            examples,
+            assignment,
+            passports,
+            exemplars,
+            language.descriptor.vocabulary["vocabulary_size"],
+            issues,
+        )
         _validate_mode_table(root, by_role.get("corridor_mode_table"), issues)
         _validate_delivery_receipt(root, by_role.get("delivery_receipt"), issues)
         if target is None or examples is None or assignment is None or issues:
@@ -856,11 +867,19 @@ def _validate_assignment(
 def _validate_selected_coordinates(
     target: tuple[np.ndarray, np.ndarray] | None,
     examples: list[dict[str, Any]] | None,
+    assignment: tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray] | None,
     passports: list[dict[str, Any]] | None,
     exemplars: list[dict[str, Any]] | None,
+    vocabulary_size: int,
     issues: list[BehavioralResourceIssue],
 ) -> None:
-    if target is None or examples is None or passports is None or exemplars is None:
+    if (
+        target is None
+        or examples is None
+        or assignment is None
+        or passports is None
+        or exemplars is None
+    ):
         return
     ids = [row.get("example_id") for row in examples]
     if len(ids) != target[0].shape[0] or any(
@@ -887,6 +906,25 @@ def _validate_selected_coordinates(
     exemplar_keys = {_selected_key(record) for record in exemplars}
     if None in exemplar_keys or exemplar_keys != seen:
         issues.append(_issue("BRC019_SELECTED_JOIN_INVALID", "exemplar"))
+        return
+    corridor_coordinates = {
+        (ids[int(example_index)], int(position))
+        for example_index, position in zip(assignment[0], assignment[1], strict=True)
+    }
+    findings = validate_exemplar_passport_semantics(
+        passports,
+        exemplars,
+        corridor_coordinates=corridor_coordinates,
+        vocabulary_size=vocabulary_size,
+    )
+    if findings:
+        issues.append(
+            _issue(
+                "BRC027_EXEMPLAR_SEMANTICS_INVALID",
+                "exemplar",
+                findings=[finding.code for finding in findings],
+            )
+        )
 
 
 def _validate_mode_table(

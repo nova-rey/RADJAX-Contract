@@ -22,6 +22,7 @@ from radjax_contract.tome.student_consumption_v6 import (
     canonical_selected_passport_identity,
     open_verified_student_jsonl_records_v6,
     sha256_identity,
+    validate_and_resolve_student_consumption_v6,
 )
 
 V5_FIXTURE = (
@@ -44,7 +45,7 @@ def _write_json(path: Path, value: object) -> None:
     path.write_text(json.dumps(value, sort_keys=True), encoding="utf-8")
 
 
-def _v6_package(tmp_path: Path) -> Path:
+def _v6_package(tmp_path: Path, *, invalid_exemplar: bool = False) -> Path:
     """Build a portable whole-JSONL v6 package without claiming Tome data."""
 
     package = tmp_path / "package"
@@ -175,7 +176,23 @@ def _v6_package(tmp_path: Path) -> Path:
             ),
             plain(
                 "selected_exemplar_payload",
-                [{"selected_example_id": "example-0", "selected_position": 0}],
+                [
+                    {
+                        "selected_example_id": "example-0",
+                        "selected_position": 0,
+                        "rank": 1,
+                        "corridor_mode_id": 0,
+                        "effective_top_k": 1,
+                        "top_token_ids": [0],
+                        "top_probs": [0.9 if invalid_exemplar else 1.0],
+                        "top_log_probs": [0.0 if not invalid_exemplar else -0.1],
+                        "top_selection_mask": [True],
+                        "top_mass": 1.0,
+                        "tail_mass": 0.0,
+                        "bucket_masses": [],
+                        "source_delivery_path": "two_pass_rerun_selected",
+                    }
+                ],
                 encoding="jsonl",
             ),
             plain(
@@ -423,3 +440,14 @@ def test_ordinary_jsonl_opening_verifies_the_complete_member_before_yield(
             package, "example_registry/default"
         ):
             pass
+
+
+def test_v6_reuses_exemplar_semantic_validation_for_admitted_payloads(
+    tmp_path: Path,
+) -> None:
+    result = validate_and_resolve_student_consumption_v6(
+        _v6_package(tmp_path, invalid_exemplar=True)
+    )
+    assert [issue.code for issue in result.issues] == [
+        "BRC027_EXEMPLAR_SEMANTICS_INVALID"
+    ]

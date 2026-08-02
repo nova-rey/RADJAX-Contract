@@ -714,3 +714,10 @@ next minor publication is planned as `v0.5.0` after complete verification.
 - Added a synthetic, clearly non-Tome v6 fixture that composes the immutable
   v5 fixture and proves ordinary JSONL records are yielded only after complete
   resource admission. A post-admission raw-member replacement fails closed.
+
+## 2026-08-02 - B2 selected-exemplar semantic admission
+
+- V6 now applies the established architecture-neutral exemplar/passport
+  semantic validator after its own coordinate joins. Dynamic top-k, probability
+  mass, selected-rank, corridor linkage, and delivery-provenance failures are
+  exposed through one deterministic v6 exemplar issue with source findings.
