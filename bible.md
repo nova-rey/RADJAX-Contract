@@ -756,3 +756,12 @@ next minor publication is planned as `v0.5.0` after complete verification.
   added a checksum-pinned v6 conformance catalog. Its synthetic cases are
   explicitly Contract-only evidence, while the M7 early-close case is marked
   as inherited protocol coverage rather than a Tome v6 producer claim.
+
+## 2026-08-02 - B2 independent-review M7 repairs
+
+- M7 payload admission now performs incremental exemplar semantic and join
+  validation without retaining payload records. Raw integrity hashing is
+  chunked, the schema validator exception path is deterministic, and M7
+  opening stages an exact verified archive snapshot before streaming to close
+  the validation/reopen replacement window. Added a real v6 M7 integration
+  fixture for admission, early close, full exhaustion, and tamper rejection.

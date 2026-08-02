@@ -9,6 +9,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from radjax_contract.tome import student_consumption_v6 as v6_module
+from radjax_contract.tome.streaming_validation import open_streaming_tome
 from radjax_contract.tome.student_consumption_v6 import (
     AUTHORITY_ROLES,
     ResolvedBehavioralResource,
@@ -21,6 +23,7 @@ from radjax_contract.tome.student_consumption_v6 import (
     canonical_npy_component_identity,
     canonical_selected_passport_identity,
     open_verified_student_jsonl_records_v6,
+    open_verified_student_m7_payload_v6,
     sha256_identity,
     validate_and_resolve_student_consumption_v6,
 )
@@ -29,6 +32,8 @@ V5_FIXTURE = (
     Path(__file__).parents[1]
     / "src/radjax_contract/contracts/radjax_tome/student_consumption/v5/fixtures/valid"
 )
+M7_FIXTURE = Path(__file__).parent / "fixtures/v6_m7_payload.tgz"
+M7_LANGUAGE_FIXTURE = Path(__file__).parent / "fixtures"
 
 
 def _identity(letter: str) -> str:
@@ -50,6 +55,7 @@ def _v6_package(
     *,
     invalid_exemplar: bool = False,
     unknown_assignment_mode: bool = False,
+    m7_archive: Path | None = None,
 ) -> Path:
     """Build a portable whole-JSONL v6 package without claiming Tome data."""
 
@@ -223,6 +229,101 @@ def _v6_package(
             ),
         ]
     )
+    if m7_archive is not None:
+        shutil.copyfile(
+            M7_LANGUAGE_FIXTURE / "v6_m7_language_tokenizer_binding_v1.json",
+            package / "manifests/language_tokenizer_binding_v1.json",
+        )
+        shutil.copyfile(
+            M7_LANGUAGE_FIXTURE / "v6_m7_tokenizer_vocabulary.jsonl",
+            resources / "tokenizer_vocabulary.jsonl",
+        )
+        shutil.copyfile(m7_archive, resources / "selected_exemplar_payload.tgz")
+        with open_streaming_tome(m7_archive) as reader:
+            m7_records = list(reader)
+        assert len(m7_records) == 2
+        exemplar_row = next(
+            row for row in rows if row["role"] == "selected_exemplar_payload"
+        )
+        m7_path = resources / "selected_exemplar_payload.tgz"
+        m7_digest, m7_size = _raw(m7_path)
+        exemplar_row.update(
+            {
+                "encoding": "m7_tome_archive",
+                "locator": m7_path.relative_to(package).as_posix(),
+                "raw_sha256": m7_digest,
+                "raw_size_bytes": m7_size,
+            }
+        )
+        target_row = next(row for row in rows if row["role"] == "target_shard")
+        target_components = {
+            component["component"]: component for component in target_row["components"]
+        }
+        np.save(
+            package / target_components["input_ids"]["locator"],
+            np.zeros((1, 4), dtype=np.int32),
+            allow_pickle=False,
+        )
+        np.save(
+            package / target_components["attention_mask"]["locator"],
+            np.ones((1, 4), dtype=np.int8),
+            allow_pickle=False,
+        )
+        assignment_row = next(
+            row for row in rows if row["role"] == "corridor_assignment"
+        )
+        assignment_components = {
+            component["component"]: component
+            for component in assignment_row["components"]
+        }
+        for component, values in {
+            "example_index": np.zeros(4, dtype=np.int32),
+            "position": np.arange(4, dtype=np.int32),
+            "mode_id": np.zeros(4, dtype=np.int32),
+            "weight": np.ones(4, dtype=np.float32),
+        }.items():
+            np.save(
+                package / assignment_components[component]["locator"],
+                values,
+                allow_pickle=False,
+            )
+        example_row = next(row for row in rows if row["role"] == "example_registry")
+        passport_row = next(
+            row for row in rows if row["role"] == "selected_passport_index"
+        )
+        example_path = package / example_row["locator"]
+        passport_path = package / passport_row["locator"]
+        example_path.write_text(
+            json.dumps({"example_id": m7_records[0]["selected_example_id"]}) + "\n",
+            encoding="utf-8",
+        )
+        passports = [
+            {
+                "schema_version": "radjax_selected_passport_v6",
+                "selected_example_id": record["selected_example_id"],
+                "selected_position": record["selected_position"],
+                "rank": rank,
+                "selected_score": record["selected_score"],
+                "selected_policy": record["selected_policy"],
+                "corridor_mode_id": record["corridor_mode_id"],
+                "corridor_fingerprint_id": record["corridor_fingerprint_id"],
+                "corridor_assignment_status": "selected",
+                "selection_integration_config_hash": _identity("a"),
+            }
+            for rank, record in enumerate(m7_records, start=1)
+        ]
+        passport_path.write_text(
+            "".join(json.dumps(record, sort_keys=True) + "\n" for record in passports),
+            encoding="utf-8",
+        )
+        for row in (target_row, assignment_row):
+            for component in row["components"]:
+                component_path = package / component["locator"]
+                component["raw_sha256"], component["raw_size_bytes"] = _raw(
+                    component_path
+                )
+        for row, path in ((example_row, example_path), (passport_row, passport_path)):
+            row["raw_sha256"], row["raw_size_bytes"] = _raw(path)
     from radjax_contract.tome import student_consumption_v6 as v6
     from radjax_contract.tome.language_tokenizer_binding_v1 import (
         validate_and_resolve_language_tokenizer_binding,
@@ -271,7 +372,7 @@ def _v6_package(
         language_binding_digest=language.descriptor.canonical_binding_digest,
         target_semantic_identity=target_identity,
         example_registry_semantic_identity=example_registry_identity,
-        target_shape=(1, 2),
+        target_shape=(1, 4) if m7_archive is not None else (1, 2),
         target_axes=("example", "sequence_position"),
     )
     behavioral = canonical_behavioral_authority_digest(
@@ -473,3 +574,71 @@ def test_v6_rejects_full_grid_assignments_to_undeclared_modes(tmp_path: Path) ->
         _v6_package(tmp_path, unknown_assignment_mode=True)
     )
     assert [issue.code for issue in result.issues] == ["BRC028_ASSIGNMENT_MODE_UNKNOWN"]
+
+
+def test_v6_closed_manifest_schema_cannot_escape_as_validator_exception(
+    tmp_path: Path,
+) -> None:
+    package = _v6_package(tmp_path)
+    manifest_path = package / "manifests/behavioral_resource_binding_v1.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["unexpected"] = True
+    _write_json(manifest_path, manifest)
+    result = validate_and_resolve_student_consumption_v6(package)
+    assert [issue.code for issue in result.issues] == [
+        "BRC004_RESOURCE_REGISTRY_INVALID"
+    ]
+
+
+def test_v6_m7_payload_admission_streaming_and_tamper_rejection(
+    tmp_path: Path,
+) -> None:
+    package = _v6_package(tmp_path, m7_archive=M7_FIXTURE)
+    result = validate_and_resolve_student_consumption_v6(package)
+    assert result.ok, result.issues
+
+    with open_verified_student_m7_payload_v6(
+        package, "selected_exemplar_payload/default"
+    ) as reader:
+        first = next(iter(reader))
+        assert first["selected_example_id"] == "corpus_000000003"
+        assert reader.verification_state == "open"
+    assert reader.verification_state == "closed_early"
+
+    with open_verified_student_m7_payload_v6(
+        package, "selected_exemplar_payload/default"
+    ) as reader:
+        assert len(list(reader)) == 2
+        assert reader.verification_state == "fully_verified"
+
+    payload = package / "resources/selected_exemplar_payload.tgz"
+    payload.write_bytes(payload.read_bytes() + b"replacement")
+    rejected = validate_and_resolve_student_consumption_v6(package)
+    assert [issue.code for issue in rejected.issues] == [
+        "BRC010_RAW_INTEGRITY_MISMATCH",
+        "BRC012_REQUIRED_ROLE_MISSING",
+    ]
+
+
+def test_v6_m7_opener_rejects_replacement_after_resolver_admission(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    package = _v6_package(tmp_path, m7_archive=M7_FIXTURE)
+    payload = package / "resources/selected_exemplar_payload.tgz"
+    original = v6_module.validate_and_resolve_student_consumption_v6
+
+    def replace_after_admission(*args: object, **kwargs: object) -> object:
+        result = original(*args, **kwargs)
+        payload.write_bytes(payload.read_bytes() + b"replacement")
+        return result
+
+    monkeypatch.setattr(
+        v6_module,
+        "validate_and_resolve_student_consumption_v6",
+        replace_after_admission,
+    )
+    with pytest.raises(ValueError, match="integrity changed at open"):
+        with open_verified_student_m7_payload_v6(
+            package, "selected_exemplar_payload/default"
+        ):
+            pass

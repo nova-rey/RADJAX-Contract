@@ -13,6 +13,7 @@ import hashlib
 import io
 import json
 import math
+import tempfile
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
@@ -20,7 +21,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-from jsonschema import Draft202012Validator
+from jsonschema import Draft202012Validator, ValidationError
 
 from radjax_contract.tome import student_consumption as _v1
 from radjax_contract.tome.contract_publication import (
@@ -488,16 +489,34 @@ def validate_and_resolve_student_consumption_v6(
             root, by_role.get("corridor_assignment"), target, mode_ids, issues
         )
         passports = _read_jsonl(root, by_role.get("selected_passport_index"), issues)
-        exemplars = _read_jsonl(root, by_role.get("selected_exemplar_payload"), issues)
-        _validate_selected_coordinates(
-            target,
-            examples,
-            assignment,
-            passports,
-            exemplars,
-            language.descriptor.vocabulary["vocabulary_size"],
-            issues,
-        )
+        exemplar_resource = by_role.get("selected_exemplar_payload")
+        if exemplar_resource is not None and exemplar_resource.encoding == "jsonl":
+            exemplars = _read_jsonl(root, exemplar_resource, issues)
+            _validate_selected_coordinates(
+                target,
+                examples,
+                assignment,
+                passports,
+                exemplars,
+                language.descriptor.vocabulary["vocabulary_size"],
+                issues,
+            )
+        elif (
+            exemplar_resource is not None
+            and exemplar_resource.encoding == "m7_tome_archive"
+        ):
+            _validate_m7_selected_exemplars(
+                root,
+                exemplar_resource,
+                target,
+                examples,
+                assignment,
+                passports,
+                language.descriptor.vocabulary["vocabulary_size"],
+                issues,
+            )
+        else:
+            issues.append(_issue("BRC013_ENCODING_INVALID", "encoding"))
         _validate_delivery_receipt(root, by_role.get("delivery_receipt"), issues)
         if target is None or examples is None or assignment is None or issues:
             return _result(issues, warnings)
@@ -587,6 +606,8 @@ def open_verified_student_resource_v6(
     resource = _find_resource(result.descriptor, resource_id)
     if resource is None:
         raise ValueError(f"unknown v6 behavioral resource: {resource_id}")
+    if resource.encoding == "m7_tome_archive":
+        raise ValueError("v6 M7 resources require open_verified_student_m7_payload_v6")
     with _v1._artifact_root(Path(artifact), [], []) as root:
         if root is None:
             raise ValueError("v6 behavioral resource transport is unavailable")
@@ -661,8 +682,12 @@ def open_verified_student_m7_payload_v6(
         if root is None:
             raise ValueError("v6 behavioral resource transport is unavailable")
         try:
-            with open_streaming_tome(root / resource.locator, strict=strict) as reader:
-                yield reader
+            with _staged_verified_m7_archive(root, resource) as archive:
+                reader = open_streaming_tome(archive, strict=strict)
+                try:
+                    yield reader
+                finally:
+                    reader.close()
         except M7ContractError as exc:
             raise ValueError("v6 M7 resource verification failed at open") from exc
 
@@ -757,7 +782,7 @@ def _manifest_schema_valid(manifest: dict[str, Any]) -> bool:
             ).read_text(encoding="utf-8")
         )
         Draft202012Validator(schema).validate(manifest)
-    except (OSError, ValueError, json.JSONDecodeError):
+    except (OSError, ValueError, json.JSONDecodeError, ValidationError):
         return False
     return True
 
@@ -1035,6 +1060,99 @@ def _validate_selected_coordinates(
         )
 
 
+def _validate_m7_selected_exemplars(
+    root: Path,
+    resource: ResolvedBehavioralResource,
+    target: tuple[np.ndarray, np.ndarray] | None,
+    examples: list[dict[str, Any]] | None,
+    assignment: tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray] | None,
+    passports: list[dict[str, Any]] | None,
+    vocabulary_size: int,
+    issues: list[BehavioralResourceIssue],
+) -> None:
+    """Validate M7 payload semantics incrementally without retaining records."""
+
+    if target is None or examples is None or assignment is None or passports is None:
+        return
+    ids = [row.get("example_id") for row in examples]
+    if len(ids) != target[0].shape[0] or any(
+        not isinstance(value, str) for value in ids
+    ):
+        issues.append(_issue("BRC018_EXAMPLE_REGISTRY_INVALID", "structural_join"))
+        return
+    example_index = {value: offset for offset, value in enumerate(ids)}
+    if len(example_index) != len(ids):
+        issues.append(_issue("BRC018_EXAMPLE_REGISTRY_INVALID", "structural_join"))
+        return
+    passport_by_key = {_selected_key(record): record for record in passports}
+    if None in passport_by_key or len(passport_by_key) != len(passports):
+        issues.append(_issue("BRC019_SELECTED_JOIN_INVALID", "structural_join"))
+        return
+    assignment_modes = {
+        (ids[int(row)], int(position)): int(mode)
+        for row, position, mode in zip(
+            assignment[0], assignment[1], assignment[2], strict=True
+        )
+    }
+    corridor_coordinates = set(assignment_modes)
+    seen: set[tuple[str, int]] = set()
+    try:
+        with _staged_verified_m7_archive(root, resource) as archive:
+            reader = open_streaming_tome(archive)
+            try:
+                for exemplar in reader:
+                    key = _selected_key(exemplar)
+                    passport = passport_by_key.get(key)
+                    if (
+                        key is None
+                        or passport is None
+                        or key in seen
+                        or key[0] not in example_index
+                    ):
+                        issues.append(
+                            _issue("BRC019_SELECTED_JOIN_INVALID", "exemplar")
+                        )
+                        continue
+                    seen.add(key)
+                    row, position = example_index[key[0]], key[1]
+                    if position >= target[0].shape[1] or target[1][row, position] != 1:
+                        issues.append(
+                            _issue(
+                                "BRC020_SELECTED_MASKED_OR_OUT_OF_RANGE",
+                                "structural_join",
+                            )
+                        )
+                    elif exemplar.get("corridor_mode_id") != assignment_modes[key]:
+                        issues.append(
+                            _issue("BRC029_SELECTED_MODE_MISMATCH", "corridor")
+                        )
+                    normalized = dict(exemplar)
+                    normalized["rank"] = 1
+                    findings = validate_exemplar_passport_semantics(
+                        [passport],
+                        [normalized],
+                        corridor_coordinates=corridor_coordinates,
+                        vocabulary_size=vocabulary_size,
+                    )
+                    if findings:
+                        issues.append(
+                            _issue(
+                                "BRC027_EXEMPLAR_SEMANTICS_INVALID",
+                                "exemplar",
+                                findings=[finding.code for finding in findings],
+                            )
+                        )
+            finally:
+                reader.close()
+            if reader.verification_state != "fully_verified":
+                issues.append(_issue("BRC030_M7_STREAM_INVALID", "exemplar"))
+    except (M7ContractError, OSError, ValueError):
+        issues.append(_issue("BRC030_M7_STREAM_INVALID", "exemplar"))
+        return
+    if seen != set(passport_by_key):
+        issues.append(_issue("BRC019_SELECTED_JOIN_INVALID", "exemplar"))
+
+
 def _validate_mode_table(
     root: Path,
     resource: ResolvedBehavioralResource | None,
@@ -1190,11 +1308,50 @@ def _verified_resource_bytes(root: Path, resource: ResolvedBehavioralResource) -
 
 
 def _raw_matches(path: Path, digest: str, size: int) -> bool:
-    return (
-        path.is_file()
-        and path.stat().st_size == size
-        and sha256_identity(path.read_bytes()) == digest
-    )
+    if not path.is_file() or path.stat().st_size != size:
+        return False
+    observed, observed_size = _chunked_file_identity(path)
+    return observed_size == size and observed == digest
+
+
+def _chunked_file_identity(path: Path) -> tuple[str, int]:
+    """Hash a member in fixed-size blocks without materializing its content."""
+
+    digest = hashlib.sha256()
+    size = 0
+    with path.open("rb") as handle:
+        while block := handle.read(1024 * 1024):
+            digest.update(block)
+            size += len(block)
+    return "sha256:" + digest.hexdigest(), size
+
+
+@contextmanager
+def _staged_verified_m7_archive(
+    root: Path,
+    resource: ResolvedBehavioralResource,
+) -> Iterator[Path]:
+    """Create an immutable, chunk-verified M7 snapshot for one opener call."""
+
+    source = root / resource.locator
+    with tempfile.TemporaryDirectory(prefix="radjax-contract-v6-m7-") as temporary:
+        staged = Path(temporary) / "payload.tgz"
+        digest = hashlib.sha256()
+        size = 0
+        try:
+            with source.open("rb") as reader, staged.open("wb") as writer:
+                while block := reader.read(1024 * 1024):
+                    digest.update(block)
+                    size += len(block)
+                    writer.write(block)
+        except OSError as exc:
+            raise ValueError("v6 M7 resource is unavailable at open") from exc
+        if (
+            size != resource.raw_size_bytes
+            or "sha256:" + digest.hexdigest() != resource.raw_sha256
+        ):
+            raise ValueError("v6 M7 resource integrity changed at open")
+        yield staged
 
 
 def _registry(resources: list[ResolvedBehavioralResource]) -> list[dict[str, str]]:

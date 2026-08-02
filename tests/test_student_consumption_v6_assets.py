@@ -46,7 +46,8 @@ def test_v6_assets_are_closed_and_profile_is_schema_valid() -> None:
         "post-admission-jsonl-tamper",
         "invalid-exemplar-semantics",
         "undeclared-corridor-mode",
-        "m7-early-close-state",
+        "v6-m7-admission-streaming-and-tamper",
+        "v6-m7-open-toctou",
     }
     assert (
         tome_student_consumption_v6_contract_asset_path("contract.json")
