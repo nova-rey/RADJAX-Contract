@@ -33,6 +33,24 @@ AUTHORITY_ROLES = (
 )
 NON_AUTHORITY_ROLES = ("delivery_receipt",)
 REQUIRED_ROLES = frozenset((*AUTHORITY_ROLES, *NON_AUTHORITY_ROLES))
+_PASSPORT_FIELDS = (
+    "schema_version",
+    "selected_example_id",
+    "selected_position",
+    "rank",
+    "selected_score",
+    "selected_policy",
+    "corridor_mode_id",
+    "corridor_fingerprint_id",
+    "corridor_assignment_status",
+    "selection_integration_config_hash",
+)
+_AUTHORITY_REFERENCE_FIELDS = (
+    "schema_version",
+    "selection_integration_config_hash",
+    "score_pass_authority_hash",
+    "delivery_authority_hash",
+)
 
 
 @dataclass(frozen=True)
@@ -186,6 +204,59 @@ def canonical_record_sequence_identity(
     return "sha256:" + digest.hexdigest()
 
 
+def canonical_selected_passport_identity(records: list[dict[str, Any]]) -> str:
+    """Hash only the frozen authority projection of canonical passport rows."""
+
+    projected: list[dict[str, Any]] = []
+    for expected_rank, record in enumerate(records, start=1):
+        if set(record) != set(_PASSPORT_FIELDS):
+            raise ValueError("selected passport fields are closed")
+        if (
+            record["schema_version"] != "radjax_selected_passport_v6"
+            or record["rank"] != expected_rank
+            or record["corridor_assignment_status"] != "selected"
+            or not isinstance(record["selected_example_id"], str)
+            or not record["selected_example_id"]
+            or any(
+                type(record[name]) is not int or record[name] < 0
+                for name in ("selected_position", "corridor_mode_id")
+            )
+            or not _finite(record["selected_score"])
+            or not isinstance(record["selected_policy"], str)
+            or not isinstance(record["corridor_fingerprint_id"], str)
+            or not _identity_syntax(record["selection_integration_config_hash"])
+        ):
+            raise ValueError("selected passport projection is invalid")
+        projected.append({name: record[name] for name in _PASSPORT_FIELDS})
+    if not projected or projected != sorted(
+        projected,
+        key=lambda item: (
+            item["rank"],
+            item["selected_example_id"],
+            item["selected_position"],
+        ),
+    ):
+        raise ValueError("selected passports must have deterministic rank order")
+    return canonical_record_sequence_identity(
+        role="selected_passport_index", records=projected
+    )
+
+
+def canonical_authority_reference_identity(reference: dict[str, Any]) -> str:
+    """Hash the exact closed v6 score/selection/delivery authority object."""
+
+    if (
+        set(reference) != set(_AUTHORITY_REFERENCE_FIELDS)
+        or reference["schema_version"] != "radjax_behavioral_authority_reference_v6"
+        or any(
+            not _identity_syntax(reference[name])
+            for name in _AUTHORITY_REFERENCE_FIELDS[1:]
+        )
+    ):
+        raise ValueError("authority reference projection is invalid")
+    return sha256_identity(canonical_json_bytes(reference))
+
+
 def canonical_behavioral_source_identity(
     *,
     language_binding_digest: str,
@@ -306,6 +377,14 @@ def _require_identity(value: Any) -> None:
         or any(char not in "0123456789abcdef" for char in value[7:])
     ):
         raise ValueError("expected lowercase sha256 identity")
+
+
+def _identity_syntax(value: Any) -> bool:
+    try:
+        _require_identity(value)
+    except ValueError:
+        return False
+    return True
 
 
 def _finite(value: Any) -> bool:

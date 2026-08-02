@@ -6,10 +6,12 @@ import numpy as np
 import pytest
 
 from radjax_contract.tome.student_consumption_v6 import (
+    canonical_authority_reference_identity,
     canonical_behavioral_authority_digest,
     canonical_composition_digest,
     canonical_multipart_npy_identity,
     canonical_npy_component_identity,
+    canonical_selected_passport_identity,
 )
 
 
@@ -113,3 +115,28 @@ def test_delivery_registry_changes_composition_not_behavioral_authority() -> Non
         package_semantic_identity=_identity("1"),
     )
     assert first != second
+
+
+def test_closed_passport_and_authority_projections_reject_extra_fields() -> None:
+    passport = {
+        "schema_version": "radjax_selected_passport_v6",
+        "selected_example_id": "example-0",
+        "selected_position": 0,
+        "rank": 1,
+        "selected_score": 1.0,
+        "selected_policy": "fixed",
+        "corridor_mode_id": 0,
+        "corridor_fingerprint_id": "fingerprint-0",
+        "corridor_assignment_status": "selected",
+        "selection_integration_config_hash": _identity("a"),
+    }
+    assert canonical_selected_passport_identity([passport]).startswith("sha256:")
+    with pytest.raises(ValueError, match="closed"):
+        canonical_selected_passport_identity([{**passport, "source_row": 0}])
+    reference = {
+        "schema_version": "radjax_behavioral_authority_reference_v6",
+        "selection_integration_config_hash": _identity("a"),
+        "score_pass_authority_hash": _identity("b"),
+        "delivery_authority_hash": _identity("c"),
+    }
+    assert canonical_authority_reference_identity(reference).startswith("sha256:")

@@ -643,3 +643,10 @@ next minor publication is planned as `v0.5.0` after complete verification.
   authority digest but included in the composition digest. No v1--v5 code,
   profile behavior, or packaged contract asset was changed, and this is not a
   release or a Tome/Student migration claim.
+
+## 2026-08-02 - B2 v6 exact projection identity implementation
+
+- Implemented the approved closed projections for selected passports and the
+  authority reference before admitting them to any behavioral digest. Passport
+  provenance extensions and authority aliases fail closed; included-field
+  changes necessarily change the projected semantic identity.
