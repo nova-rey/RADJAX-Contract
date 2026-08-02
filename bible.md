@@ -622,3 +622,12 @@ next minor publication is planned as `v0.5.0` after complete verification.
 - Whole-resource verification is the honest opening unit for ordinary JSONL;
   M7 retains its bounded shard/index record unit. Corridor aggregates remain
   validated diagnostics and are not behavioral authority by default.
+
+## 2026-08-02 - B2 v6 projection freeze evidence correction
+
+- Corrected the preliminary projection record using the actual historical
+  producer/model fields: v6 passports retain the evidenced rank, score,
+  policy, corridor mode/fingerprint/status, and selection-integration hash;
+  the authority reference retains closed selection, score-pass, and delivery
+  authority hashes. Unsupported conceptual fields and legacy aliases are
+  excluded before v6 schema or digest implementation.

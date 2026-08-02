@@ -7,20 +7,18 @@ interpretations byte-for-byte.
 ## `selected_passport_index/default`
 
 The resource is a canonical JSONL sequence. Records are ordered strictly by
-the zero-based `canonical_selection_index`; there is exactly one record for
-each index in the contiguous range `0..N-1`. Each canonical record contains
-exactly these authority fields, in canonical JSON key order:
+`(rank, selected_example_id, selected_position)`, with ranks contiguous from
+`1..N`. Each canonical record contains exactly these authority fields:
 
-1. `selected_example_id` (nonempty string)
-2. `selected_position` (nonnegative integer)
-3. `canonical_selection_index` (nonnegative integer)
-4. `assigned_mode_id` (nonnegative integer)
-5. `assignment_status` (the exact string `"selected"`)
+1. `selected_example_id`; 2. `selected_position`; 3. `rank`; 4.
+`selected_score`; 5. `selected_policy`; 6. `corridor_mode_id`; 7.
+`corridor_fingerprint_id`; 8. `corridor_assignment_status` = `"selected"`;
+9. `selection_integration_config_hash`.
 
 The resource semantic identity frames each canonical record in sequence order;
 the JSONL delimiter, whitespace, physical shard, source row, source position,
-score, rank, score policy, selection policy, delivery path, timestamps, and
-other provenance fields are excluded. Changing an included field changes both
+delivery path, payload values, raw bindings, timestamps, wrappers, and
+arbitrary extensions are excluded. Changing an included field changes both
 this resource identity and the behavioral authority digest. Changing an
 excluded field may change raw/package/composition identities, never behavioral
 authority.
@@ -29,20 +27,19 @@ authority.
 
 The resource is one canonical JSON object with exactly these authority fields:
 
-1. `schema_version` = `"radjax_v6_authority_reference_v1"`
-2. `score_pass_authority_digest` (lowercase `sha256:` identity)
-3. `selection_authority_digest` (lowercase `sha256:` identity of the fixed
-   existing 25-field selection projection)
-4. `language_binding_digest` (the resolved v5 canonical binding digest)
-5. `behavioral_source_identity` (the v6 target/example source identity)
+1. `schema_version` = `"radjax_behavioral_authority_reference_v6"`
+2. `selection_integration_config_hash` (lowercase `sha256:` identity)
+3. `score_pass_authority_hash` (lowercase `sha256:` identity)
+4. `delivery_authority_hash` (lowercase `sha256:` identity)
 
-Keys are canonical JSON sorted keys. The existing fixed 25-field selection
-projection itself is not recopied or reinterpreted by v6; its exact existing
-digest is the sole selection projection input. Excluded fields include delivery
-placement, source shard/row/position, producer commits, archive/tree hashes,
-runtime configuration, dynamic selection thresholds or top-k limits, score
-values, score policies, and all timestamps/paths. Excluded fields must be in a
-separate non-authority receipt where their delivery provenance is required.
+Keys are canonical JSON sorted keys. The historical
+`score_pass_authority_hash_v1` alias, derived passport/resource digests, raw
+bindings, transport, time, and arbitrary extensions are excluded. The fixed
+existing selection projection is not recopied or reinterpreted; its evidenced
+selection-integration hash is the sole selection input. Delivery placement,
+source coordinates, producer commits, archive/tree hashes, runtime config,
+dynamic thresholds/top-k limits, scores, policies, and timestamps remain
+non-authority receipt data.
 
 The authority-reference semantic identity and behavioral authority digest
 change for every included-field change. Delivery-only changes cannot alter
