@@ -598,3 +598,16 @@ next minor publication is planned as `v0.5.0` after complete verification.
   behavior-content resources only. It intentionally contains no architecture
   or plugin projection. Package metadata is the unreleased `0.7.0` candidate;
   no release, tag, merge, or publication has occurred.
+
+## 2026-08-01 - Phase 5 C3 v0.7.0 immutable publication receipt
+
+- `v0.7.0` is annotated at
+  `cac3dd21e0d56df5a9e6fd50b20267e0b8960995`. It publishes the additive
+  `native_v3_student_v5` generic LanguageTokenizerBindingV1 profile; v1--v4
+  profiles, assets, and validation behavior remain immutable.
+- Independent review accepted C1/C2. Full wheel-enabled verification passed:
+  208 tests, plus Ruff and format checks. GitHub release artifacts are
+  `radjax_contract-0.7.0-py3-none-any.whl`
+  (`sha256:2e6e39602460133d9c8a9c4a100e3933db5b221ed3503ae05c087d60863a2622`)
+  and `radjax_contract-0.7.0.tar.gz`
+  (`sha256:2214b9cc64e22e471f98f2c0218124d61701864cd109b31eee8c24e30132fcc0`).
