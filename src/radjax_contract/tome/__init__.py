@@ -116,6 +116,14 @@ from radjax_contract.tome.student_consumption_v4 import (
     open_verified_student_resource_v4,
     validate_and_resolve_student_consumption_v4,
 )
+from radjax_contract.tome.student_consumption_v6 import (
+    BehavioralAuthorityDescriptor,
+    BehavioralAuthorityValidationResult,
+    BehavioralResourceIssue,
+    ResolvedBehavioralResource,
+    open_verified_student_resource_v6,
+    validate_and_resolve_student_consumption_v6,
+)
 from radjax_contract.tome.validation import (
     TomeValidationResult,
     validate_tome,
@@ -149,6 +157,10 @@ __all__ = [
     "StudentConsumptionV3ValidationResult",
     "StudentConsumptionV4Descriptor",
     "StudentConsumptionV4ValidationResult",
+    "BehavioralAuthorityDescriptor",
+    "BehavioralAuthorityValidationResult",
+    "BehavioralResourceIssue",
+    "ResolvedBehavioralResource",
     "LanguageTokenizerBindingDescriptor",
     "LanguageTokenizerBindingIssue",
     "LanguageTokenizerBindingValidationResult",
@@ -160,6 +172,7 @@ __all__ = [
     "open_verified_student_resource_v2",
     "open_verified_student_resource_v3",
     "open_verified_student_resource_v4",
+    "open_verified_student_resource_v6",
     "open_verified_language_tokenizer_resource",
     "TomeBehavioralSummary",
     "TomeCompression",
@@ -216,5 +229,6 @@ __all__ = [
     "validate_and_resolve_student_consumption_v2",
     "validate_and_resolve_student_consumption_v3",
     "validate_and_resolve_student_consumption_v4",
+    "validate_and_resolve_student_consumption_v6",
     "validate_and_resolve_language_tokenizer_binding",
 ]
