@@ -684,6 +684,11 @@ next minor publication is planned as `v0.5.0` after complete verification.
   mode-table semantic projection binds mode IDs and statistic definitions, not
   diagnostic minimum/mean/maximum values.
 
+## 2026-08-02 - B2 multipart raw-integrity enforcement
+
+- V6 multipart NPY resources now require independently declared raw digest and
+  size evidence for every component before semantic decoding or identity use.
+
 ## 2026-08-02 - B2 v6 static identity contract checkpoint
 
 - Added the initial checksum-closed v6 candidate assets: exact profile

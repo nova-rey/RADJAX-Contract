@@ -600,6 +600,13 @@ def _resolve_resources(
                 _issue("BRC010_RAW_INTEGRITY_MISMATCH", "integrity", locator=locator)
             )
             continue
+        if row.get("encoding") == "multipart_npy" and not _components_match(
+            root, row.get("components")
+        ):
+            issues.append(
+                _issue("BRC010_RAW_INTEGRITY_MISMATCH", "integrity", locator=locator)
+            )
+            continue
         semantic = _resource_semantic_identity(root, row, issues)
         if semantic is None:
             continue
@@ -630,6 +637,29 @@ def _resolve_resources(
     if seen_roles != REQUIRED_ROLES:
         issues.append(_issue("BRC012_REQUIRED_ROLE_MISSING", "binding"))
     return sorted(result, key=lambda item: (item.role, item.resource_id))
+
+
+def _components_match(root: Path, components: Any) -> bool:
+    """Require raw integrity evidence for every logical NPY component."""
+
+    if not isinstance(components, list) or not components:
+        return False
+    for component in components:
+        if not isinstance(component, dict):
+            return False
+        locator = component.get("locator")
+        digest = component.get("raw_sha256")
+        size = component.get("raw_size_bytes")
+        if (
+            not isinstance(locator, str)
+            or not _v1._safe(locator)
+            or not _identity_syntax(digest)
+            or type(size) is not int
+            or size < 0
+            or not _raw_matches(root / locator, digest, size)
+        ):
+            return False
+    return True
 
 
 def _resource_semantic_identity(
