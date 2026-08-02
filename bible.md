@@ -708,3 +708,9 @@ next minor publication is planned as `v0.5.0` after complete verification.
   trust transition before parsing or yielding any record, retains immutable
   verified bytes, and rejects M7 from that API. The raw resource opener is
   documented as a byte opener, not a record-verification promise.
+
+## 2026-08-02 - B2 whole-resource JSONL conformance fixture
+
+- Added a synthetic, clearly non-Tome v6 fixture that composes the immutable
+  v5 fixture and proves ordinary JSONL records are yielded only after complete
+  resource admission. A post-admission raw-member replacement fails closed.
