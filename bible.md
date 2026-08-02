@@ -677,3 +677,11 @@ next minor publication is planned as `v0.5.0` after complete verification.
   resource semantic admission. A resource with extra, missing, aliased, or
   otherwise noncanonical authority fields is rejected before it can affect a
   behavioral identity.
+
+## 2026-08-02 - B2 v6 static identity contract checkpoint
+
+- Added the initial checksum-closed v6 candidate assets: exact profile
+  negotiation, the frozen authority/non-authority role inventory, deterministic
+  issue ordering, and documented separation of raw, behavioral, and exact
+  package identity. The v6 profile explicitly composes v5 and remains false
+  for default new production.
