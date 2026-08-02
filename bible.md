@@ -689,6 +689,11 @@ next minor publication is planned as `v0.5.0` after complete verification.
 - V6 multipart NPY resources now require independently declared raw digest and
   size evidence for every component before semantic decoding or identity use.
 
+## 2026-08-02 - B2 declared multipart component opening
+
+- Target and assignment validation now opens only declared component locators;
+  no v6 component role is inferred from a fixed filename.
+
 ## 2026-08-02 - B2 v6 static identity contract checkpoint
 
 - Added the initial checksum-closed v6 candidate assets: exact profile

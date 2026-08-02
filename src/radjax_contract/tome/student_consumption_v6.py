@@ -81,6 +81,7 @@ class ResolvedBehavioralResource:
     raw_size_bytes: int
     locator: str
     authority: bool
+    components: tuple[dict[str, Any], ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -630,6 +631,7 @@ def _resolve_resources(
                 raw_size,
                 locator,
                 role in AUTHORITY_ROLES,
+                tuple(row.get("components", ())),
             )
         )
         seen_roles.add(role)
@@ -755,8 +757,9 @@ def _validate_target(
     # The declared members are recomputed above; this fixed layout is the v6
     # public target representation, never a permissive filename convention.
     try:
-        input_ids = np.load(root / "resources/input_ids.npy", allow_pickle=False)
-        mask = np.load(root / "resources/attention_mask.npy", allow_pickle=False)
+        members = {item["component"]: item["locator"] for item in resource.components}
+        input_ids = np.load(root / members["input_ids"], allow_pickle=False)
+        mask = np.load(root / members["attention_mask"], allow_pickle=False)
     except (OSError, ValueError):
         issues.append(_issue("BRC014_TARGET_INVALID", "encoding"))
         return None
@@ -786,8 +789,9 @@ def _validate_assignment(
         issues.append(_issue("BRC016_ASSIGNMENT_INVALID", "encoding"))
         return None
     try:
+        members = {item["component"]: item["locator"] for item in resource.components}
         arrays = tuple(
-            np.load(root / f"resources/assignment_{name}.npy", allow_pickle=False)
+            np.load(root / members[name], allow_pickle=False)
             for name in ("example_index", "position", "mode_id", "weight")
         )
     except (OSError, ValueError):
