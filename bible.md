@@ -742,3 +742,10 @@ next minor publication is planned as `v0.5.0` after complete verification.
   nonclaims: no tag or publication, no default migration, no Tome or Student
   change, and no assertion that a canonical v6 producer yet exists. The full
   Contract test suite passed with 217 tests.
+
+## 2026-08-02 - B2 bounded M7 resource opening
+
+- Added the explicit `m7_tome_archive` v6 encoding and a separate verified
+  opener backed by Contract's established sequential M7 reader. It preserves
+  shard/index verification before yield and exposes early-close versus complete
+  verification state; ordinary JSONL never silently uses this protocol.

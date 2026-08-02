@@ -52,10 +52,10 @@ either identity.
 whole-resource raw identity in B2: their complete bytes are verified before
 the first record is yielded. The ordinary-JSONL public opener returns immutable
 verified bytes parsed before iteration, so a member replacement after opening
-cannot alter a yielded record. `selected_exemplar_payload/default` uses the
-existing M7 shard/index logical record unit; it must use a separate bounded
-shard/index opener rather than being silently treated as ordinary JSONL. A
-record may be yielded only after its shard/index evidence and record parsing
-have succeeded. Completion of a shard remains observable only at exhaustion.
-B2 makes no unsupported claim of per-record cryptographic identity for
-ordinary JSONL resources.
+cannot alter a yielded record. `selected_exemplar_payload/default` may instead
+declare `encoding = "m7_tome_archive"`, the existing Contract M7 shard/index
+logical record unit. Its dedicated opener retains the M7 sequential reader: a
+record is yielded only after its control-plane, shard/index evidence, and
+record parsing succeed. Completion remains observable as `fully_verified` only
+at exhaustion; an early close is `closed_early`. B2 makes no unsupported claim
+of per-record cryptographic identity for ordinary JSONL resources.

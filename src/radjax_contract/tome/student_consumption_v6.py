@@ -30,6 +30,13 @@ from radjax_contract.tome.language_tokenizer_binding_v1 import (
     canonical_json_bytes,
     validate_and_resolve_language_tokenizer_binding,
 )
+from radjax_contract.tome.streaming_validation import (
+    ContractError as M7ContractError,
+)
+from radjax_contract.tome.streaming_validation import (
+    StreamingTomeReader,
+    open_streaming_tome,
+)
 from radjax_contract.tome.student_exemplar_semantics import (
     validate_exemplar_passport_semantics,
 )
@@ -613,6 +620,41 @@ def open_verified_student_jsonl_records_v6(
         yield iter(records)
 
 
+@contextmanager
+def open_verified_student_m7_payload_v6(
+    artifact: str | Path, resource_id: str, *, strict: bool = False
+) -> Iterator[StreamingTomeReader]:
+    """Open a v6 M7 payload as a bounded, shard-verified record stream.
+
+    The v6 manifest's outer admission verifies the M7 resource before this
+    function is entered.  Opening then creates a fresh sequential M7 reader;
+    it verifies the cover/header/index prelude and each shard before records
+    from that shard are yielded.  Its ``verification_state`` remains
+    ``"closed_early"`` if the caller closes before exhaustion and becomes
+    ``"fully_verified"`` only after all shard records have been consumed.
+    """
+
+    result = validate_and_resolve_student_consumption_v6(artifact, strict=strict)
+    if not result.ok or result.descriptor is None:
+        raise ValueError(
+            "v6 behavioral-resource validation failed: "
+            + ",".join(item.code for item in result.issues)
+        )
+    resource = _find_resource(result.descriptor, resource_id)
+    if resource is None:
+        raise ValueError(f"unknown v6 behavioral resource: {resource_id}")
+    if resource.encoding != "m7_tome_archive":
+        raise ValueError("v6 M7 opener requires encoding=m7_tome_archive")
+    with _v1._artifact_root(Path(artifact), [], []) as root:
+        if root is None:
+            raise ValueError("v6 behavioral resource transport is unavailable")
+        try:
+            with open_streaming_tome(root / resource.locator, strict=strict) as reader:
+                yield reader
+        except M7ContractError as exc:
+            raise ValueError("v6 M7 resource verification failed at open") from exc
+
+
 def _resolve_resources(
     root: Path, rows: list[Any], issues: list[BehavioralResourceIssue]
 ) -> list[ResolvedBehavioralResource]:
@@ -735,6 +777,22 @@ def _resource_semantic_identity(
     root: Path, row: dict[str, Any], issues: list[BehavioralResourceIssue]
 ) -> str | None:
     role, encoding, locator = row["role"], row.get("encoding"), row["locator"]
+    if encoding == "m7_tome_archive":
+        if role != "selected_exemplar_payload":
+            issues.append(_issue("BRC013_ENCODING_INVALID", "encoding"))
+            return None
+        try:
+            with open_streaming_tome(root / locator) as reader:
+                for _ in reader:
+                    pass
+                if reader.verification_state != "fully_verified":
+                    raise M7ContractError("payload_sequence_digest_mismatch")
+                return sha256_identity(
+                    canonical_json_bytes(reader.descriptor.semantic_identity)
+                )
+        except (M7ContractError, OSError, ValueError):
+            issues.append(_issue("BRC030_M7_STREAM_INVALID", "exemplar"))
+            return None
     if encoding == "json":
         value = _read_json(root / locator, issues, "encoding")
         if value is None:
