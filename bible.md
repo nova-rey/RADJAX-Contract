@@ -670,3 +670,10 @@ next minor publication is planned as `v0.5.0` after complete verification.
   B2 branch. The subsequent projection correction binds its identity-bearing
   passport and authority inputs to the approved closed field sets; no v1--v5
   resolver behavior was edited.
+
+## 2026-08-02 - B2 v6 resolver projection enforcement
+
+- Wired the approved closed passport and authority-reference projections into
+  resource semantic admission. A resource with extra, missing, aliased, or
+  otherwise noncanonical authority fields is rejected before it can affect a
+  behavioral identity.

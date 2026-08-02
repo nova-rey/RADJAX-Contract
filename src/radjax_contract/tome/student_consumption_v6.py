@@ -638,14 +638,26 @@ def _resource_semantic_identity(
     role, encoding, locator = row["role"], row.get("encoding"), row["locator"]
     if encoding == "json":
         value = _read_json(root / locator, issues, "encoding")
-        return None if value is None else sha256_identity(canonical_json_bytes(value))
+        if value is None:
+            return None
+        if role == "authority_reference":
+            try:
+                return canonical_authority_reference_identity(value)
+            except ValueError:
+                issues.append(_issue("BRC025_AUTHORITY_REFERENCE_INVALID", "identity"))
+                return None
+        return sha256_identity(canonical_json_bytes(value))
     if encoding in {"jsonl", "m7_jsonl"}:
         records = _read_jsonl_path(root / locator, issues, "encoding")
-        return (
-            None
-            if records is None
-            else canonical_record_sequence_identity(role=role, records=records)
-        )
+        if records is None:
+            return None
+        if role == "selected_passport_index":
+            try:
+                return canonical_selected_passport_identity(records)
+            except ValueError:
+                issues.append(_issue("BRC026_PASSPORT_PROJECTION_INVALID", "identity"))
+                return None
+        return canonical_record_sequence_identity(role=role, records=records)
     if encoding == "multipart_npy":
         components = row.get("components")
         if not isinstance(components, list):
