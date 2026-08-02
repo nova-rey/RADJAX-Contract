@@ -678,6 +678,12 @@ next minor publication is planned as `v0.5.0` after complete verification.
   otherwise noncanonical authority fields is rejected before it can affect a
   behavioral identity.
 
+## 2026-08-02 - B2 corridor diagnostic identity exclusion
+
+- Corridor aggregate statistic values are validated diagnostics only. The v6
+  mode-table semantic projection binds mode IDs and statistic definitions, not
+  diagnostic minimum/mean/maximum values.
+
 ## 2026-08-02 - B2 v6 static identity contract checkpoint
 
 - Added the initial checksum-closed v6 candidate assets: exact profile

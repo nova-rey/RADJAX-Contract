@@ -640,6 +640,20 @@ def _resource_semantic_identity(
         value = _read_json(root / locator, issues, "encoding")
         if value is None:
             return None
+        if role == "corridor_mode_table":
+            try:
+                modes = value["modes"]
+                projection = [
+                    {
+                        "mode_id": mode["mode_id"],
+                        "statistic_names": sorted(mode["statistics"]),
+                    }
+                    for mode in modes
+                ]
+                return sha256_identity(canonical_json_bytes({"modes": projection}))
+            except (KeyError, TypeError):
+                issues.append(_issue("BRC021_CORRIDOR_MODE_INVALID", "corridor"))
+                return None
         if role == "authority_reference":
             try:
                 return canonical_authority_reference_identity(value)
