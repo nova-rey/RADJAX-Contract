@@ -229,6 +229,54 @@ def canonical_record_sequence_identity(
     return "sha256:" + digest.hexdigest()
 
 
+def canonical_selected_passport_identity(records: list[dict[str, Any]]) -> str:
+    """Hash exactly the approved v6 passport projection, never raw rows."""
+
+    fields = (
+        "schema_version",
+        "selected_example_id",
+        "selected_position",
+        "rank",
+        "selected_score",
+        "selected_policy",
+        "corridor_mode_id",
+        "corridor_fingerprint_id",
+        "corridor_assignment_status",
+        "selection_integration_config_hash",
+    )
+    projected = []
+    for rank, row in enumerate(records, start=1):
+        if (
+            set(row) != set(fields)
+            or row.get("schema_version") != "radjax_selected_passport_v6"
+            or row.get("rank") != rank
+            or row.get("corridor_assignment_status") != "selected"
+        ):
+            raise ValueError("selected passport fields are closed")
+        projected.append({field: row[field] for field in fields})
+    return canonical_record_sequence_identity(
+        role="selected_passport_index", records=projected
+    )
+
+
+def canonical_authority_reference_identity(reference: dict[str, Any]) -> str:
+    """Hash the approved closed score/selection/delivery authority fields."""
+
+    fields = (
+        "schema_version",
+        "selection_integration_config_hash",
+        "score_pass_authority_hash",
+        "delivery_authority_hash",
+    )
+    if (
+        set(reference) != set(fields)
+        or reference.get("schema_version") != "radjax_behavioral_authority_reference_v6"
+        or any(not _identity_syntax(reference[field]) for field in fields[1:])
+    ):
+        raise ValueError("authority reference projection is invalid")
+    return sha256_identity(canonical_json_bytes(reference))
+
+
 def canonical_behavioral_source_identity(
     *,
     language_binding_digest: str,

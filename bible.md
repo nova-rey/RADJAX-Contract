@@ -663,3 +663,10 @@ next minor publication is planned as `v0.5.0` after complete verification.
 - Added only an explicit `native_v3_student_v6` branch to the established
   public resolver/opener dispatch surface. No historical profile negotiates or
   falls back to v6.
+
+## 2026-08-02 - B2 v6 resolver foundation
+
+- Added the candidate v6 resolver and verified-opening foundation on the clean
+  B2 branch. The subsequent projection correction binds its identity-bearing
+  passport and authority inputs to the approved closed field sets; no v1--v5
+  resolver behavior was edited.
