@@ -728,3 +728,10 @@ next minor publication is planned as `v0.5.0` after complete verification.
   undeclared mode, and every selected passport must agree with the assignment
   mode at its unmasked coordinate. Corridor aggregate diagnostics remain out
   of behavioral identity.
+
+## 2026-08-02 - B2 schema-closed behavioral binding
+
+- Added and checksum-pinned the v6 behavioral-resource binding schema. The
+  resolver applies it before registry resolution, so unknown binding/resource
+  fields and malformed integrity declarations fail deterministically instead
+  of entering semantic identity computation.

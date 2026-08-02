@@ -20,8 +20,12 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+from jsonschema import Draft202012Validator
 
 from radjax_contract.tome import student_consumption as _v1
+from radjax_contract.tome.contract_publication import (
+    tome_student_consumption_v6_contract_asset_path,
+)
 from radjax_contract.tome.language_tokenizer_binding_v1 import (
     canonical_json_bytes,
     validate_and_resolve_language_tokenizer_binding,
@@ -445,6 +449,9 @@ def validate_and_resolve_student_consumption_v6(
         ):
             issues.append(_issue("BRC003_PROFILE_OR_SCHEMA_UNSUPPORTED", "profile"))
             return _result(issues, warnings)
+        if not _manifest_schema_valid(manifest):
+            issues.append(_issue("BRC004_RESOURCE_REGISTRY_INVALID", "binding"))
+            return _result(issues, warnings)
         rows = manifest.get("resources")
         if not isinstance(rows, list):
             issues.append(_issue("BRC004_RESOURCE_REGISTRY_INVALID", "binding"))
@@ -684,6 +691,21 @@ def _resolve_resources(
     if seen_roles != REQUIRED_ROLES:
         issues.append(_issue("BRC012_REQUIRED_ROLE_MISSING", "binding"))
     return sorted(result, key=lambda item: (item.role, item.resource_id))
+
+
+def _manifest_schema_valid(manifest: dict[str, Any]) -> bool:
+    """Apply the checksum-closed v6 binding schema before resource admission."""
+
+    try:
+        schema = json.loads(
+            tome_student_consumption_v6_contract_asset_path(
+                "schemas/behavioral_resource_binding_v1.json"
+            ).read_text(encoding="utf-8")
+        )
+        Draft202012Validator(schema).validate(manifest)
+    except (OSError, ValueError, json.JSONDecodeError):
+        return False
+    return True
 
 
 def _components_match(root: Path, components: Any) -> bool:
