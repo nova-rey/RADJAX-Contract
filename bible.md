@@ -701,3 +701,10 @@ next minor publication is planned as `v0.5.0` after complete verification.
   issue ordering, and documented separation of raw, behavioral, and exact
   package identity. The v6 profile explicitly composes v5 and remains false
   for default new production.
+
+## 2026-08-02 - B2 honest ordinary-JSONL verified opening
+
+- Added an explicit ordinary-JSONL opener that performs the whole-member raw
+  trust transition before parsing or yielding any record, retains immutable
+  verified bytes, and rejects M7 from that API. The raw resource opener is
+  documented as a byte opener, not a record-verification promise.

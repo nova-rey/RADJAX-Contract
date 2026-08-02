@@ -10,8 +10,10 @@ replay equivalence.
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import math
+from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -530,7 +532,12 @@ def validate_and_resolve_student_consumption_v6(
 def open_verified_student_resource_v6(
     artifact: str | Path, resource_id: str, *, strict: bool = False
 ):
-    """Open an admitted v6 resource only after a second raw-byte verification."""
+    """Open immutable verified bytes for one admitted v6 resource.
+
+    This is deliberately a *byte* opener.  In particular, callers must not
+    infer record-before-yield semantics from it for a JSONL role; use
+    :func:`open_verified_student_jsonl_records_v6` for that contract.
+    """
 
     result = validate_and_resolve_student_consumption_v6(artifact, strict=strict)
     if not result.ok or result.descriptor is None:
@@ -538,27 +545,52 @@ def open_verified_student_resource_v6(
             "v6 behavioral-resource validation failed: "
             + ",".join(item.code for item in result.issues)
         )
-    resource = next(
-        (
-            item
-            for item in (
-                *result.descriptor.authority_resources,
-                *result.descriptor.non_authority_resources,
-            )
-            if item.resource_id == resource_id
-        ),
-        None,
-    )
+    resource = _find_resource(result.descriptor, resource_id)
     if resource is None:
         raise ValueError(f"unknown v6 behavioral resource: {resource_id}")
     with _v1._artifact_root(Path(artifact), [], []) as root:
         if root is None:
             raise ValueError("v6 behavioral resource transport is unavailable")
-        path = root / resource.locator
-        if not _raw_matches(path, resource.raw_sha256, resource.raw_size_bytes):
-            raise ValueError("v6 behavioral resource integrity changed at open")
-        with path.open("rb") as handle:
-            yield handle
+        yield io.BytesIO(_verified_resource_bytes(root, resource))
+
+
+@contextmanager
+def open_verified_student_jsonl_records_v6(
+    artifact: str | Path, resource_id: str, *, strict: bool = False
+) -> Iterator[Iterator[dict[str, Any]]]:
+    """Yield ordinary JSONL records only after whole-resource verification.
+
+    V6 ordinary JSONL resources carry a raw identity for the complete member,
+    not a cryptographic identity per row.  This opener therefore reads and
+    verifies every byte before parsing or yielding the first record.  The
+    returned iterator is over an immutable in-memory tuple, so a post-open
+    replacement cannot change a record after the trust transition.
+
+    M7 JSONL is intentionally rejected here: it has a distinct bounded
+    shard/index protocol and must use its dedicated opener rather than being
+    silently treated as ordinary whole-resource JSONL.
+    """
+
+    result = validate_and_resolve_student_consumption_v6(artifact, strict=strict)
+    if not result.ok or result.descriptor is None:
+        raise ValueError(
+            "v6 behavioral-resource validation failed: "
+            + ",".join(item.code for item in result.issues)
+        )
+    resource = _find_resource(result.descriptor, resource_id)
+    if resource is None:
+        raise ValueError(f"unknown v6 behavioral resource: {resource_id}")
+    if resource.encoding != "jsonl":
+        raise ValueError("v6 whole-resource JSONL opener requires encoding=jsonl")
+    with _v1._artifact_root(Path(artifact), [], []) as root:
+        if root is None:
+            raise ValueError("v6 behavioral resource transport is unavailable")
+        try:
+            payload = _verified_resource_bytes(root, resource)
+            records = tuple(_parse_jsonl_bytes(payload))
+        except ValueError as exc:
+            raise ValueError("v6 verified JSONL is invalid at open") from exc
+        yield iter(records)
 
 
 def _resolve_resources(
@@ -951,6 +983,57 @@ def _read_jsonl_path(
     except (OSError, UnicodeDecodeError, json.JSONDecodeError, ValueError):
         issues.append(_issue("BRC024_JSONL_INVALID", phase, locator=str(path)))
         return None
+
+
+def _parse_jsonl_bytes(payload: bytes) -> tuple[dict[str, Any], ...]:
+    """Parse one nonempty ordinary JSONL member after its trust transition."""
+
+    try:
+        decoded = payload.decode("utf-8")
+        lines = decoded.splitlines()
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError("JSONL decoding failed") from exc
+    if not lines or any(not line for line in lines):
+        raise ValueError("JSONL must contain nonempty object records")
+    try:
+        records = tuple(json.loads(line) for line in lines)
+    except json.JSONDecodeError as exc:
+        raise ValueError("JSONL decoding failed") from exc
+    if any(not isinstance(record, dict) for record in records):
+        raise ValueError("JSONL must contain nonempty object records")
+    return records
+
+
+def _find_resource(
+    descriptor: BehavioralAuthorityDescriptor, resource_id: str
+) -> ResolvedBehavioralResource | None:
+    return next(
+        (
+            item
+            for item in (
+                *descriptor.authority_resources,
+                *descriptor.non_authority_resources,
+            )
+            if item.resource_id == resource_id
+        ),
+        None,
+    )
+
+
+def _verified_resource_bytes(root: Path, resource: ResolvedBehavioralResource) -> bytes:
+    """Make the raw-byte trust transition once and retain immutable bytes."""
+
+    path = root / resource.locator
+    try:
+        payload = path.read_bytes()
+    except OSError as exc:
+        raise ValueError("v6 behavioral resource is unavailable at open") from exc
+    if (
+        len(payload) != resource.raw_size_bytes
+        or sha256_identity(payload) != resource.raw_sha256
+    ):
+        raise ValueError("v6 behavioral resource integrity changed at open")
+    return payload
 
 
 def _raw_matches(path: Path, digest: str, size: int) -> bool:

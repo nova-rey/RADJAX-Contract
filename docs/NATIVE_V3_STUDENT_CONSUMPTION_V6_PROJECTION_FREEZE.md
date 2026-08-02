@@ -10,10 +10,11 @@ The resource is a canonical JSONL sequence. Records are ordered strictly by
 `(rank, selected_example_id, selected_position)`, with ranks contiguous from
 `1..N`. Each canonical record contains exactly these authority fields:
 
-1. `selected_example_id`; 2. `selected_position`; 3. `rank`; 4.
-`selected_score`; 5. `selected_policy`; 6. `corridor_mode_id`; 7.
-`corridor_fingerprint_id`; 8. `corridor_assignment_status` = `"selected"`;
-9. `selection_integration_config_hash`.
+1. `schema_version` = `"radjax_selected_passport_v6"`; 2.
+`selected_example_id`; 3. `selected_position`; 4. `rank`; 5.
+`selected_score`; 6. `selected_policy`; 7. `corridor_mode_id`; 8.
+`corridor_fingerprint_id`; 9. `corridor_assignment_status` = `"selected"`;
+10. `selection_integration_config_hash`.
 
 The resource semantic identity frames each canonical record in sequence order;
 the JSONL delimiter, whitespace, physical shard, source row, source position,
@@ -49,8 +50,12 @@ either identity.
 
 `example_registry/default` and `selected_passport_index/default` have only a
 whole-resource raw identity in B2: their complete bytes are verified before
-the first record is yielded. `selected_exemplar_payload/default` uses the
-existing M7 shard/index logical record unit; a record may be yielded only after
-its shard/index evidence and record parsing have succeeded. Completion of a
-shard remains observable only at exhaustion. B2 makes no unsupported claim of
-per-record cryptographic identity for ordinary JSONL resources.
+the first record is yielded. The ordinary-JSONL public opener returns immutable
+verified bytes parsed before iteration, so a member replacement after opening
+cannot alter a yielded record. `selected_exemplar_payload/default` uses the
+existing M7 shard/index logical record unit; it must use a separate bounded
+shard/index opener rather than being silently treated as ordinary JSONL. A
+record may be yielded only after its shard/index evidence and record parsing
+have succeeded. Completion of a shard remains observable only at exhaustion.
+B2 makes no unsupported claim of per-record cryptographic identity for
+ordinary JSONL resources.

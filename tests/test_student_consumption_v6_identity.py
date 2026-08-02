@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 
 from radjax_contract.tome.student_consumption_v6 import (
+    _parse_jsonl_bytes,
     canonical_authority_reference_identity,
     canonical_behavioral_authority_digest,
     canonical_composition_digest,
@@ -140,3 +141,12 @@ def test_closed_passport_and_authority_projections_reject_extra_fields() -> None
         "delivery_authority_hash": _identity("c"),
     }
     assert canonical_authority_reference_identity(reference).startswith("sha256:")
+
+
+def test_ordinary_jsonl_parser_requires_complete_object_records() -> None:
+    records = _parse_jsonl_bytes(b'{"example_id":"a"}\n{"example_id":"b"}\n')
+    assert records == ({"example_id": "a"}, {"example_id": "b"})
+    with pytest.raises(ValueError, match="JSONL"):
+        _parse_jsonl_bytes(b'{"example_id":"a"}\nnot-json\n')
+    with pytest.raises(ValueError, match="nonempty"):
+        _parse_jsonl_bytes(b"\n")

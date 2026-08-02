@@ -121,6 +121,7 @@ from radjax_contract.tome.student_consumption_v6 import (
     BehavioralAuthorityValidationResult,
     BehavioralResourceIssue,
     ResolvedBehavioralResource,
+    open_verified_student_jsonl_records_v6,
     open_verified_student_resource_v6,
     validate_and_resolve_student_consumption_v6,
 )
@@ -173,6 +174,7 @@ __all__ = [
     "open_verified_student_resource_v3",
     "open_verified_student_resource_v4",
     "open_verified_student_resource_v6",
+    "open_verified_student_jsonl_records_v6",
     "open_verified_language_tokenizer_resource",
     "TomeBehavioralSummary",
     "TomeCompression",
