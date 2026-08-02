@@ -14,6 +14,7 @@ TOME_STUDENT_CONSUMPTION_V2_CONTRACT_PUBLICATION_VERSION = "2.0.0"
 TOME_STUDENT_CONSUMPTION_V3_CONTRACT_PUBLICATION_VERSION = "3.0.0"
 TOME_STUDENT_CONSUMPTION_V4_CONTRACT_PUBLICATION_VERSION = "4.0.0"
 TOME_STUDENT_CONSUMPTION_V5_CONTRACT_PUBLICATION_VERSION = "5.0.0"
+TOME_STUDENT_CONSUMPTION_V6_CONTRACT_PUBLICATION_VERSION = "6.0.0"
 
 
 def tome_contract_root() -> Path:
@@ -188,6 +189,32 @@ def tome_student_consumption_v5_contract_asset_path(relative_path: str) -> Path:
     return asset
 
 
+def tome_student_consumption_v6_contract_root() -> Path:
+    """Return installed v6 behavioral-resource contract assets."""
+
+    root = files("radjax_contract").joinpath(
+        "contracts", "radjax_tome", "student_consumption", "v6"
+    )
+    return Path(str(root))
+
+
+def tome_student_consumption_v6_contract_asset_path(relative_path: str) -> Path:
+    """Return one v6 asset after rejecting traversal-like resource names."""
+
+    if (
+        not relative_path
+        or relative_path.startswith("/")
+        or ".." in relative_path.split("/")
+    ):
+        raise ValueError("contract asset path must be a normalized relative path")
+    asset = tome_student_consumption_v6_contract_root() / relative_path
+    if not asset.is_file():
+        raise ValueError(
+            f"unknown v6 Student-consumption contract asset: {relative_path}"
+        )
+    return asset
+
+
 __all__ = [
     "TOME_CONTRACT_ID",
     "TOME_CONTRACT_PUBLICATION_VERSION",
@@ -198,6 +225,7 @@ __all__ = [
     "TOME_STUDENT_CONSUMPTION_V3_CONTRACT_PUBLICATION_VERSION",
     "TOME_STUDENT_CONSUMPTION_V4_CONTRACT_PUBLICATION_VERSION",
     "TOME_STUDENT_CONSUMPTION_V5_CONTRACT_PUBLICATION_VERSION",
+    "TOME_STUDENT_CONSUMPTION_V6_CONTRACT_PUBLICATION_VERSION",
     "tome_contract_asset_path",
     "tome_contract_root",
     "tome_streaming_contract_asset_path",
@@ -212,4 +240,6 @@ __all__ = [
     "tome_student_consumption_v4_contract_root",
     "tome_student_consumption_v5_contract_asset_path",
     "tome_student_consumption_v5_contract_root",
+    "tome_student_consumption_v6_contract_asset_path",
+    "tome_student_consumption_v6_contract_root",
 ]

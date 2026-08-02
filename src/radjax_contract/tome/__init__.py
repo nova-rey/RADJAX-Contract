@@ -15,6 +15,7 @@ from radjax_contract.tome.contract_publication import (
     TOME_STUDENT_CONSUMPTION_V3_CONTRACT_PUBLICATION_VERSION,
     TOME_STUDENT_CONSUMPTION_V4_CONTRACT_PUBLICATION_VERSION,
     TOME_STUDENT_CONSUMPTION_V5_CONTRACT_PUBLICATION_VERSION,
+    TOME_STUDENT_CONSUMPTION_V6_CONTRACT_PUBLICATION_VERSION,
     tome_contract_asset_path,
     tome_contract_root,
     tome_streaming_contract_asset_path,
@@ -29,6 +30,8 @@ from radjax_contract.tome.contract_publication import (
     tome_student_consumption_v4_contract_root,
     tome_student_consumption_v5_contract_asset_path,
     tome_student_consumption_v5_contract_root,
+    tome_student_consumption_v6_contract_asset_path,
+    tome_student_consumption_v6_contract_root,
 )
 from radjax_contract.tome.cover_page import (
     TomeBehavioralSummary,
@@ -131,6 +134,7 @@ __all__ = [
     "TOME_STUDENT_CONSUMPTION_V3_CONTRACT_PUBLICATION_VERSION",
     "TOME_STUDENT_CONSUMPTION_V4_CONTRACT_PUBLICATION_VERSION",
     "TOME_STUDENT_CONSUMPTION_V5_CONTRACT_PUBLICATION_VERSION",
+    "TOME_STUDENT_CONSUMPTION_V6_CONTRACT_PUBLICATION_VERSION",
     "ProductionTomeArtifact",
     "ProductionTomeInspection",
     "ProductionTomeValidationResult",
@@ -200,6 +204,8 @@ __all__ = [
     "tome_student_consumption_v4_contract_root",
     "tome_student_consumption_v5_contract_asset_path",
     "tome_student_consumption_v5_contract_root",
+    "tome_student_consumption_v6_contract_asset_path",
+    "tome_student_consumption_v6_contract_root",
     "load_production_tome",
     "valid_compression_for_payload",
     "validate_tome",

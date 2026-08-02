@@ -650,3 +650,10 @@ next minor publication is planned as `v0.5.0` after complete verification.
   authority reference before admitting them to any behavioral digest. Passport
   provenance extensions and authority aliases fail closed; included-field
   changes necessarily change the projected semantic identity.
+
+## 2026-08-02 - B2 v6 packaged-contract discovery checkpoint
+
+- Added additive v6 packaged-asset discovery and wheel inclusion plumbing;
+  historical v1--v5 discovery functions remain unchanged. The v6 asset tree
+  is still under construction and is not published, tagged, or selected by
+  any default profile.
