@@ -36,6 +36,18 @@ def test_v6_assets_are_closed_and_profile_is_schema_valid() -> None:
     Draft202012Validator(schema).validate(
         json.loads((ROOT / "profiles/native_v3_student_v6.json").read_text())
     )
+    catalog = json.loads((ROOT / "fixtures/catalog.json").read_text())
+    assert (
+        catalog["schema_version"]
+        == "radjax_student_consumption_v6_conformance_catalog_v1"
+    )
+    assert {case["id"] for case in catalog["cases"]} >= {
+        "synthetic-whole-jsonl-admission",
+        "post-admission-jsonl-tamper",
+        "invalid-exemplar-semantics",
+        "undeclared-corridor-mode",
+        "m7-early-close-state",
+    }
     assert (
         tome_student_consumption_v6_contract_asset_path("contract.json")
         == ROOT / "contract.json"

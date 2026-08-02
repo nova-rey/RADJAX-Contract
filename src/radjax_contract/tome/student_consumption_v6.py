@@ -268,6 +268,18 @@ def canonical_selected_passport_identity(records: list[dict[str, Any]]) -> str:
             or row.get("schema_version") != "radjax_selected_passport_v6"
             or row.get("rank") != rank
             or row.get("corridor_assignment_status") != "selected"
+            or not isinstance(row.get("selected_example_id"), str)
+            or not row["selected_example_id"]
+            or type(row.get("selected_position")) is not int
+            or row["selected_position"] < 0
+            or not _finite(row.get("selected_score"))
+            or not isinstance(row.get("selected_policy"), str)
+            or not row["selected_policy"]
+            or type(row.get("corridor_mode_id")) is not int
+            or row["corridor_mode_id"] < 0
+            or not isinstance(row.get("corridor_fingerprint_id"), str)
+            or not row["corridor_fingerprint_id"]
+            or not _identity_syntax(row.get("selection_integration_config_hash"))
         ):
             raise ValueError("selected passport fields are closed")
         projected.append({field: row[field] for field in fields})

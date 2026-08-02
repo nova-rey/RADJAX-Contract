@@ -417,6 +417,10 @@ def test_closed_passport_and_authority_projections_reject_extra_fields() -> None
     assert canonical_selected_passport_identity([passport]).startswith("sha256:")
     with pytest.raises(ValueError, match="closed"):
         canonical_selected_passport_identity([{**passport, "source_row": 0}])
+    with pytest.raises(ValueError, match="closed"):
+        canonical_selected_passport_identity(
+            [{**passport, "selection_integration_config_hash": "not-a-digest"}]
+        )
     reference = {
         "schema_version": "radjax_behavioral_authority_reference_v6",
         "selection_integration_config_hash": _identity("a"),

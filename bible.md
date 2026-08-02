@@ -749,3 +749,10 @@ next minor publication is planned as `v0.5.0` after complete verification.
   opener backed by Contract's established sequential M7 reader. It preserves
   shard/index verification before yield and exposes early-close versus complete
   verification state; ordinary JSONL never silently uses this protocol.
+
+## 2026-08-02 - B2 frozen-projection conformance corpus
+
+- Closed runtime validation over the exact passport field/value domains and
+  added a checksum-pinned v6 conformance catalog. Its synthetic cases are
+  explicitly Contract-only evidence, while the M7 early-close case is marked
+  as inherited protocol coverage rather than a Tome v6 producer claim.
