@@ -611,3 +611,14 @@ next minor publication is planned as `v0.5.0` after complete verification.
   (`sha256:2e6e39602460133d9c8a9c4a100e3933db5b221ed3503ae05c087d60863a2622`)
   and `radjax_contract-0.7.0.tar.gz`
   (`sha256:2214b9cc64e22e471f98f2c0218124d61701864cd109b31eee8c24e30132fcc0`).
+
+## 2026-08-02 - B2 v6 approved projection freeze
+
+- B2 restarted from the B1-recorded `bae469e` Contract base on an isolated
+  unpublished branch. Before any v6 identity-bearing schema or digest, the
+  exact selected-passport and authority-reference field sets, ordering,
+  canonicalization, exclusions, and identity consequences were frozen in the
+  v6 projection record.
+- Whole-resource verification is the honest opening unit for ordinary JSONL;
+  M7 retains its bounded shard/index record unit. Corridor aggregates remain
+  validated diagnostics and are not behavioral authority by default.
