@@ -657,3 +657,9 @@ next minor publication is planned as `v0.5.0` after complete verification.
   historical v1--v5 discovery functions remain unchanged. The v6 asset tree
   is still under construction and is not published, tagged, or selected by
   any default profile.
+
+## 2026-08-02 - B2 v6 explicit public dispatch
+
+- Added only an explicit `native_v3_student_v6` branch to the established
+  public resolver/opener dispatch surface. No historical profile negotiates or
+  falls back to v6.
