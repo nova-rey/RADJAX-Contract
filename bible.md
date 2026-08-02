@@ -611,3 +611,165 @@ next minor publication is planned as `v0.5.0` after complete verification.
   (`sha256:2e6e39602460133d9c8a9c4a100e3933db5b221ed3503ae05c087d60863a2622`)
   and `radjax_contract-0.7.0.tar.gz`
   (`sha256:2214b9cc64e22e471f98f2c0218124d61701864cd109b31eee8c24e30132fcc0`).
+
+## 2026-08-02 - B2 v6 approved projection freeze
+
+- B2 restarted from the B1-recorded `bae469e` Contract base on an isolated
+  unpublished branch. Before any v6 identity-bearing schema or digest, the
+  exact selected-passport and authority-reference field sets, ordering,
+  canonicalization, exclusions, and identity consequences were frozen in the
+  v6 projection record.
+- Whole-resource verification is the honest opening unit for ordinary JSONL;
+  M7 retains its bounded shard/index record unit. Corridor aggregates remain
+  validated diagnostics and are not behavioral authority by default.
+
+## 2026-08-02 - B2 v6 projection freeze evidence correction
+
+- Corrected the preliminary projection record using the actual historical
+  producer/model fields: v6 passports retain the evidenced rank, score,
+  policy, corridor mode/fingerprint/status, and selection-integration hash;
+  the authority reference retains closed selection, score-pass, and delivery
+  authority hashes. Unsupported conceptual fields and legacy aliases are
+  excluded before v6 schema or digest implementation.
+
+## 2026-08-02 - B2 v6 behavioral authority identity foundations
+
+- Began the explicitly approved additive `native_v3_student_v6` Contract work
+  on an unpublished B2 branch. The first foundation establishes distinct,
+  framed identities for NPY components and multipart NPY resources, canonical
+  JSONL logical record sequences, behavioral-source authority, behavioral
+  replay authority, and exact composition provenance.
+- Delivery registry entries are mechanically excluded from the behavioral
+  authority digest but included in the composition digest. No v1--v5 code,
+  profile behavior, or packaged contract asset was changed, and this is not a
+  release or a Tome/Student migration claim.
+
+## 2026-08-02 - B2 v6 exact projection identity implementation
+
+- Implemented the approved closed projections for selected passports and the
+  authority reference before admitting them to any behavioral digest. Passport
+  provenance extensions and authority aliases fail closed; included-field
+  changes necessarily change the projected semantic identity.
+
+## 2026-08-02 - B2 v6 packaged-contract discovery checkpoint
+
+- Added additive v6 packaged-asset discovery and wheel inclusion plumbing;
+  historical v1--v5 discovery functions remain unchanged. The v6 asset tree
+  is still under construction and is not published, tagged, or selected by
+  any default profile.
+
+## 2026-08-02 - B2 v6 explicit public dispatch
+
+- Added only an explicit `native_v3_student_v6` branch to the established
+  public resolver/opener dispatch surface. No historical profile negotiates or
+  falls back to v6.
+
+## 2026-08-02 - B2 v6 resolver foundation
+
+- Added the candidate v6 resolver and verified-opening foundation on the clean
+  B2 branch. The subsequent projection correction binds its identity-bearing
+  passport and authority inputs to the approved closed field sets; no v1--v5
+  resolver behavior was edited.
+
+## 2026-08-02 - B2 v6 resolver projection enforcement
+
+- Wired the approved closed passport and authority-reference projections into
+  resource semantic admission. A resource with extra, missing, aliased, or
+  otherwise noncanonical authority fields is rejected before it can affect a
+  behavioral identity.
+
+## 2026-08-02 - B2 corridor diagnostic identity exclusion
+
+- Corridor aggregate statistic values are validated diagnostics only. The v6
+  mode-table semantic projection binds mode IDs and statistic definitions, not
+  diagnostic minimum/mean/maximum values.
+
+## 2026-08-02 - B2 multipart raw-integrity enforcement
+
+- V6 multipart NPY resources now require independently declared raw digest and
+  size evidence for every component before semantic decoding or identity use.
+
+## 2026-08-02 - B2 declared multipart component opening
+
+- Target and assignment validation now opens only declared component locators;
+  no v6 component role is inferred from a fixed filename.
+
+## 2026-08-02 - B2 v6 static identity contract checkpoint
+
+- Added the initial checksum-closed v6 candidate assets: exact profile
+  negotiation, the frozen authority/non-authority role inventory, deterministic
+  issue ordering, and documented separation of raw, behavioral, and exact
+  package identity. The v6 profile explicitly composes v5 and remains false
+  for default new production.
+
+## 2026-08-02 - B2 honest ordinary-JSONL verified opening
+
+- Added an explicit ordinary-JSONL opener that performs the whole-member raw
+  trust transition before parsing or yielding any record, retains immutable
+  verified bytes, and rejects M7 from that API. The raw resource opener is
+  documented as a byte opener, not a record-verification promise.
+
+## 2026-08-02 - B2 whole-resource JSONL conformance fixture
+
+- Added a synthetic, clearly non-Tome v6 fixture that composes the immutable
+  v5 fixture and proves ordinary JSONL records are yielded only after complete
+  resource admission. A post-admission raw-member replacement fails closed.
+
+## 2026-08-02 - B2 selected-exemplar semantic admission
+
+- V6 now applies the established architecture-neutral exemplar/passport
+  semantic validator after its own coordinate joins. Dynamic top-k, probability
+  mass, selected-rank, corridor linkage, and delivery-provenance failures are
+  exposed through one deterministic v6 exemplar issue with source findings.
+
+## 2026-08-02 - B2 corridor-grid authority joins
+
+- V6 full-grid corridor assignments now fail closed when a coordinate names an
+  undeclared mode, and every selected passport must agree with the assignment
+  mode at its unmasked coordinate. Corridor aggregate diagnostics remain out
+  of behavioral identity.
+
+## 2026-08-02 - B2 schema-closed behavioral binding
+
+- Added and checksum-pinned the v6 behavioral-resource binding schema. The
+  resolver applies it before registry resolution, so unknown binding/resource
+  fields and malformed integrity declarations fail deterministically instead
+  of entering semantic identity computation.
+
+## 2026-08-02 - B2 Contract v0.8.0 preparation
+
+- Prepared local package metadata for v0.8.0 and recorded the release
+  nonclaims: no tag or publication, no default migration, no Tome or Student
+  change, and no assertion that a canonical v6 producer yet exists. The full
+  Contract test suite passed with 217 tests.
+
+## 2026-08-02 - B2 bounded M7 resource opening
+
+- Added the explicit `m7_tome_archive` v6 encoding and a separate verified
+  opener backed by Contract's established sequential M7 reader. It preserves
+  shard/index verification before yield and exposes early-close versus complete
+  verification state; ordinary JSONL never silently uses this protocol.
+
+## 2026-08-02 - B2 frozen-projection conformance corpus
+
+- Closed runtime validation over the exact passport field/value domains and
+  added a checksum-pinned v6 conformance catalog. Its synthetic cases are
+  explicitly Contract-only evidence, while the M7 early-close case is marked
+  as inherited protocol coverage rather than a Tome v6 producer claim.
+
+## 2026-08-02 - B2 independent-review M7 repairs
+
+- M7 payload admission now performs incremental exemplar semantic and join
+  validation without retaining payload records. Raw integrity hashing is
+  chunked, the schema validator exception path is deterministic, and M7
+  opening stages an exact verified archive snapshot before streaming to close
+  the validation/reopen replacement window. Added a real v6 M7 integration
+  fixture for admission, early close, full exhaustion, and tamper rejection.
+
+## 2026-08-02 - B2 M7 inner-exemplar adversarial conformance
+
+- Added a validly rehashed M7 archive whose inner exemplar violates dynamic
+  top-k semantics. The generic M7 verifier accepts its rebuilt transport and
+  integrity chain; v6 deterministically rejects it through the exemplar
+  semantic validator as `BRC027_EXEMPLAR_SEMANTICS_INVALID` with
+  `TSC052_DYNAMIC_TOPK_INVALID`.
