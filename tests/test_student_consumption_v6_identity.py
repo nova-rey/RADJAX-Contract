@@ -45,7 +45,12 @@ def _write_json(path: Path, value: object) -> None:
     path.write_text(json.dumps(value, sort_keys=True), encoding="utf-8")
 
 
-def _v6_package(tmp_path: Path, *, invalid_exemplar: bool = False) -> Path:
+def _v6_package(
+    tmp_path: Path,
+    *,
+    invalid_exemplar: bool = False,
+    unknown_assignment_mode: bool = False,
+) -> Path:
     """Build a portable whole-JSONL v6 package without claiming Tome data."""
 
     package = tmp_path / "package"
@@ -152,7 +157,13 @@ def _v6_package(tmp_path: Path, *, invalid_exemplar: bool = False) -> Path:
                 {
                     "example_index": (np.array([0, 0], dtype=np.int32), ["coordinate"]),
                     "position": (np.array([0, 1], dtype=np.int32), ["coordinate"]),
-                    "mode_id": (np.array([0, 0], dtype=np.int32), ["coordinate"]),
+                    "mode_id": (
+                        np.array(
+                            [1, 1] if unknown_assignment_mode else [0, 0],
+                            dtype=np.int32,
+                        ),
+                        ["coordinate"],
+                    ),
                     "weight": (np.array([1.0, 1.0], dtype=np.float32), ["coordinate"]),
                 },
             ),
@@ -451,3 +462,10 @@ def test_v6_reuses_exemplar_semantic_validation_for_admitted_payloads(
     assert [issue.code for issue in result.issues] == [
         "BRC027_EXEMPLAR_SEMANTICS_INVALID"
     ]
+
+
+def test_v6_rejects_full_grid_assignments_to_undeclared_modes(tmp_path: Path) -> None:
+    result = validate_and_resolve_student_consumption_v6(
+        _v6_package(tmp_path, unknown_assignment_mode=True)
+    )
+    assert [issue.code for issue in result.issues] == ["BRC028_ASSIGNMENT_MODE_UNKNOWN"]

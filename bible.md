@@ -721,3 +721,10 @@ next minor publication is planned as `v0.5.0` after complete verification.
   semantic validator after its own coordinate joins. Dynamic top-k, probability
   mass, selected-rank, corridor linkage, and delivery-provenance failures are
   exposed through one deterministic v6 exemplar issue with source findings.
+
+## 2026-08-02 - B2 corridor-grid authority joins
+
+- V6 full-grid corridor assignments now fail closed when a coordinate names an
+  undeclared mode, and every selected passport must agree with the assignment
+  mode at its unmasked coordinate. Corridor aggregate diagnostics remain out
+  of behavioral identity.

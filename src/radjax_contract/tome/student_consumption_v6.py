@@ -455,8 +455,11 @@ def validate_and_resolve_student_consumption_v6(
         by_role = {item.role: item for item in resources}
         target = _validate_target(root, by_role.get("target_shard"), issues)
         examples = _read_jsonl(root, by_role.get("example_registry"), issues)
+        mode_ids = _validate_mode_table(
+            root, by_role.get("corridor_mode_table"), issues
+        )
         assignment = _validate_assignment(
-            root, by_role.get("corridor_assignment"), target, issues
+            root, by_role.get("corridor_assignment"), target, mode_ids, issues
         )
         passports = _read_jsonl(root, by_role.get("selected_passport_index"), issues)
         exemplars = _read_jsonl(root, by_role.get("selected_exemplar_payload"), issues)
@@ -469,7 +472,6 @@ def validate_and_resolve_student_consumption_v6(
             language.descriptor.vocabulary["vocabulary_size"],
             issues,
         )
-        _validate_mode_table(root, by_role.get("corridor_mode_table"), issues)
         _validate_delivery_receipt(root, by_role.get("delivery_receipt"), issues)
         if target is None or examples is None or assignment is None or issues:
             return _result(issues, warnings)
@@ -826,6 +828,7 @@ def _validate_assignment(
     root: Path,
     resource: ResolvedBehavioralResource | None,
     target: tuple[np.ndarray, np.ndarray] | None,
+    declared_mode_ids: set[int] | None,
     issues: list[BehavioralResourceIssue],
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray] | None:
     if resource is None or target is None or resource.encoding != "multipart_npy":
@@ -852,6 +855,11 @@ def _validate_assignment(
         or np.any(weight < 0)
     ):
         issues.append(_issue("BRC016_ASSIGNMENT_INVALID", "encoding"))
+        return None
+    if declared_mode_ids is None or any(
+        int(value) not in declared_mode_ids for value in mode_id
+    ):
+        issues.append(_issue("BRC028_ASSIGNMENT_MODE_UNKNOWN", "corridor"))
         return None
     n, length = target[0].shape
     expected_example = np.repeat(np.arange(n, dtype=np.int32), length)
@@ -892,6 +900,12 @@ def _validate_selected_coordinates(
         issues.append(_issue("BRC018_EXAMPLE_REGISTRY_INVALID", "structural_join"))
         return
     seen: set[tuple[str, int]] = set()
+    assignment_modes = {
+        (ids[int(example_index)], int(position)): int(mode_id)
+        for example_index, position, mode_id in zip(
+            assignment[0], assignment[1], assignment[2], strict=True
+        )
+    }
     for record in passports:
         key = _selected_key(record)
         if key is None or key in seen or key[0] not in index:
@@ -903,6 +917,8 @@ def _validate_selected_coordinates(
             issues.append(
                 _issue("BRC020_SELECTED_MASKED_OR_OUT_OF_RANGE", "structural_join")
             )
+        elif record.get("corridor_mode_id") != assignment_modes[key]:
+            issues.append(_issue("BRC029_SELECTED_MODE_MISMATCH", "corridor"))
     exemplar_keys = {_selected_key(record) for record in exemplars}
     if None in exemplar_keys or exemplar_keys != seen:
         issues.append(_issue("BRC019_SELECTED_JOIN_INVALID", "exemplar"))
@@ -931,22 +947,22 @@ def _validate_mode_table(
     root: Path,
     resource: ResolvedBehavioralResource | None,
     issues: list[BehavioralResourceIssue],
-) -> None:
+) -> set[int] | None:
     if resource is None:
-        return
+        return None
     table = _read_json(root / resource.locator, issues, "corridor")
     if table is None:
-        return
+        return None
     modes = table.get("modes")
     if not isinstance(modes, list) or not modes:
         issues.append(_issue("BRC021_CORRIDOR_MODE_INVALID", "corridor"))
-        return
+        return None
     required = {"entropy", "top1_margin", "top8_mass", "top32_mass", "tail_mass"}
     for mode in modes:
         stats = mode.get("statistics") if isinstance(mode, dict) else None
         if not isinstance(stats, dict) or set(stats) != required:
             issues.append(_issue("BRC021_CORRIDOR_MODE_INVALID", "corridor"))
-            return
+            return None
         try:
             values = {name: stats[name] for name in required}
             if any(
@@ -964,7 +980,14 @@ def _validate_mode_table(
                 raise ValueError
         except (KeyError, TypeError, ValueError):
             issues.append(_issue("BRC021_CORRIDOR_MODE_INVALID", "corridor"))
-            return
+            return None
+    mode_ids = [mode.get("mode_id") for mode in modes]
+    if any(type(mode_id) is not int or mode_id < 0 for mode_id in mode_ids) or len(
+        set(mode_ids)
+    ) != len(mode_ids):
+        issues.append(_issue("BRC021_CORRIDOR_MODE_INVALID", "corridor"))
+        return None
+    return set(mode_ids)
 
 
 def _validate_delivery_receipt(
