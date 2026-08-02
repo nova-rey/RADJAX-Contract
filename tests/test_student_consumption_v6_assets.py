@@ -48,6 +48,7 @@ def test_v6_assets_are_closed_and_profile_is_schema_valid() -> None:
         "undeclared-corridor-mode",
         "v6-m7-admission-streaming-and-tamper",
         "v6-m7-open-toctou",
+        "v6-m7-inner-exemplar-mutation",
     }
     assert (
         tome_student_consumption_v6_contract_asset_path("contract.json")

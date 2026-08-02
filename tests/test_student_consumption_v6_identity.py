@@ -2,15 +2,22 @@
 
 from __future__ import annotations
 
+import io
 import json
 import shutil
+import tarfile
+from gzip import GzipFile
 from pathlib import Path
 
 import numpy as np
 import pytest
 
+from radjax_contract.tome import streaming_validation as m7_validation
 from radjax_contract.tome import student_consumption_v6 as v6_module
-from radjax_contract.tome.streaming_validation import open_streaming_tome
+from radjax_contract.tome.streaming_validation import (
+    open_streaming_tome,
+    validate_streaming_tome,
+)
 from radjax_contract.tome.student_consumption_v6 import (
     AUTHORITY_ROLES,
     ResolvedBehavioralResource,
@@ -421,6 +428,122 @@ def _authority_registry() -> list[dict[str, str]]:
     ]
 
 
+def _mutated_inner_exemplar_archive(tmp_path: Path) -> Path:
+    """Rebuild a valid M7 archive whose payload fails only v6 semantics."""
+
+    root = tmp_path / "m7"
+    with tarfile.open(M7_FIXTURE, "r:gz") as archive:
+        archive.extractall(root, filter="data")
+    shard_path = root / "selected_exemplars/shards/shard-00000.jsonl"
+    records = [json.loads(line) for line in shard_path.read_text().splitlines()]
+    records[0]["top_probs"][0] = 0.0
+    shard_path.write_text(
+        "".join(json.dumps(record, sort_keys=True) + "\n" for record in records),
+        encoding="utf-8",
+    )
+
+    def digest(path: Path) -> tuple[str, int]:
+        return _raw(path)
+
+    shard_digest, shard_size = digest(shard_path)
+    sequence = m7_validation._SequenceDigest()
+    index_path = root / "selected_exemplars/payload-index.jsonl"
+    index_rows = [json.loads(line) for line in index_path.read_text().splitlines()]
+    for row, record in zip(index_rows, records, strict=True):
+        logical_id, semantic = m7_validation._semantic_record(record)
+        row["logical_id"] = logical_id
+        row["payload_sha256"] = m7_validation._canonical(record)
+        row["payload_semantic_digest"] = semantic
+        row["shard_sha256"] = shard_digest
+        sequence.add({"logical_id": logical_id, "payload_semantic_digest": semantic})
+    sequence_digest = sequence.finish()
+    index_path.write_text(
+        "".join(json.dumps(row, sort_keys=True) + "\n" for row in index_rows),
+        encoding="utf-8",
+    )
+    index_digest, index_size = digest(index_path)
+    shard_index_path = root / "selected_exemplars/payload-shards.jsonl"
+    shard_index = json.loads(shard_index_path.read_text())
+    shard_index.update(
+        {
+            "sha256": shard_digest,
+            "size_bytes": shard_size,
+            "semantic_digest": sequence_digest,
+        }
+    )
+    shard_index_path.write_text(json.dumps(shard_index, sort_keys=True) + "\n")
+    shard_index_digest, shard_index_size = digest(shard_index_path)
+    layout_path = root / "selected_exemplars/payload-layout.json"
+    layout = json.loads(layout_path.read_text())
+    layout["sequence_digest"] = sequence_digest
+    layout["payload_index"].update({"sha256": index_digest, "size_bytes": index_size})
+    layout["shard_index"].update(
+        {"sha256": shard_index_digest, "size_bytes": shard_index_size}
+    )
+    layout_path.write_text(json.dumps(layout, sort_keys=True))
+
+    cover_path = root / "cover_page.json"
+    cover = json.loads(cover_path.read_text())
+    cover["identity"]["payload_sequence_digest"] = sequence_digest
+    cover["identity"]["semantic_digest"] = m7_validation._canonical(
+        {
+            key: value
+            for key, value in cover["identity"].items()
+            if key != "semantic_digest"
+        }
+    )
+    cover_path.write_text(json.dumps(cover, sort_keys=True))
+
+    inventory_path = root / "manifests/content-manifest-inventory.jsonl"
+    inventory = [json.loads(line) for line in inventory_path.read_text().splitlines()]
+    for entry in inventory:
+        path = root / entry["path"]
+        entry["sha256"], entry["size_bytes"] = digest(path)
+    inventory_path.write_text(
+        "".join(json.dumps(entry, sort_keys=True) + "\n" for entry in inventory),
+        encoding="utf-8",
+    )
+    inventory_digest, inventory_size = digest(inventory_path)
+    header_path = root / "manifests/content-manifest-header.json"
+    header = json.loads(header_path.read_text())
+    header.update(
+        {
+            "inventory_sha256": inventory_digest,
+            "inventory_size_bytes": inventory_size,
+            "semantic_identity_digest": cover["identity"]["semantic_digest"],
+        }
+    )
+    header_path.write_text(json.dumps(header, sort_keys=True))
+    header_digest, header_size = digest(header_path)
+    cover["manifests"]["header"].update(
+        {"sha256": header_digest, "size_bytes": header_size}
+    )
+    cover_path.write_text(json.dumps(cover, sort_keys=True))
+
+    output = tmp_path / "mutated.tgz"
+    with (
+        output.open("wb") as raw,
+        GzipFile(filename="", fileobj=raw, mode="wb", mtime=0) as gzip,
+    ):
+        with tarfile.open(fileobj=gzip, mode="w") as archive:
+            ordered = [
+                root / "cover_page.json",
+                root / "manifests/content-manifest-header.json",
+                root / "manifests/content-manifest-inventory.jsonl",
+                *(root / entry["path"] for entry in inventory),
+            ]
+            for path in ordered:
+                payload = path.read_bytes()
+                member = tarfile.TarInfo(path.relative_to(root).as_posix())
+                member.size = len(payload)
+                member.mtime = 0
+                member.uid = member.gid = 0
+                member.uname = member.gname = ""
+                member.mode = 0o644
+                archive.addfile(member, io.BytesIO(payload))
+    return output
+
+
 def test_npy_component_identity_frames_semantic_metadata_and_values() -> None:
     array = np.array([[1, 2]], dtype=np.int32)
     baseline = canonical_npy_component_identity(
@@ -642,3 +765,17 @@ def test_v6_m7_opener_rejects_replacement_after_resolver_admission(
             package, "selected_exemplar_payload/default"
         ):
             pass
+
+
+def test_v6_m7_inner_exemplar_semantic_mutation_reaches_v6_validator(
+    tmp_path: Path,
+) -> None:
+    archive = _mutated_inner_exemplar_archive(tmp_path)
+    assert validate_streaming_tome(archive).ok
+    result = validate_and_resolve_student_consumption_v6(
+        _v6_package(tmp_path / "package", m7_archive=archive)
+    )
+    assert [issue.code for issue in result.issues] == [
+        "BRC027_EXEMPLAR_SEMANTICS_INVALID"
+    ]
+    assert result.issues[0].context["findings"] == ["TSC052_DYNAMIC_TOPK_INVALID"]

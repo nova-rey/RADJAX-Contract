@@ -765,3 +765,11 @@ next minor publication is planned as `v0.5.0` after complete verification.
   opening stages an exact verified archive snapshot before streaming to close
   the validation/reopen replacement window. Added a real v6 M7 integration
   fixture for admission, early close, full exhaustion, and tamper rejection.
+
+## 2026-08-02 - B2 M7 inner-exemplar adversarial conformance
+
+- Added a validly rehashed M7 archive whose inner exemplar violates dynamic
+  top-k semantics. The generic M7 verifier accepts its rebuilt transport and
+  integrity chain; v6 deterministically rejects it through the exemplar
+  semantic validator as `BRC027_EXEMPLAR_SEMANTICS_INVALID` with
+  `TSC052_DYNAMIC_TOPK_INVALID`.
