@@ -106,6 +106,39 @@ class ResolvedBehavioralResource:
 
 
 @dataclass(frozen=True)
+class VerifiedStudentResourceComponentV6:
+    """One admitted multipart declaration with a bounded read-only stream."""
+
+    schema_version: str
+    profile_id: str
+    resource_id: str
+    component_id: str
+    resource_role: str
+    resource_schema: str
+    resource_encoding: str
+    resource_semantic_identity: str
+    axes: tuple[str, ...]
+    raw_sha256: str
+    raw_size_bytes: int
+    content: io.BufferedReader = field(repr=False, compare=False)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema_version": self.schema_version,
+            "profile_id": self.profile_id,
+            "resource_id": self.resource_id,
+            "component_id": self.component_id,
+            "resource_role": self.resource_role,
+            "resource_schema": self.resource_schema,
+            "resource_encoding": self.resource_encoding,
+            "resource_semantic_identity": self.resource_semantic_identity,
+            "axes": list(self.axes),
+            "raw_sha256": self.raw_sha256,
+            "raw_size_bytes": self.raw_size_bytes,
+        }
+
+
+@dataclass(frozen=True)
 class BehavioralAuthorityDescriptor:
     """Resolved v6 identities with replay and exact-package domains separate."""
 
@@ -641,6 +674,61 @@ def open_verified_student_resource_v6(
         if root is None:
             raise ValueError("v6 behavioral resource transport is unavailable")
         yield io.BytesIO(_verified_resource_bytes(root, resource))
+
+
+@contextmanager
+def open_verified_student_resource_component_v6(
+    artifact: str | Path,
+    resource_id: str,
+    component_id: str,
+    *,
+    profile_id: str = PROFILE_ID,
+    strict: bool = True,
+) -> Iterator[VerifiedStudentResourceComponentV6]:
+    """Open one declared multipart component after exact strict v6 admission."""
+
+    if profile_id != PROFILE_ID:
+        raise ValueError(f"unsupported component opener profile: {profile_id}")
+    if not strict:
+        raise ValueError("v6 component opening requires strict admission")
+    result = validate_and_resolve_student_consumption_v6(artifact, strict=True)
+    if not result.ok or result.descriptor is None:
+        raise ValueError(
+            "v6 component opening admission failed: "
+            + ",".join(item.code for item in result.issues)
+        )
+    resource = _find_resource(result.descriptor, resource_id)
+    if resource is None:
+        raise ValueError(f"unknown v6 behavioral resource: {resource_id}")
+    if resource.encoding != "multipart_npy":
+        raise ValueError("v6 component opener requires a multipart resource")
+    component = _find_component(resource, component_id)
+    if component is None:
+        raise ValueError(
+            f"unknown component {component_id!r} for v6 resource {resource_id!r}"
+        )
+    with _v1._artifact_root(Path(artifact), [], []) as root:
+        if root is None:
+            raise ValueError("v6 component transport is unavailable")
+        payload = _verified_component_bytes(root, resource, component)
+        stream = io.BufferedReader(io.BytesIO(payload))
+        try:
+            yield VerifiedStudentResourceComponentV6(
+                "radjax_verified_student_resource_component_v6",
+                PROFILE_ID,
+                resource.resource_id,
+                component_id,
+                resource.role,
+                resource.schema,
+                resource.encoding,
+                resource.semantic_identity,
+                tuple(component["axes"]),
+                component["raw_sha256"],
+                component["raw_size_bytes"],
+                stream,
+            )
+        finally:
+            stream.close()
 
 
 @contextmanager
@@ -1318,6 +1406,57 @@ def _find_resource(
         ),
         None,
     )
+
+
+def _find_component(
+    resource: ResolvedBehavioralResource, component_id: str
+) -> dict[str, Any] | None:
+    if not isinstance(component_id, str) or not component_id:
+        return None
+    return next(
+        (
+            component
+            for component in resource.components
+            if component.get("component") == component_id
+        ),
+        None,
+    )
+
+
+def _verified_component_bytes(
+    root: Path,
+    resource: ResolvedBehavioralResource,
+    component: dict[str, Any],
+) -> bytes:
+    """Recheck one admitted component before exposing immutable bytes."""
+
+    locator = component.get("locator")
+    component_id = component.get("component")
+    axes = component.get("axes")
+    digest = component.get("raw_sha256")
+    size = component.get("raw_size_bytes")
+    if (
+        resource.encoding != "multipart_npy"
+        or component not in resource.components
+        or not isinstance(component_id, str)
+        or not component_id
+        or not isinstance(locator, str)
+        or not _v1._safe(locator)
+        or not isinstance(axes, list)
+        or not axes
+        or any(not isinstance(axis, str) or not axis for axis in axes)
+        or not _identity_syntax(digest)
+        or type(size) is not int
+        or size < 0
+    ):
+        raise ValueError("v6 component declaration is invalid at open")
+    try:
+        payload = (root / locator).read_bytes()
+    except OSError as exc:
+        raise ValueError("v6 component is unavailable at open") from exc
+    if len(payload) != size or sha256_identity(payload) != digest:
+        raise ValueError("v6 component integrity changed at open")
+    return payload
 
 
 def _verified_resource_bytes(root: Path, resource: ResolvedBehavioralResource) -> bytes:

@@ -60,6 +60,13 @@ directory or `.tgz` and verifies that the returned binding digest equals the
 admitted v6 composition descriptor. It does not negotiate a historical profile
 or expose a temporary archive extraction path.
 
+Declared v6 multipart components are available through
+`open_verified_student_resource_component_v6()`. The strict-only context
+manager returns a typed declaration and bounded read-only content stream after
+the complete v6 artifact, resource semantic identity, component locator, raw
+size, and raw SHA-256 have been verified. The public result omits physical and
+temporary locators; callers remain responsible for decoding the verified bytes.
+
 ## Legacy Tome Contract
 
 A legacy v0 Tome is a portable teacher-output artifact directory:

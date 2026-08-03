@@ -788,3 +788,29 @@ next minor publication is planned as `v0.5.0` after complete verification.
   project the same canonical language binding digest.
 - Advanced additive package metadata to `radjax-contract` 0.8.1 without v6
   schema, semantic identity, profile-default, or historical v5 API changes.
+
+## 2026-08-03 - P5.3 strict v6 multipart component opening
+
+- Added `open_verified_student_resource_component_v6()` and the typed
+  `VerifiedStudentResourceComponentV6` result. The strict exact-v6 context
+  manager selects only a component declared by an admitted multipart resource,
+  reuses Contract's existing safe artifact root, and rechecks raw size and
+  SHA-256 before yielding a bounded read-only stream.
+- The public result carries resource/component identity, role, schema,
+  encoding, axes, resource semantic identity, raw digest, and raw size. It
+  deliberately omits physical member and temporary extraction locators, and
+  leaves byte decoding to Student.
+- Proved directory/archive byte equivalence, resource and component selection,
+  locator/size/byte tamper rejection, post-admission replacement rejection,
+  historical-profile and non-strict rejection, inherited archive safety and
+  limits, and installed-wheel visibility. The full Contract suite passes with
+  250 tests.
+- Against Tome `8508b1351d0ed8d6a3a14049e4d6f8a849c33cf1`, every declared
+  `target_shard/default` component opens identically from `student/` and
+  `student.tgz`: `attention_mask` is 160 bytes at
+  `sha256:675a218989692894cb472ebb39984e1e7a83fab33ecc78a416a8629a475e1f89`,
+  and `input_ids` is 256 bytes at
+  `sha256:7d09f5ad2928dfeb3a7fa8c9d21afe25c0f2a2db30b2f1a8f2b1b79fea35e893`.
+- Advanced additive package metadata to `radjax-contract` 0.8.2 without v6
+  schema, semantic identity, archive reader, decoder, or historical API
+  changes.
