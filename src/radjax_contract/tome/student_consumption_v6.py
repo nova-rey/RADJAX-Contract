@@ -16,7 +16,7 @@ import math
 import tempfile
 from collections.abc import Iterator
 from contextlib import contextmanager
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -28,6 +28,7 @@ from radjax_contract.tome.contract_publication import (
     tome_student_consumption_v6_contract_asset_path,
 )
 from radjax_contract.tome.language_tokenizer_binding_v1 import (
+    LanguageTokenizerBindingDescriptor,
     canonical_json_bytes,
     validate_and_resolve_language_tokenizer_binding,
 )
@@ -143,6 +144,9 @@ class BehavioralAuthorityValidationResult:
     issues: tuple[BehavioralResourceIssue, ...]
     warnings: tuple[BehavioralResourceIssue, ...]
     descriptor: BehavioralAuthorityDescriptor | None
+    _language_binding: LanguageTokenizerBindingDescriptor | None = field(
+        default=None, repr=False, compare=False
+    )
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -155,6 +159,30 @@ class BehavioralAuthorityValidationResult:
             if self.descriptor is None
             else self.descriptor.to_dict(),
         }
+
+
+def resolve_student_language_binding(
+    artifact: str | Path,
+    *,
+    profile_id: str = PROFILE_ID,
+    strict: bool = True,
+) -> LanguageTokenizerBindingDescriptor:
+    """Return the v5 language binding subordinate to one strict v6 admission."""
+
+    if profile_id != PROFILE_ID:
+        raise ValueError(f"unsupported language projection profile: {profile_id}")
+    if not strict:
+        raise ValueError("v6 language projection requires strict admission")
+    result = validate_and_resolve_student_consumption_v6(artifact, strict=True)
+    if not result.ok or result.descriptor is None or result._language_binding is None:
+        raise ValueError(
+            "v6 language projection admission failed: "
+            + ",".join(item.code for item in result.issues)
+        )
+    language = result._language_binding
+    if language.canonical_binding_digest != result.descriptor.language_binding_digest:
+        raise ValueError("v6 language projection digest mismatch")
+    return language
 
 
 def sha256_identity(payload: bytes) -> str:
@@ -583,6 +611,7 @@ def validate_and_resolve_student_consumption_v6(
                     "not_an_architecture_descriptor",
                 ),
             ),
+            language.descriptor,
         )
 
 
@@ -1392,6 +1421,7 @@ def _result(
     issues: list[BehavioralResourceIssue],
     warnings: list[BehavioralResourceIssue],
     descriptor: BehavioralAuthorityDescriptor | None = None,
+    language_binding: LanguageTokenizerBindingDescriptor | None = None,
 ) -> BehavioralAuthorityValidationResult:
     order = {phase: index for index, phase in enumerate(_PHASES)}
     ordered = tuple(
@@ -1403,4 +1433,5 @@ def _result(
         ordered,
         tuple(warnings),
         descriptor if not ordered else None,
+        language_binding if not ordered else None,
     )

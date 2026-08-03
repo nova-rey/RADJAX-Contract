@@ -52,6 +52,14 @@ boundary data.
 The original `qrwkv-xla` repository is historical source material for the split
 and is not modified by this Contract hardening phase.
 
+For an exact `native_v3_student_v6` artifact, Student can obtain the complete
+typed v5 language/tokenizer descriptor with
+`resolve_student_language_binding(artifact, profile_id="native_v3_student_v6",
+strict=True)`. The accessor performs one strict v6 admission for either a
+directory or `.tgz` and verifies that the returned binding digest equals the
+admitted v6 composition descriptor. It does not negotiate a historical profile
+or expose a temporary archive extraction path.
+
 ## Legacy Tome Contract
 
 A legacy v0 Tome is a portable teacher-output artifact directory:

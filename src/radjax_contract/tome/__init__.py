@@ -124,6 +124,7 @@ from radjax_contract.tome.student_consumption_v6 import (
     open_verified_student_jsonl_records_v6,
     open_verified_student_m7_payload_v6,
     open_verified_student_resource_v6,
+    resolve_student_language_binding,
     validate_and_resolve_student_consumption_v6,
 )
 from radjax_contract.tome.validation import (
@@ -235,4 +236,5 @@ __all__ = [
     "validate_and_resolve_student_consumption_v4",
     "validate_and_resolve_student_consumption_v6",
     "validate_and_resolve_language_tokenizer_binding",
+    "resolve_student_language_binding",
 ]

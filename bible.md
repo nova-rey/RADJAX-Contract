@@ -773,3 +773,18 @@ next minor publication is planned as `v0.5.0` after complete verification.
   integrity chain; v6 deterministically rejects it through the exemplar
   semantic validator as `BRC027_EXEMPLAR_SEMANTICS_INVALID` with
   `TSC052_DYNAMIC_TOPK_INVALID`.
+
+## 2026-08-03 - P5.U1 strict v6 language projection
+
+- Added `resolve_student_language_binding()` as an exact-profile, strict-only
+  public projection over one authoritative v6 admission. It returns the
+  already-validated `LanguageTokenizerBindingDescriptor` and fails closed if
+  its canonical digest differs from the admitted v6 descriptor.
+- Proved canonical directory and `.tgz` parity, embedded-binding and projected
+  digest tamper rejection, historical-profile exclusion, inherited archive
+  safety and size limits, absence of temporary extraction paths, and installed
+  wheel visibility. The full Contract suite passes with 230 tests; the exact
+  Tome P5.U1 fixtures at `8508b1351d0ed8d6a3a14049e4d6f8a849c33cf1`
+  project the same canonical language binding digest.
+- Advanced additive package metadata to `radjax-contract` 0.8.1 without v6
+  schema, semantic identity, profile-default, or historical v5 API changes.
