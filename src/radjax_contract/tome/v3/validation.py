@@ -26,7 +26,7 @@ from radjax_contract.tome.v3.schema import (
     normalize_policy,
     normalize_semantic_record,
 )
-from radjax_contract.tome.v3.strict_json import load_jsonl, loads
+from radjax_contract.tome.v3.strict_json import NumberLexeme, load_jsonl, loads
 
 _FIXED = frozenset(
     {
@@ -70,6 +70,29 @@ def _safe(relative: str) -> str:
             "member_path_unsafe", phase=ValidationPhaseV3.DISCOVERY
         )
     return relative
+
+
+def _wire_int(
+    value: Any, *, phase: ValidationPhaseV3, code: str, minimum: int = 0
+) -> int:
+    """Normalize a JSON integer lexeme for nonsemantic closed wire fields."""
+
+    if isinstance(value, NumberLexeme):
+        spelling = str(value)
+        if (
+            not spelling
+            or spelling.startswith("+")
+            or "." in spelling
+            or "e" in spelling.lower()
+        ):
+            raise TomeV3ValidationError(code, phase=phase)
+        try:
+            value = int(spelling)
+        except ValueError as exc:
+            raise TomeV3ValidationError(code, phase=phase) from exc
+    if not isinstance(value, int) or isinstance(value, bool) or value < minimum:
+        raise TomeV3ValidationError(code, phase=phase)
+    return value
 
 
 def _discover(root: Path) -> dict[str, Path]:
@@ -123,13 +146,12 @@ def _reference(
     if (
         not isinstance(value["sha256"], str)
         or not value["sha256"].startswith("sha256:")
-        or not isinstance(value["size_bytes"], int)
-        or value["size_bytes"] < 0
         or not isinstance(value["schema_version"], str)
     ):
         raise TomeV3ValidationError("reference_invalid", phase=phase)
+    _wire_int(value["size_bytes"], phase=phase, code="reference_invalid")
     if index and (
-        not isinstance(value["record_count"], int) or value["record_count"] < 0
+        _wire_int(value["record_count"], phase=phase, code="reference_invalid") < 0
     ):
         raise TomeV3ValidationError("reference_invalid", phase=phase)
     return value
@@ -147,7 +169,9 @@ def _verify_ref(
             "referenced_member_missing", phase=phase, location=path
         )
     raw = members[path].read_bytes()
-    if _sha(raw) != reference["sha256"] or len(raw) != reference["size_bytes"]:
+    if _sha(raw) != reference["sha256"] or len(raw) != _wire_int(
+        reference["size_bytes"], phase=phase, code="reference_invalid"
+    ):
         raise TomeV3ValidationError(
             "referenced_member_corrupt", phase=phase, location=path
         )
@@ -271,7 +295,11 @@ def _validate_root(
     inventory_rows = load_jsonl(
         members[inventory_ref["path"]].read_bytes(), phase=ValidationPhaseV3.GRAPH
     )
-    if len(inventory_rows) != header["entry_count"]:
+    if len(inventory_rows) != _wire_int(
+        header["entry_count"],
+        phase=ValidationPhaseV3.GRAPH,
+        code="inventory_count_mismatch",
+    ):
         raise TomeV3ValidationError(
             "inventory_count_mismatch", phase=ValidationPhaseV3.GRAPH
         )
@@ -305,7 +333,12 @@ def _validate_root(
         if (
             path not in members
             or _sha(members[path].read_bytes()) != row["sha256"]
-            or len(members[path].read_bytes()) != row["size_bytes"]
+            or len(members[path].read_bytes())
+            != _wire_int(
+                row["size_bytes"],
+                phase=ValidationPhaseV3.GRAPH,
+                code="inventory_row_invalid",
+            )
         ):
             raise TomeV3ValidationError(
                 "inventory_member_mismatch",
@@ -332,6 +365,33 @@ def _validate_root(
             members,
             _reference(header[name], phase=ValidationPhaseV3.GRAPH),
             phase=ValidationPhaseV3.GRAPH,
+        )
+    if (
+        header["capabilities_ref"] != cover["capabilities_ref"]
+        or header["semantic_identity_ref"] != cover["semantic_identity_ref"]
+    ):
+        raise TomeV3ValidationError(
+            "cover_header_reference_mismatch", phase=ValidationPhaseV3.GRAPH
+        )
+    capabilities = _load(
+        members[cover["capabilities_ref"]["path"]], phase=ValidationPhaseV3.GRAPH
+    )
+    _closed(
+        capabilities,
+        {"schema_version", "required", "optional"},
+        phase=ValidationPhaseV3.GRAPH,
+        code="capabilities_invalid",
+    )
+    if (
+        capabilities["schema_version"] != "radjax_tome_capabilities_v1"
+        or not isinstance(capabilities["required"], list)
+        or not isinstance(capabilities["optional"], list)
+        or not {"standard_integrity_v3", "streaming_shard_receipts_v3"}.issubset(
+            capabilities["required"]
+        )
+    ):
+        raise TomeV3ValidationError(
+            "capabilities_invalid", phase=ValidationPhaseV3.GRAPH
         )
     identity = _load(
         members[cover["semantic_identity_ref"]["path"]],
@@ -361,6 +421,17 @@ def _validate_root(
         raise TomeV3ValidationError(
             "semantic_identity_binding_mismatch", phase=ValidationPhaseV3.SEMANTIC_ROOT
         )
+    identity["record_count"] = _wire_int(
+        identity["record_count"],
+        phase=ValidationPhaseV3.SEMANTIC_ROOT,
+        code="semantic_identity_invalid",
+    )
+    cover["record_count"] = _wire_int(
+        cover["record_count"], phase=ValidationPhaseV3.INDEXES, code="cover_invalid"
+    )
+    cover["shard_count"] = _wire_int(
+        cover["shard_count"], phase=ValidationPhaseV3.INDEXES, code="cover_invalid"
+    )
     authority = normalize_authority(
         _load(
             members[cover["semantic_authority_ref"]["path"]],
@@ -396,6 +467,13 @@ def _validate_root(
     _closed(
         layout, layout_fields, phase=ValidationPhaseV3.INDEXES, code="layout_invalid"
     )
+    if layout["semantic_identity_ref"] != cover["semantic_identity_ref"]:
+        raise TomeV3ValidationError(
+            "layout_identity_reference_mismatch", phase=ValidationPhaseV3.INDEXES
+        )
+    layout["record_count"] = _wire_int(
+        layout["record_count"], phase=ValidationPhaseV3.INDEXES, code="layout_invalid"
+    )
     if (
         layout["schema_version"] != "radjax_tome_payload_layout_v2"
         or layout["record_count"] != identity["record_count"]
@@ -417,7 +495,12 @@ def _validate_root(
     )
     if (
         len(payload_rows) != identity["record_count"]
-        or payload_ref["record_count"] != identity["record_count"]
+        or _wire_int(
+            payload_ref["record_count"],
+            phase=ValidationPhaseV3.INDEXES,
+            code="payload_index_count_mismatch",
+        )
+        != identity["record_count"]
     ):
         raise TomeV3ValidationError(
             "payload_index_count_mismatch", phase=ValidationPhaseV3.INDEXES
@@ -434,12 +517,23 @@ def _validate_root(
             phase=ValidationPhaseV3.INDEXES,
             code="payload_index_row_invalid",
         )
-        if (
-            row["selection_index"] != expected_index
-            or not isinstance(row["row"], int)
-            or row["row"] < 0
-            or not isinstance(row["shard_id"], str)
-            or not isinstance(row["logical_record_id"], str)
+        row["selection_index"] = _wire_int(
+            row["selection_index"],
+            phase=ValidationPhaseV3.INDEXES,
+            code="payload_index_order_invalid",
+        )
+        row["row"] = _wire_int(
+            row["row"],
+            phase=ValidationPhaseV3.INDEXES,
+            code="payload_index_order_invalid",
+        )
+        row["shard_id"] = _wire_int(
+            row["shard_id"],
+            phase=ValidationPhaseV3.INDEXES,
+            code="payload_index_order_invalid",
+        )
+        if row["selection_index"] != expected_index or not isinstance(
+            row["logical_record_id"], str
         ):
             raise TomeV3ValidationError(
                 "payload_index_order_invalid", phase=ValidationPhaseV3.INDEXES
@@ -450,7 +544,7 @@ def _validate_root(
     )
     shard_sources: list[tuple[Path, dict[str, Any]]] = []
     expected_first = 0
-    for row in shard_rows:
+    for expected_shard_id, row in enumerate(shard_rows):
         if not isinstance(row, Mapping):
             raise TomeV3ValidationError(
                 "shard_receipt_invalid", phase=ValidationPhaseV3.INDEXES
@@ -468,7 +562,31 @@ def _validate_root(
             phase=ValidationPhaseV3.INDEXES,
             code="shard_receipt_invalid",
         )
-        if row["first_selection_index"] != expected_first or row["path"] not in members:
+        row["shard_id"] = _wire_int(
+            row["shard_id"],
+            phase=ValidationPhaseV3.INDEXES,
+            code="shard_receipt_invalid",
+        )
+        row["first_selection_index"] = _wire_int(
+            row["first_selection_index"],
+            phase=ValidationPhaseV3.INDEXES,
+            code="shard_receipt_invalid",
+        )
+        row["record_count"] = _wire_int(
+            row["record_count"],
+            phase=ValidationPhaseV3.INDEXES,
+            code="shard_receipt_invalid",
+        )
+        row["size_bytes"] = _wire_int(
+            row["size_bytes"],
+            phase=ValidationPhaseV3.INDEXES,
+            code="shard_receipt_invalid",
+        )
+        if (
+            row["shard_id"] != expected_shard_id
+            or row["first_selection_index"] != expected_first
+            or row["path"] not in members
+        ):
             raise TomeV3ValidationError(
                 "shard_range_or_path_mismatch", phase=ValidationPhaseV3.INDEXES
             )
@@ -488,7 +606,11 @@ def _validate_root(
         raise TomeV3ValidationError(
             "shard_count_or_range_mismatch", phase=ValidationPhaseV3.INDEXES
         )
-    if shards_ref["record_count"] != len(shard_rows):
+    if _wire_int(
+        shards_ref["record_count"],
+        phase=ValidationPhaseV3.INDEXES,
+        code="shard_index_count_mismatch",
+    ) != len(shard_rows):
         raise TomeV3ValidationError(
             "shard_index_count_mismatch", phase=ValidationPhaseV3.INDEXES
         )
@@ -528,7 +650,7 @@ def _validate_records(
 ) -> list[dict[str, Any]]:
     records: list[dict[str, Any]] = []
     logical_ids: set[str] = set()
-    locations: dict[tuple[str, int], dict[str, Any]] = {
+    locations: dict[tuple[int, int], dict[str, Any]] = {
         (row["shard_id"], row["row"]): row for row in payload_rows
     }
     if len(locations) != len(payload_rows):

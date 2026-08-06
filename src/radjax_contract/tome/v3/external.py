@@ -58,6 +58,18 @@ def _closed(
     return value
 
 
+def _wire_int(value: Any, *, phase: ValidationPhaseV3, code: str) -> int:
+    """Normalize a nonsemantic JSON integer lexeme in an external receipt."""
+
+    try:
+        result = int(str(value))
+    except (TypeError, ValueError) as exc:
+        raise TomeV3ValidationError(code, phase=phase) from exc
+    if str(result) != str(value) or result < 0:
+        raise TomeV3ValidationError(code, phase=phase)
+    return result
+
+
 def compare_governed_v3(
     artifact: Path,
     standard: StandardIntegrityReportV3,
@@ -125,12 +137,14 @@ def validate_archive_receipt_v3(
     ):
         raise TomeV3ValidationError("archive_receipt_unsupported", phase=phase)
     raw = archive.read_bytes()
-    return ArchiveReceiptReportV3(
-        archive,
-        "sha256:" + hashlib.sha256(raw).hexdigest() == value["archive_sha256"]
-        and len(raw) == value["archive_size_bytes"],
-        value["archive_sha256"],
+    matches = "sha256:" + hashlib.sha256(raw).hexdigest() == value[
+        "archive_sha256"
+    ] and len(raw) == _wire_int(
+        value["archive_size_bytes"],
+        phase=phase,
+        code="archive_receipt_invalid",
     )
+    return ArchiveReceiptReportV3(archive, matches, value["archive_sha256"])
 
 
 def verify_attestation_v3(

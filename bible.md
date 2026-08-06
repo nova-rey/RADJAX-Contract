@@ -897,3 +897,19 @@ next minor publication is planned as `v0.5.0` after complete verification.
   excluded from public discovery and semantic framing. Focused static vector,
   checksum, framing, and parser tests pass; full conformance and release-candidate
   validation remain subsequent implementation work on this branch.
+
+## 2026-08-06 - Tome artifact Contract v3 proof-graph hardening
+
+- Added an end-to-end generated v3 test package that exercises the closed
+  cover/header/inventory graph, single shard receipt, payload index, authority,
+  policy, sequence identity, root, and streaming admission. Raw member damage
+  is rejected before a streaming reader can yield a row from the damaged shard.
+- Normalized every closed nonsemantic wire integer from the strict retained JSON
+  lexeme instead of relying on host parser coercion. The public validator now
+  enforces payload/shard index location coherence, count/range continuity,
+  header/cover/layout reference agreement, required capabilities, and the
+  private journal's published uppercase state vocabulary.
+- Governed comparison and external receipt inputs remain caller supplied and
+  external to the artifact under test. This is still unreleased Contract-only
+  work: no producer, consumer, historical v1/v2 behavior, Tome, Student, Golden,
+  M8, or M9 surface changed.

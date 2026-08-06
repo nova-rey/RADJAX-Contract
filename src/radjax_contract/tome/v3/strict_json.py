@@ -17,13 +17,13 @@ class NumberLexeme(str):
     """A JSON numeric token retained until the field schema chooses its type."""
 
 
-def _reject_duplicates(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+def _reject_duplicates(
+    pairs: list[tuple[str, Any]], *, phase: ValidationPhaseV3
+) -> dict[str, Any]:
     result: dict[str, Any] = {}
     for key, value in pairs:
         if key in result:
-            raise TomeV3ValidationError(
-                "duplicate_json_key", phase=ValidationPhaseV3.DISPATCH
-            )
+            raise TomeV3ValidationError("duplicate_json_key", phase=phase)
         result[key] = value
     return result
 
@@ -34,13 +34,16 @@ def loads(text: str, *, phase: ValidationPhaseV3 = ValidationPhaseV3.DISPATCH) -
     def invalid_constant(value: str) -> Any:
         raise TomeV3ValidationError("json_nonfinite", phase=phase)
 
+    def reject_duplicates(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+        return _reject_duplicates(pairs, phase=phase)
+
     try:
         return json.loads(
             text,
             parse_int=NumberLexeme,
             parse_float=NumberLexeme,
             parse_constant=invalid_constant,
-            object_pairs_hook=_reject_duplicates,
+            object_pairs_hook=reject_duplicates,
         )
     except TomeV3ValidationError:
         raise
