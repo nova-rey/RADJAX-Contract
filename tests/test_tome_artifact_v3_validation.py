@@ -4,21 +4,27 @@ from __future__ import annotations
 
 import hashlib
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 
 from radjax_contract.tome.v3.codec import (
     DOMAIN_LABELS,
+    canonical_base64_encode,
     digest,
+    fv3,
     logical_record_id,
     record_sequence_digest,
     semantic_root,
 )
 from radjax_contract.tome.v3.issues import TomeV3ValidationError
+from radjax_contract.tome.v3.models import AttestationRequirement
 from radjax_contract.tome.v3.validation import (
+    compare_governed_tome_artifact_v3,
     open_tome_artifact_v3,
     validate_tome_artifact_v3,
+    verify_external_tome_attestation_v3,
 )
 
 
@@ -224,3 +230,61 @@ def test_standard_validation_and_streaming_verify_before_yield(tmp_path: Path) -
     shard.write_bytes(shard.read_bytes() + b" ")
     with pytest.raises(TomeV3ValidationError, match="inventory_member_mismatch"):
         open_tome_artifact_v3(artifact)
+
+
+def test_governed_and_external_modes_use_expected_evidence_outside_artifact(
+    tmp_path: Path,
+) -> None:
+    artifact = _valid_artifact(tmp_path / "artifact")
+    identity = json.loads((artifact / "provenance/semantic-identity.json").read_text())
+    expected = {
+        "schema_version": "radjax_tome_governed_comparison_v1",
+        "expected_semantic_root": identity["semantic_root"],
+        "expected_authority_identity": identity["semantic_authority_identity"],
+        "expected_contract_version": identity["contract_version"],
+        "expected_profile_id": identity["semantic_profile_id"],
+        "expected_policy_identity": identity["behavioral_policy_identity"],
+    }
+    expected_path = tmp_path / "governed.json"
+    expected_path.write_bytes(_raw(expected))
+    assert compare_governed_tome_artifact_v3(artifact, expected_path).matches
+    expected["expected_semantic_root"] = "sha256:" + "0" * 64
+    expected_path.write_bytes(_raw(expected))
+    assert not compare_governed_tome_artifact_v3(artifact, expected_path).matches
+
+    attestation = {
+        "schema_version": "radjax_tome_external_attestation_v1",
+        "semantic_root": identity["semantic_root"],
+        "semantic_authority_identity": identity["semantic_authority_identity"],
+        "contract_version": identity["contract_version"],
+        "semantic_profile_id": identity["semantic_profile_id"],
+        "behavioral_policy_identity": identity["behavioral_policy_identity"],
+        "artifact_reference": "release/test",
+        "issuer_id": "independent-test-domain",
+        "issued_at": "2026-08-06T00:00:00Z",
+        "expires_at": "2027-08-06T00:00:00Z",
+        "envelope_algorithm_id": "fv3_raw_base64_v1",
+    }
+    binding = {
+        key: attestation[key]
+        for key in sorted(attestation, key=lambda key: key.encode())
+    }
+    attestation["envelope"] = canonical_base64_encode(fv3(binding))
+    attestation_path = tmp_path / "attestation.json"
+    attestation_path.write_bytes(_raw(attestation))
+    result = verify_external_tome_attestation_v3(
+        artifact,
+        attestation_path,
+        requirement=AttestationRequirement.REQUIRED,
+        evaluation_time_utc=datetime(2026, 8, 6, tzinfo=UTC),
+    )
+    assert result.status == "verified"
+    with pytest.raises(
+        TomeV3ValidationError, match="external_evidence_inside_artifact"
+    ):
+        verify_external_tome_attestation_v3(
+            artifact,
+            artifact / "provenance/semantic-identity.json",
+            requirement=AttestationRequirement.REQUIRED,
+            evaluation_time_utc=datetime(2026, 8, 6, tzinfo=UTC),
+        )

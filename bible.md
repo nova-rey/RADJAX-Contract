@@ -913,3 +913,14 @@ next minor publication is planned as `v0.5.0` after complete verification.
   external to the artifact under test. This is still unreleased Contract-only
   work: no producer, consumer, historical v1/v2 behavior, Tome, Student, Golden,
   M8, or M9 surface changed.
+
+## 2026-08-06 - Tome artifact v3 assurance-boundary tests
+
+- Added focused mode tests proving the intended distinction: a valid package
+  compares successfully against independently supplied governed evidence,
+  reports a governed-root mismatch without conflating it with standard package
+  integrity, and verifies the optional raw FV3 external-attestation interface
+  only when its receipt is supplied outside the artifact.
+- An artifact-local file cannot satisfy external-attestation mode. These tests
+  make no claim that an in-process test fixture proves real-world trust-domain
+  independence, signer safety, honest producer behavior, or truthful origin.
