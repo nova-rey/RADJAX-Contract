@@ -840,3 +840,21 @@ next minor publication is planned as `v0.5.0` after complete verification.
   installed-wheel public exports pass. Advanced package metadata to
   `radjax-contract` 0.8.3 without schema, semantic-identity, language,
   whole-resource, JSONL, M7, or archive-semantics changes.
+
+## 2026-08-06 - Tome provenance v3 Contract design draft
+
+- Added an unreleased, non-production `radjax_tome_artifact_contract` 3.0.0
+  draft specification and conformance design on the isolated
+  `design/tome-provenance-vnext` branch. The version follows the v1/v2 Tome
+  artifact-contract lineage; it is not a new Student-consumption profile.
+- The draft defines one lean public operational proof surface, an acyclic
+  cover-to-header-to-inventory graph, byte-exact framed semantic root rules,
+  private journal-only construction/resume state, governed expected-root
+  comparison, and an external-attestation interface. It explicitly preserves
+  historical validators and makes no released schema, API, fixture, Tome,
+  Student, Golden, M8, or M9 change.
+- Standard validation is intentionally limited to operational integrity. A
+  fully recomputed self-consistent replacement requires externally retained
+  governed evidence or a genuinely independent attestation to detect; honest
+  production, uncompromised source/validator, and truthful teacher origin remain
+  explicit nonclaims.

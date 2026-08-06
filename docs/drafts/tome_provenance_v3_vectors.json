@@ -1,0 +1,34 @@
+{
+  "artifact": "unreleased_design_only",
+  "schema_version": "radjax_tome_provenance_v3_draft_vectors_v1",
+  "algorithm": "sha256",
+  "framing": "FV3 as specified by docs/TOME_PROVENANCE_V3_DRAFT_SPEC.md section 4",
+  "vectors": [
+    {
+      "id": "primitive-null-empty-map",
+      "expected": {
+        "empty_text_fv3_hex": "200000000000000000",
+        "map_fv3_hex": "400000000000000002000000000000000161000000000000000a20000000000000000178000000000000000162000000000000000a10000000000000000001",
+        "null_fv3_hex": "00"
+      },
+      "input": {"map": {"a": "x", "b": 1}, "null": null, "text": ""}
+    },
+    {
+      "id": "minimal-one-record",
+      "input_records": [{"corridor_mode_id": "m0", "selected_example_id": "example-a", "selected_position": 2, "top_probs": [0.75, 0.25], "top_token_ids": [7, 3]}],
+      "expected": {"logical_ids": ["sha256:3b9bb06dafbbfacb447bde1ddaaa56bd6c73ba3c0a5bde6c0285384455a3bbd1"], "semantic_root": "sha256:7ca7d21db26ad57dd1b89a503da3097fed427f1b34d34d95403ce62c93d3bffd", "sequence_digest": "sha256:09316ae83cbe0b029cfe5c07bb710d5f9ca2fe9777a36a8188497652543a3541"}
+    },
+    {
+      "id": "two-ordered-records",
+      "input_records": [{"corridor_mode_id": "m0", "selected_example_id": "example-a", "selected_position": 2, "top_probs": [0.75, 0.25], "top_token_ids": [7, 3]}, {"corridor_mode_id": "m1", "selected_example_id": "example-b", "selected_position": 4, "top_probs": [1.0], "top_token_ids": [8]}],
+      "expected": {"logical_ids": ["sha256:3b9bb06dafbbfacb447bde1ddaaa56bd6c73ba3c0a5bde6c0285384455a3bbd1", "sha256:cb55c7f9e6475863e2190df90fa9a9f266f8232381a726cb06d375d327340b96"], "semantic_root": "sha256:e7381c5c19ad9e19a7617c007bf24c876b37cf262748636f1026c498d20aca7c", "sequence_digest": "sha256:638f79eccd86f376a964005e51991c77f7f7494b978341e80eea11e8763496a8"}
+    },
+    {"id": "changed-order", "relation_to": "two-ordered-records", "expected": {"semantic_root": "sha256:5fd74d32caa63b9e145783f7d5dfdb6b9db6576831e24c1fadc23d66378d511f", "sequence_digest": "sha256:8702bfd7571e307e2f07a6a09c6ed74d194ef7a1930ef810487a81089f64775c", "relation": "different"}},
+    {"id": "changed-semantic-payload", "relation_to": "two-ordered-records", "mutation": "example-a.top_token_ids[0]=6", "expected": {"semantic_root": "sha256:b89f9025be60a829b48f40848601a46ac9422a2d0808b7fc86d4deb583697cca", "sequence_digest": "sha256:ea26a5ea73b42a680676f2ad45fd8aeacea371c3ffed98f161de85b743c34885", "relation": "different"}},
+    {"id": "changed-authority", "relation_to": "two-ordered-records", "mutation": "semantic_authority_identity=sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "expected": {"semantic_root": "sha256:ae986e5f8614d8bab56773592a2c2629a88fdf26dfdecb0d04aabc3627b98a64", "sequence_relation": "same", "relation": "different"}},
+    {"id": "changed-contract", "relation_to": "two-ordered-records", "mutation": "contract_version=radjax_tome_artifact_contract@3.0.1-draft", "expected": {"semantic_root": "sha256:31c923fde939de6cc3a5ce5a02021f635c2c1ae300f53d098f90afb54b9786cd", "sequence_relation": "same", "relation": "different"}},
+    {"id": "changed-policy", "relation_to": "two-ordered-records", "mutation": "behavioral_policy_identity=sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", "expected": {"semantic_root": "sha256:24fb131a2a697adc771345ba648c12df8743e8ff7b3fe1f77e6d887ae7d0c6bd", "sequence_relation": "same", "relation": "different"}},
+    {"id": "nonsemantic-reshard-and-repackage", "relation_to": "two-ordered-records", "mutation": "change shard capacity, boundaries, compression, member metadata, or JSON presentation only", "expected": {"semantic_root": "sha256:e7381c5c19ad9e19a7617c007bf24c876b37cf262748636f1026c498d20aca7c", "sequence_digest": "sha256:638f79eccd86f376a964005e51991c77f7f7494b978341e80eea11e8763496a8", "relation": "same"}},
+    {"id": "unknown-and-absent", "input": {"unknown_record_field": true, "empty_text": "", "null": null}, "expected": {"empty_vs_null": "different framed bytes", "unknown_closed_field": "reject"}}
+  ]
+}
