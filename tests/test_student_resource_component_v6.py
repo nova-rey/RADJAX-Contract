@@ -71,6 +71,19 @@ def test_v6_target_components_open_identically_from_directory_and_archive(
             assert archived.raw_sha256 == declaration["raw_sha256"]
             assert archived.raw_size_bytes == declaration["raw_size_bytes"]
             assert len(archive_bytes) == archived.raw_size_bytes
+            assert set(archived.to_dict()) == {
+                "schema_version",
+                "profile_id",
+                "resource_id",
+                "component_id",
+                "resource_role",
+                "resource_schema",
+                "resource_encoding",
+                "resource_semantic_identity",
+                "axes",
+                "raw_sha256",
+                "raw_size_bytes",
+            }
             assert "locator" not in archived.to_dict()
             assert "content" not in archived.to_dict()
         assert archive_bytes == directory_bytes

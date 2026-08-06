@@ -67,6 +67,12 @@ the complete v6 artifact, resource semantic identity, component locator, raw
 size, and raw SHA-256 have been verified. The public result omits physical and
 temporary locators; callers remain responsible for decoding the verified bytes.
 
+Callers that need every component of one declared multipart resource should use
+`open_verified_student_multipart_resource_v6()`. It performs one strict v6
+admission, verifies and projects the complete component mapping, and exposes
+canonical NPY dtype, shape, axes, raw identity, semantic identity, and bounded
+read-only content for each component without publishing physical locators.
+
 ## Legacy Tome Contract
 
 A legacy v0 Tome is a portable teacher-output artifact directory:

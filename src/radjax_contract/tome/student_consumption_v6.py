@@ -14,10 +14,11 @@ import io
 import json
 import math
 import tempfile
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
+from types import MappingProxyType
 from typing import Any
 
 import numpy as np
@@ -135,6 +136,76 @@ class VerifiedStudentResourceComponentV6:
             "axes": list(self.axes),
             "raw_sha256": self.raw_sha256,
             "raw_size_bytes": self.raw_size_bytes,
+        }
+
+
+@dataclass(frozen=True)
+class VerifiedStudentMultipartComponentV6:
+    """One identity-verified component in an aggregate multipart opening."""
+
+    schema_version: str
+    profile_id: str
+    resource_id: str
+    component_id: str
+    resource_role: str
+    resource_schema: str
+    resource_encoding: str
+    resource_semantic_identity: str
+    encoding: str
+    dtype: str
+    shape: tuple[int, ...]
+    axes: tuple[str, ...]
+    semantic_identity: str
+    raw_sha256: str
+    raw_size_bytes: int
+    content: io.BufferedReader = field(repr=False, compare=False)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema_version": self.schema_version,
+            "profile_id": self.profile_id,
+            "resource_id": self.resource_id,
+            "component_id": self.component_id,
+            "resource_role": self.resource_role,
+            "resource_schema": self.resource_schema,
+            "resource_encoding": self.resource_encoding,
+            "resource_semantic_identity": self.resource_semantic_identity,
+            "encoding": self.encoding,
+            "dtype": self.dtype,
+            "shape": list(self.shape),
+            "axes": list(self.axes),
+            "semantic_identity": self.semantic_identity,
+            "raw_sha256": self.raw_sha256,
+            "raw_size_bytes": self.raw_size_bytes,
+        }
+
+
+@dataclass(frozen=True)
+class VerifiedStudentMultipartResourceV6:
+    """One admitted multipart resource with every component verified."""
+
+    schema_version: str
+    profile_id: str
+    resource_id: str
+    resource_role: str
+    resource_schema: str
+    resource_encoding: str
+    resource_semantic_identity: str
+    components: Mapping[str, VerifiedStudentMultipartComponentV6]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema_version": self.schema_version,
+            "profile_id": self.profile_id,
+            "resource_id": self.resource_id,
+            "resource_role": self.resource_role,
+            "resource_schema": self.resource_schema,
+            "resource_encoding": self.resource_encoding,
+            "resource_semantic_identity": self.resource_semantic_identity,
+            "components": {
+                component_id: component.to_dict()
+                for component_id, component in self.components.items()
+            },
         }
 
 
@@ -729,6 +800,71 @@ def open_verified_student_resource_component_v6(
             )
         finally:
             stream.close()
+
+
+@contextmanager
+def open_verified_student_multipart_resource_v6(
+    artifact: str | Path,
+    resource_id: str,
+    *,
+    profile_id: str = PROFILE_ID,
+    strict: bool = True,
+) -> Iterator[VerifiedStudentMultipartResourceV6]:
+    """Open all declared components from one exact strict v6 admission."""
+
+    if profile_id != PROFILE_ID:
+        raise ValueError(f"unsupported multipart opener profile: {profile_id}")
+    if not strict:
+        raise ValueError("v6 multipart opening requires strict admission")
+    result = validate_and_resolve_student_consumption_v6(artifact, strict=True)
+    if not result.ok or result.descriptor is None:
+        raise ValueError(
+            "v6 multipart opening admission failed: "
+            + ",".join(item.code for item in result.issues)
+        )
+    resource = _find_resource(result.descriptor, resource_id)
+    if resource is None:
+        raise ValueError(f"unknown v6 behavioral resource: {resource_id}")
+    if resource.encoding != "multipart_npy":
+        raise ValueError("v6 multipart opener requires a multipart resource")
+    opened: list[VerifiedStudentMultipartComponentV6] = []
+    with _v1._artifact_root(Path(artifact), [], []) as root:
+        if root is None:
+            raise ValueError("v6 multipart transport is unavailable")
+        try:
+            by_id: dict[str, VerifiedStudentMultipartComponentV6] = {}
+            for declaration in resource.components:
+                component = _verified_multipart_component(root, resource, declaration)
+                if component.component_id in by_id:
+                    component.content.close()
+                    raise ValueError("duplicate v6 multipart component declaration")
+                opened.append(component)
+                by_id[component.component_id] = component
+            observed_identity = canonical_multipart_npy_identity(
+                role=resource.role,
+                components=[
+                    {
+                        "component": component.component_id,
+                        "semantic_identity": component.semantic_identity,
+                    }
+                    for component in opened
+                ],
+            )
+            if observed_identity != resource.semantic_identity:
+                raise ValueError("v6 multipart semantic identity changed at open")
+            yield VerifiedStudentMultipartResourceV6(
+                "radjax_verified_student_multipart_resource_v6",
+                PROFILE_ID,
+                resource.resource_id,
+                resource.role,
+                resource.schema,
+                resource.encoding,
+                resource.semantic_identity,
+                MappingProxyType(by_id),
+            )
+        finally:
+            for component in opened:
+                component.content.close()
 
 
 @contextmanager
@@ -1457,6 +1593,45 @@ def _verified_component_bytes(
     if len(payload) != size or sha256_identity(payload) != digest:
         raise ValueError("v6 component integrity changed at open")
     return payload
+
+
+def _verified_multipart_component(
+    root: Path,
+    resource: ResolvedBehavioralResource,
+    component: dict[str, Any],
+) -> VerifiedStudentMultipartComponentV6:
+    """Project one admitted component without exposing its physical locator."""
+
+    payload = _verified_component_bytes(root, resource, component)
+    axes = tuple(component["axes"])
+    try:
+        array = np.load(io.BytesIO(payload), allow_pickle=False)
+        semantic_identity = canonical_npy_component_identity(
+            role=resource.role,
+            component=component["component"],
+            array=array,
+            axes=axes,
+        )
+    except (OSError, ValueError) as exc:
+        raise ValueError("v6 component identity is invalid at open") from exc
+    return VerifiedStudentMultipartComponentV6(
+        "radjax_verified_student_multipart_component_v6",
+        PROFILE_ID,
+        resource.resource_id,
+        component["component"],
+        resource.role,
+        resource.schema,
+        resource.encoding,
+        resource.semantic_identity,
+        "npy",
+        array.dtype.str,
+        tuple(int(dimension) for dimension in array.shape),
+        axes,
+        semantic_identity,
+        component["raw_sha256"],
+        component["raw_size_bytes"],
+        io.BufferedReader(io.BytesIO(payload)),
+    )
 
 
 def _verified_resource_bytes(root: Path, resource: ResolvedBehavioralResource) -> bytes:

@@ -814,3 +814,29 @@ next minor publication is planned as `v0.5.0` after complete verification.
 - Advanced additive package metadata to `radjax-contract` 0.8.2 without v6
   schema, semantic identity, archive reader, decoder, or historical API
   changes.
+
+## 2026-08-06 - P5.3 aggregate verified multipart access
+
+- Added `open_verified_student_multipart_resource_v6()` and the frozen
+  `VerifiedStudentMultipartResourceV6` projection. One strict exact-v6
+  admission now yields an immutable mapping of every component declared by one
+  admitted multipart resource through the existing Contract-owned safe archive
+  root.
+- Added `VerifiedStudentMultipartComponentV6` with canonical NPY encoding,
+  dtype, shape, and derived component semantic identity while preserving the
+  accepted single-component model unchanged. Contract recomputes each component
+  identity and the enclosing multipart semantic identity before yielding
+  bounded read-only streams; Student still owns payload decoding.
+- Physical component locators and temporary extraction paths remain absent
+  from both public models and their serialized metadata. Unknown resources,
+  component lookup, cross-resource substitution, raw tampering,
+  post-admission replacement, historical profiles, non-strict use, unsafe
+  archives, and configured archive limits fail closed.
+- Against Tome `8508b1351d0ed8d6a3a14049e4d6f8a849c33cf1`, directory and
+  `.tgz` aggregate objects and bytes match for all six declared components of
+  `target_shard/default` and `corridor_assignment/default`, including dtype,
+  shape, axes, raw digest, raw size, component identity, and resource identity.
+- The full Contract suite passes with 267 tests; Ruff, formatting, and
+  installed-wheel public exports pass. Advanced package metadata to
+  `radjax-contract` 0.8.3 without schema, semantic-identity, language,
+  whole-resource, JSONL, M7, or archive-semantics changes.
