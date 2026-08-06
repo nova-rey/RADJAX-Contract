@@ -924,3 +924,14 @@ next minor publication is planned as `v0.5.0` after complete verification.
 - An artifact-local file cannot satisfy external-attestation mode. These tests
   make no claim that an in-process test fixture proves real-world trust-domain
   independence, signer safety, honest producer behavior, or truthful origin.
+
+## 2026-08-06 - Tome artifact v3 0.9.0 implementation candidate
+
+- Advanced the isolated Contract implementation branch's distribution metadata
+  to the planned `radjax-contract` 0.9.0 candidate after adding the parallel
+  `radjax_tome_artifact_contract@3.0.0` surface. This is branch-local candidate
+  metadata only: it neither publishes a package nor alters a released tag.
+- Historical v1/v2 Tome contracts and all Student-consumption versions retain
+  their existing discovery roots, validators, profiles, and default behavior.
+  Tome adoption remains explicitly outside this candidate until independent
+  review and separate release authorization.
