@@ -880,3 +880,20 @@ next minor publication is planned as `v0.5.0` after complete verification.
   governed-comparison, and attestation records; specified the exact raw-base64
   FV3 attestation envelope binding; and split every journal crash boundary into
   its own conformance case. This remains unreleased design-only work.
+
+## 2026-08-06 - Tome artifact Contract v3 implementation foundation
+
+- Began the additive, unreleased implementation on
+  `impl/tome-artifact-contract-v3`, preserving the frozen v1/v2 paths. Added
+  final v3 static Contract assets, safe installed-resource discovery, checksum
+  closure, and final (non-draft) vectors with a draft-to-release mapping.
+- Added a separate v3 namespace for byte-exact FV3 framing, lexeme-preserving
+  duplicate-rejecting JSON, closed semantic profile normalization, public
+  proof-graph validation, pre-yield shard raw verification, pure private-journal
+  checks, governed comparison, and externally supplied raw-envelope interface.
+  No Tome producer, consumer, Student change, migration, release, tag, or
+  historical validator change is included.
+- The private journal uses the published uppercase transition vocabulary and is
+  excluded from public discovery and semantic framing. Focused static vector,
+  checksum, framing, and parser tests pass; full conformance and release-candidate
+  validation remain subsequent implementation work on this branch.

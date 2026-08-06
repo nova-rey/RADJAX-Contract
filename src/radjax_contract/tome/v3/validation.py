@@ -1,0 +1,694 @@
+"""Fail-closed standard validation and pre-yield v3 streaming reader."""
+
+from __future__ import annotations
+
+import hashlib
+import tarfile
+import tempfile
+from collections.abc import Iterator, Mapping
+from pathlib import Path, PurePosixPath
+from typing import Any
+
+from radjax_contract.tome.v3.codec import (
+    DOMAIN_LABELS,
+    digest,
+    logical_record_id,
+    record_sequence_digest,
+    semantic_root,
+)
+from radjax_contract.tome.v3.issues import TomeV3ValidationError, ValidationPhaseV3
+from radjax_contract.tome.v3.models import StandardIntegrityReportV3
+from radjax_contract.tome.v3.schema import (
+    CONTRACT_VERSION,
+    IDENTITY_SCHEMA_VERSION,
+    SEMANTIC_PROFILE_ID,
+    normalize_authority,
+    normalize_policy,
+    normalize_semantic_record,
+)
+from radjax_contract.tome.v3.strict_json import load_jsonl, loads
+
+_FIXED = frozenset(
+    {
+        "cover_page.json",
+        "manifests/content-manifest-header.json",
+        "manifests/content-manifest-inventory.jsonl",
+        "provenance/semantic-identity.json",
+        "provenance/semantic-authority.json",
+        "provenance/behavioral-policy.json",
+        "provenance/capabilities.json",
+        "selected_exemplars/layout.json",
+        "selected_exemplars/payload-index.jsonl",
+        "selected_exemplars/payload-shards.jsonl",
+    }
+)
+_INVENTORY_EXCLUDES = frozenset(
+    {
+        "cover_page.json",
+        "manifests/content-manifest-header.json",
+        "manifests/content-manifest-inventory.jsonl",
+    }
+)
+
+
+def _sha(raw: bytes) -> str:
+    return "sha256:" + hashlib.sha256(raw).hexdigest()
+
+
+def _safe(relative: str) -> str:
+    if not isinstance(relative, str) or not relative or "\\" in relative:
+        raise TomeV3ValidationError(
+            "member_path_unsafe", phase=ValidationPhaseV3.DISCOVERY
+        )
+    pure = PurePosixPath(relative)
+    if (
+        pure.is_absolute()
+        or pure.as_posix() != relative
+        or any(part in {".", ".."} for part in pure.parts)
+    ):
+        raise TomeV3ValidationError(
+            "member_path_unsafe", phase=ValidationPhaseV3.DISCOVERY
+        )
+    return relative
+
+
+def _discover(root: Path) -> dict[str, Path]:
+    members: dict[str, Path] = {}
+    for path in root.rglob("*"):
+        if path.is_dir():
+            continue
+        if path.is_symlink() or not path.is_file():
+            raise TomeV3ValidationError(
+                "member_type_invalid", phase=ValidationPhaseV3.DISCOVERY
+            )
+        relative = _safe(path.relative_to(root).as_posix())
+        if relative in members:
+            raise TomeV3ValidationError(
+                "member_duplicate", phase=ValidationPhaseV3.DISCOVERY, location=relative
+            )
+        members[relative] = path
+    return members
+
+
+def _load(path: Path, *, phase: ValidationPhaseV3) -> Mapping[str, Any]:
+    value = loads(path.read_text(encoding="utf-8"), phase=phase)
+    if not isinstance(value, Mapping):
+        raise TomeV3ValidationError("json_object_required", phase=phase)
+    return value
+
+
+def _closed(
+    value: Mapping[str, Any],
+    required: set[str],
+    *,
+    phase: ValidationPhaseV3,
+    code: str,
+    optional: set[str] | None = None,
+) -> None:
+    optional = optional or set()
+    if set(value) - required - optional or required - set(value):
+        raise TomeV3ValidationError(code, phase=phase)
+
+
+def _reference(
+    value: Any, *, phase: ValidationPhaseV3, index: bool = False
+) -> Mapping[str, Any]:
+    fields = {"path", "sha256", "size_bytes", "schema_version"} | (
+        {"record_count"} if index else set()
+    )
+    if not isinstance(value, Mapping):
+        raise TomeV3ValidationError("reference_invalid", phase=phase)
+    _closed(value, fields, phase=phase, code="reference_invalid")
+    _safe(value["path"])
+    if (
+        not isinstance(value["sha256"], str)
+        or not value["sha256"].startswith("sha256:")
+        or not isinstance(value["size_bytes"], int)
+        or value["size_bytes"] < 0
+        or not isinstance(value["schema_version"], str)
+    ):
+        raise TomeV3ValidationError("reference_invalid", phase=phase)
+    if index and (
+        not isinstance(value["record_count"], int) or value["record_count"] < 0
+    ):
+        raise TomeV3ValidationError("reference_invalid", phase=phase)
+    return value
+
+
+def _verify_ref(
+    members: Mapping[str, Path],
+    reference: Mapping[str, Any],
+    *,
+    phase: ValidationPhaseV3,
+) -> None:
+    path = reference["path"]
+    if path not in members:
+        raise TomeV3ValidationError(
+            "referenced_member_missing", phase=phase, location=path
+        )
+    raw = members[path].read_bytes()
+    if _sha(raw) != reference["sha256"] or len(raw) != reference["size_bytes"]:
+        raise TomeV3ValidationError(
+            "referenced_member_corrupt", phase=phase, location=path
+        )
+
+
+def _transport(
+    artifact: Path,
+) -> tuple[str, Path, tempfile.TemporaryDirectory[str] | None]:
+    if artifact.is_dir():
+        return "directory", artifact, None
+    if artifact.is_file() and artifact.suffix in {".tgz", ".rtome"}:
+        temporary = tempfile.TemporaryDirectory(prefix="radjax-tome-v3-")
+        root = Path(temporary.name)
+        try:
+            with tarfile.open(artifact, "r:*") as archive:
+                for member in archive.getmembers():
+                    if not member.isfile() and not member.isdir():
+                        raise TomeV3ValidationError(
+                            "member_type_invalid", phase=ValidationPhaseV3.DISCOVERY
+                        )
+                    name = _safe(member.name)
+                    if member.isdir():
+                        continue
+                    target = root / name
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    handle = archive.extractfile(member)
+                    if handle is None:
+                        raise TomeV3ValidationError(
+                            "transport_corrupt", phase=ValidationPhaseV3.DISCOVERY
+                        )
+                    target.write_bytes(handle.read())
+        except (OSError, tarfile.TarError) as exc:
+            temporary.cleanup()
+            raise TomeV3ValidationError(
+                "transport_corrupt", phase=ValidationPhaseV3.DISCOVERY
+            ) from exc
+        return "tgz" if artifact.suffix == ".tgz" else "rtome", root, temporary
+    raise TomeV3ValidationError(
+        "transport_unsupported", phase=ValidationPhaseV3.DISCOVERY
+    )
+
+
+def _validate_root(
+    artifact: Path, root: Path, transport: str, *, strict_transport: bool
+) -> tuple[
+    StandardIntegrityReportV3,
+    list[tuple[Path, dict[str, Any]]],
+    list[dict[str, Any]],
+    dict[str, Any],
+]:
+    members = _discover(root)
+    if not _FIXED <= set(members):
+        raise TomeV3ValidationError(
+            "required_member_missing", phase=ValidationPhaseV3.DISCOVERY
+        )
+    cover = _load(members["cover_page.json"], phase=ValidationPhaseV3.DISPATCH)
+    cover_fields = {
+        "schema_version",
+        "contract_version",
+        "package",
+        "capabilities_ref",
+        "semantic_identity_ref",
+        "semantic_authority_ref",
+        "behavioral_policy_ref",
+        "manifest_header_ref",
+        "record_count",
+        "shard_count",
+    }
+    _closed(cover, cover_fields, phase=ValidationPhaseV3.DISPATCH, code="cover_invalid")
+    if (
+        cover["schema_version"] != "radjax_tome_cover_v5"
+        or cover["contract_version"] != CONTRACT_VERSION
+    ):
+        raise TomeV3ValidationError(
+            "schema_version_unsupported", phase=ValidationPhaseV3.DISPATCH
+        )
+    if (
+        not isinstance(cover["package"], Mapping)
+        or set(cover["package"]) != {"profile_id", "transport"}
+        or cover["package"]["profile_id"] != SEMANTIC_PROFILE_ID
+        or cover["package"]["transport"] != transport
+    ):
+        raise TomeV3ValidationError(
+            "package_dispatch_mismatch", phase=ValidationPhaseV3.DISPATCH
+        )
+    if strict_transport and transport == "directory":
+        raise TomeV3ValidationError(
+            "transport_strict_archive_required", phase=ValidationPhaseV3.DISPATCH
+        )
+    header_ref = _reference(
+        cover["manifest_header_ref"], phase=ValidationPhaseV3.RAW_MEMBERS
+    )
+    _verify_ref(members, header_ref, phase=ValidationPhaseV3.RAW_MEMBERS)
+    header = _load(members[header_ref["path"]], phase=ValidationPhaseV3.GRAPH)
+    header_fields = {
+        "schema_version",
+        "contract_version",
+        "profile_id",
+        "capabilities_ref",
+        "semantic_identity_ref",
+        "layout_ref",
+        "inventory_ref",
+        "entry_count",
+    }
+    _closed(
+        header,
+        header_fields,
+        phase=ValidationPhaseV3.GRAPH,
+        code="manifest_header_invalid",
+    )
+    if (
+        header["schema_version"] != "tome_content_manifest_header_v4"
+        or header["contract_version"] != CONTRACT_VERSION
+        or header["profile_id"] != SEMANTIC_PROFILE_ID
+    ):
+        raise TomeV3ValidationError(
+            "manifest_header_binding_mismatch", phase=ValidationPhaseV3.GRAPH
+        )
+    inventory_ref = _reference(header["inventory_ref"], phase=ValidationPhaseV3.GRAPH)
+    _verify_ref(members, inventory_ref, phase=ValidationPhaseV3.GRAPH)
+    inventory_rows = load_jsonl(
+        members[inventory_ref["path"]].read_bytes(), phase=ValidationPhaseV3.GRAPH
+    )
+    if len(inventory_rows) != header["entry_count"]:
+        raise TomeV3ValidationError(
+            "inventory_count_mismatch", phase=ValidationPhaseV3.GRAPH
+        )
+    declared: set[str] = set()
+    for row in inventory_rows:
+        if not isinstance(row, Mapping):
+            raise TomeV3ValidationError(
+                "inventory_row_invalid", phase=ValidationPhaseV3.GRAPH
+            )
+        _closed(
+            row,
+            {
+                "path",
+                "sha256",
+                "size_bytes",
+                "member_role",
+                "classification",
+                "required_for_standard_validation",
+            },
+            phase=ValidationPhaseV3.GRAPH,
+            code="inventory_row_invalid",
+        )
+        path = _safe(row["path"])
+        if path in declared or path in _INVENTORY_EXCLUDES:
+            raise TomeV3ValidationError(
+                "inventory_duplicate_or_control_member",
+                phase=ValidationPhaseV3.GRAPH,
+                location=path,
+            )
+        declared.add(path)
+        if (
+            path not in members
+            or _sha(members[path].read_bytes()) != row["sha256"]
+            or len(members[path].read_bytes()) != row["size_bytes"]
+        ):
+            raise TomeV3ValidationError(
+                "inventory_member_mismatch",
+                phase=ValidationPhaseV3.GRAPH,
+                location=path,
+            )
+    if declared != set(members) - _INVENTORY_EXCLUDES:
+        raise TomeV3ValidationError(
+            "inventory_not_closed", phase=ValidationPhaseV3.GRAPH
+        )
+    for name in (
+        "capabilities_ref",
+        "semantic_identity_ref",
+        "semantic_authority_ref",
+        "behavioral_policy_ref",
+    ):
+        _verify_ref(
+            members,
+            _reference(cover[name], phase=ValidationPhaseV3.GRAPH),
+            phase=ValidationPhaseV3.GRAPH,
+        )
+    for name in ("capabilities_ref", "semantic_identity_ref", "layout_ref"):
+        _verify_ref(
+            members,
+            _reference(header[name], phase=ValidationPhaseV3.GRAPH),
+            phase=ValidationPhaseV3.GRAPH,
+        )
+    identity = _load(
+        members[cover["semantic_identity_ref"]["path"]],
+        phase=ValidationPhaseV3.SEMANTIC_ROOT,
+    )
+    identity_fields = {
+        "schema_version",
+        "contract_version",
+        "semantic_profile_id",
+        "semantic_authority_identity",
+        "behavioral_policy_identity",
+        "record_count",
+        "ordered_record_sequence_digest",
+        "semantic_root",
+    }
+    _closed(
+        identity,
+        identity_fields,
+        phase=ValidationPhaseV3.SEMANTIC_ROOT,
+        code="semantic_identity_invalid",
+    )
+    if (
+        identity["schema_version"] != IDENTITY_SCHEMA_VERSION
+        or identity["contract_version"] != CONTRACT_VERSION
+        or identity["semantic_profile_id"] != SEMANTIC_PROFILE_ID
+    ):
+        raise TomeV3ValidationError(
+            "semantic_identity_binding_mismatch", phase=ValidationPhaseV3.SEMANTIC_ROOT
+        )
+    authority = normalize_authority(
+        _load(
+            members[cover["semantic_authority_ref"]["path"]],
+            phase=ValidationPhaseV3.SEMANTIC_ROOT,
+        )
+    )
+    policy = normalize_policy(
+        _load(
+            members[cover["behavioral_policy_ref"]["path"]],
+            phase=ValidationPhaseV3.SEMANTIC_ROOT,
+        )
+    )
+    if identity["semantic_authority_identity"] != digest(
+        DOMAIN_LABELS["semantic_authority"], authority
+    ) or identity["behavioral_policy_identity"] != digest(
+        DOMAIN_LABELS["behavioral_policy"], policy
+    ):
+        raise TomeV3ValidationError(
+            "semantic_governance_identity_mismatch",
+            phase=ValidationPhaseV3.SEMANTIC_ROOT,
+        )
+    layout = _load(
+        members[header["layout_ref"]["path"]], phase=ValidationPhaseV3.INDEXES
+    )
+    layout_fields = {
+        "schema_version",
+        "semantic_identity_ref",
+        "payload_index_ref",
+        "shard_index_ref",
+        "record_count",
+        "shard_capacity",
+    }
+    _closed(
+        layout, layout_fields, phase=ValidationPhaseV3.INDEXES, code="layout_invalid"
+    )
+    if (
+        layout["schema_version"] != "radjax_tome_payload_layout_v2"
+        or layout["record_count"] != identity["record_count"]
+        or cover["record_count"] != identity["record_count"]
+    ):
+        raise TomeV3ValidationError(
+            "layout_identity_mismatch", phase=ValidationPhaseV3.INDEXES
+        )
+    payload_ref = _reference(
+        layout["payload_index_ref"], phase=ValidationPhaseV3.INDEXES, index=True
+    )
+    shards_ref = _reference(
+        layout["shard_index_ref"], phase=ValidationPhaseV3.INDEXES, index=True
+    )
+    _verify_ref(members, payload_ref, phase=ValidationPhaseV3.INDEXES)
+    _verify_ref(members, shards_ref, phase=ValidationPhaseV3.INDEXES)
+    payload_rows = load_jsonl(
+        members[payload_ref["path"]].read_bytes(), phase=ValidationPhaseV3.INDEXES
+    )
+    if (
+        len(payload_rows) != identity["record_count"]
+        or payload_ref["record_count"] != identity["record_count"]
+    ):
+        raise TomeV3ValidationError(
+            "payload_index_count_mismatch", phase=ValidationPhaseV3.INDEXES
+        )
+    normalized_payload_rows: list[dict[str, Any]] = []
+    for expected_index, row in enumerate(payload_rows):
+        if not isinstance(row, Mapping):
+            raise TomeV3ValidationError(
+                "payload_index_row_invalid", phase=ValidationPhaseV3.INDEXES
+            )
+        _closed(
+            row,
+            {"logical_record_id", "selection_index", "shard_id", "row"},
+            phase=ValidationPhaseV3.INDEXES,
+            code="payload_index_row_invalid",
+        )
+        if (
+            row["selection_index"] != expected_index
+            or not isinstance(row["row"], int)
+            or row["row"] < 0
+            or not isinstance(row["shard_id"], str)
+            or not isinstance(row["logical_record_id"], str)
+        ):
+            raise TomeV3ValidationError(
+                "payload_index_order_invalid", phase=ValidationPhaseV3.INDEXES
+            )
+        normalized_payload_rows.append(dict(row))
+    shard_rows = load_jsonl(
+        members[shards_ref["path"]].read_bytes(), phase=ValidationPhaseV3.INDEXES
+    )
+    shard_sources: list[tuple[Path, dict[str, Any]]] = []
+    expected_first = 0
+    for row in shard_rows:
+        if not isinstance(row, Mapping):
+            raise TomeV3ValidationError(
+                "shard_receipt_invalid", phase=ValidationPhaseV3.INDEXES
+            )
+        _closed(
+            row,
+            {
+                "shard_id",
+                "path",
+                "sha256",
+                "size_bytes",
+                "first_selection_index",
+                "record_count",
+            },
+            phase=ValidationPhaseV3.INDEXES,
+            code="shard_receipt_invalid",
+        )
+        if row["first_selection_index"] != expected_first or row["path"] not in members:
+            raise TomeV3ValidationError(
+                "shard_range_or_path_mismatch", phase=ValidationPhaseV3.INDEXES
+            )
+        raw = members[row["path"]].read_bytes()
+        if _sha(raw) != row["sha256"] or len(raw) != row["size_bytes"]:
+            raise TomeV3ValidationError(
+                "shard_raw_mismatch",
+                phase=ValidationPhaseV3.RAW_MEMBERS,
+                location=row["path"],
+            )
+        expected_first += row["record_count"]
+        shard_sources.append((members[row["path"]], dict(row)))
+    if (
+        expected_first != identity["record_count"]
+        or len(shard_rows) != cover["shard_count"]
+    ):
+        raise TomeV3ValidationError(
+            "shard_count_or_range_mismatch", phase=ValidationPhaseV3.INDEXES
+        )
+    if shards_ref["record_count"] != len(shard_rows):
+        raise TomeV3ValidationError(
+            "shard_index_count_mismatch", phase=ValidationPhaseV3.INDEXES
+        )
+    return (
+        StandardIntegrityReportV3(
+            artifact,
+            transport,
+            identity["semantic_root"],
+            identity["record_count"],
+            len(shard_rows),
+        ),
+        shard_sources,
+        normalized_payload_rows,
+        dict(identity),
+    )
+
+
+def validate_tome_artifact_v3(
+    artifact: Path, *, strict_transport: bool = False
+) -> StandardIntegrityReportV3:
+    transport, root, temporary = _transport(Path(artifact))
+    try:
+        report, shards, payload_rows, identity = _validate_root(
+            Path(artifact), root, transport, strict_transport=strict_transport
+        )
+        _validate_records(shards, payload_rows, identity)
+        return report
+    finally:
+        if temporary is not None:
+            temporary.cleanup()
+
+
+def _validate_records(
+    shards: list[tuple[Path, dict[str, Any]]],
+    payload_rows: list[dict[str, Any]],
+    identity: Mapping[str, Any],
+) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    logical_ids: set[str] = set()
+    locations: dict[tuple[str, int], dict[str, Any]] = {
+        (row["shard_id"], row["row"]): row for row in payload_rows
+    }
+    if len(locations) != len(payload_rows):
+        raise TomeV3ValidationError(
+            "payload_index_location_duplicate", phase=ValidationPhaseV3.INDEXES
+        )
+    selection_index = 0
+    for path, shard in shards:
+        rows = load_jsonl(path.read_bytes(), phase=ValidationPhaseV3.SEMANTIC_RECORDS)
+        if len(rows) != shard["record_count"]:
+            raise TomeV3ValidationError(
+                "shard_record_count_mismatch",
+                phase=ValidationPhaseV3.SEMANTIC_RECORDS,
+                location=str(path),
+            )
+        for physical_row, row in enumerate(rows):
+            record = normalize_semantic_record(row)
+            logical_id = logical_record_id(record)
+            if logical_id in logical_ids:
+                raise TomeV3ValidationError(
+                    "logical_record_duplicate", phase=ValidationPhaseV3.SEMANTIC_RECORDS
+                )
+            index_row = locations.get((shard["shard_id"], physical_row))
+            if (
+                index_row is None
+                or index_row["selection_index"] != selection_index
+                or index_row["logical_record_id"] != logical_id
+            ):
+                raise TomeV3ValidationError(
+                    "payload_index_location_mismatch", phase=ValidationPhaseV3.INDEXES
+                )
+            logical_ids.add(logical_id)
+            records.append(record)
+            selection_index += 1
+    sequence = record_sequence_digest(records)
+    if sequence != identity["ordered_record_sequence_digest"]:
+        raise TomeV3ValidationError(
+            "semantic_sequence_mismatch", phase=ValidationPhaseV3.SEMANTIC_ROOT
+        )
+    root_input = {key: identity[key] for key in identity if key != "semantic_root"}
+    if semantic_root(root_input) != identity["semantic_root"]:
+        raise TomeV3ValidationError(
+            "semantic_root_mismatch", phase=ValidationPhaseV3.SEMANTIC_ROOT
+        )
+    return records
+
+
+class StreamingTomeV3Reader:
+    """A reader which fully checks each shard before exposing any of its rows."""
+
+    def __init__(self, artifact: Path, *, strict_transport: bool = False) -> None:
+        self.artifact = Path(artifact)
+        self.transport, self.root, self._temporary = _transport(self.artifact)
+        try:
+            self.report, self._shards, self._payload_rows, self.identity = (
+                _validate_root(
+                    self.artifact,
+                    self.root,
+                    self.transport,
+                    strict_transport=strict_transport,
+                )
+            )
+        except Exception:
+            if self._temporary is not None:
+                self._temporary.cleanup()
+            raise
+
+    def __iter__(self) -> Iterator[dict[str, Any]]:
+        for path, shard in self._shards:
+            raw = path.read_bytes()
+            if _sha(raw) != shard["sha256"] or len(raw) != shard["size_bytes"]:
+                raise TomeV3ValidationError(
+                    "shard_raw_mismatch",
+                    phase=ValidationPhaseV3.RAW_MEMBERS,
+                    location=str(path),
+                )
+            rows = [
+                normalize_semantic_record(row)
+                for row in load_jsonl(raw, phase=ValidationPhaseV3.SEMANTIC_RECORDS)
+            ]
+            if len(rows) != shard["record_count"]:
+                raise TomeV3ValidationError(
+                    "shard_record_count_mismatch",
+                    phase=ValidationPhaseV3.SEMANTIC_RECORDS,
+                )
+            yield from rows
+
+    def close(self) -> None:
+        if self._temporary is not None:
+            self._temporary.cleanup()
+            self._temporary = None
+
+    def __enter__(self) -> StreamingTomeV3Reader:
+        return self
+
+    def __exit__(self, *_: object) -> None:
+        self.close()
+
+
+def open_tome_artifact_v3(
+    artifact: Path, *, strict_transport: bool = False
+) -> StreamingTomeV3Reader:
+    return StreamingTomeV3Reader(Path(artifact), strict_transport=strict_transport)
+
+
+def compare_governed_tome_artifact_v3(
+    artifact: Path, expected_input: Path, *, strict_transport: bool = False
+):
+    """Compare an internally valid artifact to caller-supplied governed evidence."""
+
+    from radjax_contract.tome.v3.external import compare_governed_v3
+
+    transport, root, temporary = _transport(Path(artifact))
+    try:
+        report, shards, payload_rows, identity = _validate_root(
+            Path(artifact), root, transport, strict_transport=strict_transport
+        )
+        _validate_records(shards, payload_rows, identity)
+        return compare_governed_v3(
+            Path(artifact), report, Path(expected_input), identity
+        )
+    finally:
+        if temporary is not None:
+            temporary.cleanup()
+
+
+def verify_external_tome_attestation_v3(
+    artifact: Path,
+    attestation: Path | None,
+    *,
+    requirement,
+    evaluation_time_utc,
+    strict_transport: bool = False,
+):
+    """Apply external attestation only after standard validation succeeds."""
+
+    from radjax_contract.tome.v3.external import verify_attestation_v3
+
+    transport, root, temporary = _transport(Path(artifact))
+    try:
+        report, shards, payload_rows, identity = _validate_root(
+            Path(artifact), root, transport, strict_transport=strict_transport
+        )
+        _validate_records(shards, payload_rows, identity)
+        return verify_attestation_v3(
+            Path(artifact),
+            report,
+            identity,
+            None if attestation is None else Path(attestation),
+            requirement=requirement,
+            evaluation_time_utc=evaluation_time_utc,
+        )
+    finally:
+        if temporary is not None:
+            temporary.cleanup()
+
+
+def validate_external_archive_receipt_v3(archive: Path, receipt: Path):
+    """Validate caller-supplied raw archive receipt without inspecting its contents."""
+
+    from radjax_contract.tome.v3.external import validate_archive_receipt_v3
+
+    return validate_archive_receipt_v3(Path(archive), Path(receipt))
