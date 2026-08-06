@@ -382,7 +382,13 @@ cover selects dispatch, disagreement fails `incoherent_package_graph` before
 semantic reconstruction. Archive receipt is external-only:
 `{schema_version:"radjax_tome_archive_receipt_v1_draft",algorithm_id:"sha256",
 archive_sha256,archive_size_bytes,transport,artifact_reference?}` and never a
-member/root input.
+member/root input. `artifact_reference`, when present, is the one canonical v3
+artifact-reference value: nonempty strict UTF-8 text of at most 512 bytes, with
+no NUL, CR, or LF. It is an issuer/caller release locator, not a package path or
+semantic identity. It is optional, never null, excluded from all Tome semantic
+identities, and raw-validated only as a receipt field. A receipt with it is
+valid; malformed reference data fails `malformed_reference`, and each undeclared
+sibling field fails `malformed_schema`.
 
 ### Closed comparison, attestation, and journal
 
@@ -393,11 +399,25 @@ artifact reference. It is checked after standard root validation; mismatch is
 `governed_expected_root_mismatch`. Attestation is external, closed
 `radjax_tome_external_attestation_v1_draft`: the same five bindings, nonempty
 artifact reference/issuer ID, RFC3339 UTC `issued_at`, nullable RFC3339 UTC
-`expires_at`, `envelope_algorithm_id`, and base64 text `envelope`. The envelope
-payload is exactly FV3 of the closed attested-fields map (all fields except the
-envelope itself); cryptographic verification/trust policy is out of scope.
-Unsupported/expired/missing-required/mismatching attestation fails respectively;
-an attestation member inside the Tome is non-external and cannot satisfy mode.
+`expires_at`, `envelope_algorithm_id`, and base64 text `envelope`.
+`artifact_reference` uses the canonical nonempty text definition above. This
+draft supports exactly `envelope_algorithm_id:"fv3_raw_base64_v1"`: envelope is
+RFC 4648 standard base64 using only `A-Z a-z 0-9 + /`, required canonical `=`
+padding, no whitespace, and must round-trip as identical canonical base64 text.
+Its decoded bytes MUST equal exactly `FV3(attestation_binding)`, not an opaque
+cryptographic wrapper. `attestation_binding` is the closed map containing
+`schema_version`, `semantic_root`, `semantic_authority_identity`,
+`contract_version`, `semantic_profile_id`, `behavioral_policy_identity`,
+`artifact_reference`, `issuer_id`, `issued_at`, `expires_at`, and
+`envelope_algorithm_id`; `envelope` is deliberately excluded, so it cannot bind
+itself. This raw fixture mode proves byte binding only; signing, signature
+verification, keys, retrieval, and trust policy are deferred to future versioned
+envelope algorithms. Malformed/noncanonical base64, decoded bytes unequal to
+the required FV3 binding, and unsupported algorithms fail as
+`attestation_envelope_invalid`, `attestation_binding_mismatch`, and
+`attestation_algorithm_unsupported`. Optional/required availability and expiry
+policy remains as stated; an attestation member inside the Tome is non-external
+and cannot satisfy external-attestation mode.
 
 Private journal governs local POSIX filesystem construction only. Write+fsync
 staged shard; hash/size then fsync append sealed receipt; fsync contiguous-range

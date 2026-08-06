@@ -3,6 +3,7 @@
   "schema_version": "radjax_tome_provenance_v3_draft_field_registry_v1",
   "closed": true,
   "digest": "sha256:<64-lowercase-hex>",
+  "artifact_reference": {"type": "nonempty_utf8_text", "max_bytes": 512, "nullable": false, "forbidden_codepoints": ["NUL", "CR", "LF"], "tome_semantic_identity_participation": false, "external_attestation_binding_participation": true},
   "reference": {"required": ["path", "sha256", "size_bytes", "schema_version"], "additional": false},
   "index_reference": {"required": ["path", "sha256", "size_bytes", "schema_version", "record_count"], "additional": false},
   "objects": {
@@ -17,9 +18,9 @@
     "payload_index_row": {"required": ["logical_record_id", "selection_index", "shard_id", "row"], "additional": false},
     "shard_index_row": {"required": ["shard_id", "path", "sha256", "size_bytes", "first_selection_index", "record_count"], "additional": false},
     "inventory_row": {"required": ["path", "sha256", "size_bytes", "member_role", "classification", "required_for_standard_validation"], "member_role": ["semantic_identity", "semantic_authority", "behavioral_policy", "capabilities", "payload_layout", "payload_index", "payload_shard_index", "payload_shard"], "classification": ["training_critical", "integrity_or_provenance", "diagnostic", "human_readable", "operational"], "additional": false},
-    "archive_receipt_external_only": {"schema_version": "radjax_tome_archive_receipt_v1_draft", "required": ["schema_version", "algorithm_id", "archive_sha256", "archive_size_bytes", "transport"], "algorithm_id": "sha256", "additional": false},
-    "governed_comparison_external_only": {"schema_version": "radjax_tome_governed_comparison_v1_draft", "required": ["schema_version", "expected_semantic_root", "expected_authority_identity", "expected_contract_version", "expected_profile_id", "expected_policy_identity"], "optional": ["artifact_reference"], "additional": false},
-    "external_attestation_external_only": {"schema_version": "radjax_tome_external_attestation_v1_draft", "required": ["schema_version", "semantic_root", "semantic_authority_identity", "contract_version", "semantic_profile_id", "behavioral_policy_identity", "artifact_reference", "issuer_id", "issued_at", "expires_at", "envelope_algorithm_id", "envelope"], "additional": false}
+    "archive_receipt_external_only": {"schema_version": "radjax_tome_archive_receipt_v1_draft", "required": ["schema_version", "algorithm_id", "archive_sha256", "archive_size_bytes", "transport"], "optional": ["artifact_reference"], "artifact_reference": "#/artifact_reference", "algorithm_id": "sha256", "additional": false},
+    "governed_comparison_external_only": {"schema_version": "radjax_tome_governed_comparison_v1_draft", "required": ["schema_version", "expected_semantic_root", "expected_authority_identity", "expected_contract_version", "expected_profile_id", "expected_policy_identity"], "optional": ["artifact_reference"], "artifact_reference": "#/artifact_reference", "additional": false},
+    "external_attestation_external_only": {"schema_version": "radjax_tome_external_attestation_v1_draft", "required": ["schema_version", "semantic_root", "semantic_authority_identity", "contract_version", "semantic_profile_id", "behavioral_policy_identity", "artifact_reference", "issuer_id", "issued_at", "expires_at", "envelope_algorithm_id", "envelope"], "artifact_reference": "#/artifact_reference", "envelope_algorithm_id": "fv3_raw_base64_v1", "additional": false}
   },
   "member_paths": {"fixed": ["cover_page.json", "manifests/content-manifest-header.json", "manifests/content-manifest-inventory.jsonl", "provenance/semantic-identity.json", "provenance/semantic-authority.json", "provenance/behavioral-policy.json", "provenance/capabilities.json", "selected_exemplars/layout.json", "selected_exemplars/payload-index.jsonl", "selected_exemplars/payload-shards.jsonl"], "inventory_excludes": ["cover_page.json", "manifests/content-manifest-header.json", "manifests/content-manifest-inventory.jsonl"], "path_pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]*$"}
 }

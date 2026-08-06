@@ -8,8 +8,11 @@ validator, producer, consumer, fixture replacement, or changed historical path.
 
 The draft vector manifest is `docs/drafts/tome_provenance_v3_vectors.json`.
 Independent implementations MUST reproduce all declared framed bytes and
-digests. Its compact record maps exercise the framing grammar and are not claimed
-to be complete production profile records. The future corpus starts from a valid minimal package; “before yield”
+digests. Every normative root vector contains complete closed v3 semantic
+records, explicit selection order, complete authority/policy context, framing
+constants, intermediate preimages, and expected identities. No abbreviated or
+pedagogical example is a normative digest input. The future corpus starts from a
+valid minimal package; “before yield”
 means the affected shard row is never exposed to a streaming consumer.
 
 | Fixture class | Mutation / validation mode | Expected stage and result | Claim / nonclaim |
@@ -119,10 +122,16 @@ input, `A` adds independently supplied external attestation.
 | PC36 | mixed-run receipts | producer / refuse resume | transaction identity/range |
 | PC37 | cross-authority journal | producer / refuse resume | authority binding |
 | PC38 | unreceipted staged shard | producer / refuse resume | seal receipt rule |
-| PC39 | crash after each write, seal, range, complete, intent, rename, marker transition | producer / resume or nonconsumable as section 9 says | crash state machine |
-| PC40 | incomplete promotion marker absent | producer / retry or reject, never public accept | promotion visibility |
-| PC41 | v1 declared artifact | historical validator / native result | unchanged historical behavior |
-| PC42 | v2 declared artifact | historical validator / native result | unchanged historical behavior |
+| PC48 | valid external archive receipt with artifact reference | receipt validation / accept | optional canonical reference |
+| PC49 | malformed archive artifact reference | receipt validation / reject `malformed_reference` | closed reference rule |
+| PC50 | undeclared archive receipt sibling field | receipt validation / reject `malformed_schema` | closed object rule |
+| PC51 | valid raw-FV3 base64 attestation envelope | A / attestation binding pass | exact external envelope binding |
+| PC52 | malformed/noncanonical base64 envelope | A / 9 `attestation_envelope_invalid` | canonical base64 |
+| PC53 | decoded envelope differs from binding FV3 bytes | A / 9 `attestation_binding_mismatch` | noncircular binding |
+| PC54 | unsupported envelope algorithm | A / 9 `attestation_algorithm_unsupported` | explicit algorithm dispatch |
+| PC55 | archive-contained attestation supplied as external evidence | A / 9 `attestation_not_external` | separate trust channel |
+| PC56 | v1 declared artifact | historical validator / native result | unchanged historical behavior |
+| PC57 | v2 declared artifact | historical validator / native result | unchanged historical behavior |
 
 Draft-vector cases `minimal_complete_record`, `several_ordered_records`,
 `changed_record_order`, `changed_semantic_payload`, `changed_authority`,
@@ -133,3 +142,25 @@ PC24--PC32. Numeric vectors additionally require signed minima/maxima, one
 outside each bound, `-0`, `-0.0`, subnormal, overflow, and the three lexical
 positive-one spellings; these are parser/conversion cases and do not introduce
 an alternative root algorithm.
+
+### Journal crash/restart fixture details
+
+All PC39--PC47 begin with one valid private transaction whose authority and
+configuration identities match the requested run, whose sealed receipts cover a
+contiguous prefix, and whose final public location is absent. The journal and
+staging directory are restart inputs; neither is a public semantic input. “No
+public visibility” means no completed package may be opened by a standard
+consumer. Each case proves crash-safe operational recovery only, never atomic
+storage guarantees beyond the specified POSIX primitives or producer honesty.
+
+| ID | attempted transition and exact crash | durable state / restart outcome | visibility, mechanism, recovery stage/result |
+| --- | --- | --- | --- |
+| PC39 | WRITING: before the staged shard is fsynced | partial bytes and no receipt; restart removes/quarantines them, then resumes from committed prefix | no visibility; receipt absence; producer recovery refuses partial content |
+| PC40 | WRITING→sealed: after fsynced shard bytes, before fsynced receipt append | durable unreceipted bytes; restart removes/quarantines, then resumes prefix | no visibility; unreceipted-shard refusal |
+| PC41 | sealed→range-committed: after fsynced receipt, before fsynced range update | receipt exists but `committed_next_selection_index` is stale; restart audits bytes and either reconstructs the deterministic range update or refuses | no visibility; receipt/range reconciliation |
+| PC42 | range-committed→COMPLETE_INTENT: after fsynced range update, before COMPLETE_INTENT | contiguous receipt/range prefix; restart resumes WRITING or creates COMPLETE_INTENT only after all required records exist | no visibility; contiguous-range audit |
+| PC43 | COMPLETE_INTENT→PROMOTION_INTENT: after COMPLETE_INTENT, before promotion-intent fsync | sealed complete transaction; restart rebuilds public evidence only from receipts then retries | no visibility; sealed-state derivation |
+| PC44 | PROMOTION_INTENT→rename: after promotion-intent fsync, before same-filesystem rename | intent durable, final absent; restart validates receipts/ranges and retries or removes staging | no visibility; intent is not completion |
+| PC45 | rename→PROMOTED: after atomic rename, before PROMOTED marker fsync | final tree present but no marker; restart treats it nonconsumable, standard-validates it, then writes marker or removes it | no consumer acceptance; marker gate |
+| PC46 | after PROMOTED marker fsync | final tree and marker durable; restart needs no journal and standard validation may open it | public visibility; completed-promotion evidence |
+| PC47 | restart any prior state with changed transaction/configuration/authority or mixed receipts | binding mismatch; refuse without mutation/promotion | no visibility; transaction/authority binding |

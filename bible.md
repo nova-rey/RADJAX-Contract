@@ -871,3 +871,12 @@ next minor publication is planned as `v0.5.0` after complete verification.
   released schema, validator, fixture, API, format adoption, Tome/Student
   behavior, Golden evidence, M8 work, or M9 work. Historical v1/v2 validation
   remains frozen; v2 open objects are migration context rather than v3 authority.
+
+## 2026-08-06 - Tome provenance v3 final specification cleanup
+
+- Removed stale wording that described normative vectors as compact or
+  incomplete; they are complete closed v3 semantic-record/vector inputs.
+- Reconciled the optional canonical artifact reference across external archive,
+  governed-comparison, and attestation records; specified the exact raw-base64
+  FV3 attestation envelope binding; and split every journal crash boundary into
+  its own conformance case. This remains unreleased design-only work.
