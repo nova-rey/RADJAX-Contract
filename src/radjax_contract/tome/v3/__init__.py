@@ -19,12 +19,16 @@ from radjax_contract.tome.v3.external import (
     validate_archive_receipt_v3,
     verify_attestation_v3,
 )
-from radjax_contract.tome.v3.journal import validate_journal_state_v3
+from radjax_contract.tome.v3.journal import (
+    journal_restart_disposition_v3,
+    validate_journal_state_v3,
+)
 from radjax_contract.tome.v3.models import (
     ArchiveReceiptReportV3,
     AttestationRequirement,
     ExternalAttestationReportV3,
     GovernedComparisonReportV3,
+    JournalRestartDispositionV3,
     JournalStateV3,
     StandardIntegrityReportV3,
 )
@@ -54,6 +58,7 @@ __all__ = [
     "AttestationRequirement",
     "ExternalAttestationReportV3",
     "GovernedComparisonReportV3",
+    "JournalRestartDispositionV3",
     "JournalStateV3",
     "StandardIntegrityReportV3",
     "StreamingTomeV3Reader",
@@ -63,6 +68,7 @@ __all__ = [
     "validate_archive_receipt_v3",
     "validate_external_archive_receipt_v3",
     "validate_journal_state_v3",
+    "journal_restart_disposition_v3",
     "validate_tome_artifact_v3",
     "verify_attestation_v3",
     "verify_external_tome_attestation_v3",

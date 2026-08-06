@@ -63,3 +63,11 @@ class JournalStateV3:
     committed_next_selection_index: int = 0
     completion_intent: bool = False
     promotion_marker: bool = False
+
+
+@dataclass(frozen=True)
+class JournalRestartDispositionV3:
+    """Private, side-effect-free recovery decision for a validated journal."""
+
+    action: str
+    public_visible: bool

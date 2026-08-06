@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from radjax_contract.tome.v3.codec import canonical_base64_decode, fv3
+from radjax_contract.tome.v3.codec import FV3Error, canonical_base64_decode, fv3
 from radjax_contract.tome.v3.issues import TomeV3ValidationError, ValidationPhaseV3
 from radjax_contract.tome.v3.models import (
     ArchiveReceiptReportV3,
@@ -70,6 +70,19 @@ def _wire_int(value: Any, *, phase: ValidationPhaseV3, code: str) -> int:
     return result
 
 
+def _artifact_reference(value: Any, *, phase: ValidationPhaseV3, code: str) -> str:
+    """Validate the one canonical, opaque external artifact reference shape."""
+
+    if (
+        not isinstance(value, str)
+        or not value
+        or len(value) > 512
+        or any(character in value for character in "\x00\r\n")
+    ):
+        raise TomeV3ValidationError(code, phase=phase)
+    return value
+
+
 def compare_governed_v3(
     artifact: Path,
     standard: StandardIntegrityReportV3,
@@ -108,6 +121,8 @@ def compare_governed_v3(
         == identity["semantic_authority_identity"]
         and value["expected_policy_identity"] == identity["behavioral_policy_identity"]
     )
+    if not matches:
+        raise TomeV3ValidationError("governed_expected_root_mismatch", phase=phase)
     return GovernedComparisonReportV3(
         standard, value["expected_semantic_root"], matches
     )
@@ -136,6 +151,16 @@ def validate_archive_receipt_v3(
         or value["algorithm_id"] != "sha256"
     ):
         raise TomeV3ValidationError("archive_receipt_unsupported", phase=phase)
+    if value["transport"] not in {"tgz", "rtome"}:
+        raise TomeV3ValidationError("archive_receipt_invalid", phase=phase)
+    if not isinstance(value["archive_sha256"], str) or not value[
+        "archive_sha256"
+    ].startswith("sha256:"):
+        raise TomeV3ValidationError("archive_receipt_invalid", phase=phase)
+    if "artifact_reference" in value:
+        _artifact_reference(
+            value["artifact_reference"], phase=phase, code="reference_invalid"
+        )
     raw = archive.read_bytes()
     matches = "sha256:" + hashlib.sha256(raw).hexdigest() == value[
         "archive_sha256"
@@ -187,11 +212,22 @@ def verify_attestation_v3(
         or value["envelope_algorithm_id"] != "fv3_raw_base64_v1"
     ):
         raise TomeV3ValidationError("external_attestation_unsupported", phase=phase)
+    _artifact_reference(
+        value["artifact_reference"], phase=phase, code="external_attestation_invalid"
+    )
+    if not isinstance(value["issuer_id"], str) or not value["issuer_id"]:
+        raise TomeV3ValidationError("external_attestation_invalid", phase=phase)
     binding = {
         key: value[key]
         for key in sorted(required - {"envelope"}, key=lambda item: item.encode())
     }
-    if canonical_base64_decode(value["envelope"]) != fv3(binding):
+    try:
+        decoded_envelope = canonical_base64_decode(value["envelope"])
+    except (FV3Error, TypeError) as exc:
+        raise TomeV3ValidationError(
+            "external_attestation_envelope_invalid", phase=phase
+        ) from exc
+    if decoded_envelope != fv3(binding):
         raise TomeV3ValidationError(
             "external_attestation_binding_mismatch", phase=phase
         )

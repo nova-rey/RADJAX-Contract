@@ -47,7 +47,7 @@ def test_sequence_binds_order_and_closed_record_bytes() -> None:
 def test_strict_json_retains_number_lexemes_and_rejects_duplicate_keys() -> None:
     parsed = loads('{"value":1e0}')
     assert isinstance(parsed["value"], NumberLexeme)
-    with pytest.raises(ValueError, match="duplicate_json_key"):
+    with pytest.raises(ValueError, match="malformed_schema"):
         loads('{"value":1,"value":2}')
 
 

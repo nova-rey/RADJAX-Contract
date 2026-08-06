@@ -947,3 +947,18 @@ next minor publication is planned as `v0.5.0` after complete verification.
   candidate remains on its isolated branch and is not released, merged, tagged,
   or adopted by Tome. Broader PC01--PC57 conformance evidence remains a required
   review gate rather than an inferred claim.
+
+## 2026-08-06 - Tome artifact v3 conformance-execution correction
+
+- Reconciled the runtime v3 validation ABI with the checksum-pinned published
+  error catalog: callers receive only documented machine codes while preserving
+  implementation-local diagnostics as non-public issue detail. Tightened closed
+  reference-schema checks, external archive-receipt references, raw-envelope
+  failures, and governed comparison refusal semantics.
+- Added coherent multi-shard adversarial construction fixtures that exercise raw
+  receipt damage, member closure, index/range/reference mismatch, semantic-order
+  drift, authority/policy/contract bindings, resharding/repackaging invariance,
+  self-consistent replacement boundaries, per-shard streaming, external receipts,
+  attestation envelopes, and private journal recovery dispositions. This remains
+  unreleased Contract-only work; it does not add a Tome producer, public package,
+  Student behavior, migration, tag, or release.

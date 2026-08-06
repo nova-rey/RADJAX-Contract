@@ -161,7 +161,11 @@ def _closed(
 
 
 def _reference(
-    value: Any, *, phase: ValidationPhaseV3, index: bool = False
+    value: Any,
+    *,
+    phase: ValidationPhaseV3,
+    index: bool = False,
+    expected_schema_version: str | None = None,
 ) -> Mapping[str, Any]:
     fields = {"path", "sha256", "size_bytes", "schema_version"} | (
         {"record_count"} if index else set()
@@ -174,6 +178,11 @@ def _reference(
         not isinstance(value["sha256"], str)
         or not value["sha256"].startswith("sha256:")
         or not isinstance(value["schema_version"], str)
+    ):
+        raise TomeV3ValidationError("reference_invalid", phase=phase)
+    if (
+        expected_schema_version is not None
+        and value["schema_version"] != expected_schema_version
     ):
         raise TomeV3ValidationError("reference_invalid", phase=phase)
     _wire_int(value["size_bytes"], phase=phase, code="reference_invalid")
@@ -189,12 +198,11 @@ def _verify_ref(
     reference: Mapping[str, Any],
     *,
     phase: ValidationPhaseV3,
+    missing_code: str = "referenced_member_missing",
 ) -> None:
     path = reference["path"]
     if path not in members:
-        raise TomeV3ValidationError(
-            "referenced_member_missing", phase=phase, location=path
-        )
+        raise TomeV3ValidationError(missing_code, phase=phase, location=path)
     raw = members[path].read_bytes()
     if _sha(raw) != reference["sha256"] or len(raw) != _wire_int(
         reference["size_bytes"], phase=phase, code="reference_invalid"
@@ -250,7 +258,12 @@ def _transport(
 
 
 def _validate_root(
-    artifact: Path, root: Path, transport: str, *, strict_transport: bool
+    artifact: Path,
+    root: Path,
+    transport: str,
+    *,
+    strict_transport: bool,
+    defer_shard_raw: bool = False,
 ) -> tuple[
     StandardIntegrityReportV3,
     list[tuple[Path, dict[str, Any]]],
@@ -297,9 +310,16 @@ def _validate_root(
             "transport_strict_archive_required", phase=ValidationPhaseV3.DISPATCH
         )
     header_ref = _reference(
-        cover["manifest_header_ref"], phase=ValidationPhaseV3.RAW_MEMBERS
+        cover["manifest_header_ref"],
+        phase=ValidationPhaseV3.RAW_MEMBERS,
+        expected_schema_version="tome_content_manifest_header_v4",
     )
-    _verify_ref(members, header_ref, phase=ValidationPhaseV3.RAW_MEMBERS)
+    _verify_ref(
+        members,
+        header_ref,
+        phase=ValidationPhaseV3.RAW_MEMBERS,
+        missing_code="graph_reference_missing",
+    )
     header = _load(members[header_ref["path"]], phase=ValidationPhaseV3.GRAPH)
     header_fields = {
         "schema_version",
@@ -325,8 +345,17 @@ def _validate_root(
         raise TomeV3ValidationError(
             "manifest_header_binding_mismatch", phase=ValidationPhaseV3.GRAPH
         )
-    inventory_ref = _reference(header["inventory_ref"], phase=ValidationPhaseV3.GRAPH)
-    _verify_ref(members, inventory_ref, phase=ValidationPhaseV3.GRAPH)
+    inventory_ref = _reference(
+        header["inventory_ref"],
+        phase=ValidationPhaseV3.GRAPH,
+        expected_schema_version="tome_content_manifest_inventory_v4",
+    )
+    _verify_ref(
+        members,
+        inventory_ref,
+        phase=ValidationPhaseV3.GRAPH,
+        missing_code="graph_reference_missing",
+    )
     inventory_rows = load_jsonl(
         members[inventory_ref["path"]].read_bytes(), phase=ValidationPhaseV3.GRAPH
     )
@@ -373,18 +402,24 @@ def _validate_root(
                 location=path,
             )
         declared.add(path)
-        if (
-            path not in members
-            or _sha(members[path].read_bytes()) != row["sha256"]
-            or len(members[path].read_bytes())
-            != _wire_int(
-                row["size_bytes"],
-                phase=ValidationPhaseV3.GRAPH,
-                code="inventory_row_invalid",
+        if path not in members:
+            raise TomeV3ValidationError(
+                "referenced_member_missing",
+                phase=ValidationPhaseV3.RAW_MEMBERS,
+                location=path,
             )
+        if defer_shard_raw and row["member_role"] == "payload_shard":
+            continue
+        member_raw = members[path].read_bytes()
+        if _sha(member_raw) != row["sha256"] or len(member_raw) != _wire_int(
+            row["size_bytes"],
+            phase=ValidationPhaseV3.GRAPH,
+            code="inventory_row_invalid",
         ):
             raise TomeV3ValidationError(
-                "inventory_member_mismatch",
+                "shard_raw_mismatch"
+                if row["member_role"] == "payload_shard"
+                else "inventory_member_mismatch",
                 phase=ValidationPhaseV3.GRAPH,
                 location=path,
             )
@@ -400,14 +435,33 @@ def _validate_root(
     ):
         _verify_ref(
             members,
-            _reference(cover[name], phase=ValidationPhaseV3.GRAPH),
+            _reference(
+                cover[name],
+                phase=ValidationPhaseV3.GRAPH,
+                expected_schema_version={
+                    "capabilities_ref": "radjax_tome_capabilities_v1",
+                    "semantic_identity_ref": IDENTITY_SCHEMA_VERSION,
+                    "semantic_authority_ref": "radjax_tome_semantic_authority_v1",
+                    "behavioral_policy_ref": "radjax_tome_behavioral_policy_v1",
+                }[name],
+            ),
             phase=ValidationPhaseV3.GRAPH,
+            missing_code="graph_reference_missing",
         )
     for name in ("capabilities_ref", "semantic_identity_ref", "layout_ref"):
         _verify_ref(
             members,
-            _reference(header[name], phase=ValidationPhaseV3.GRAPH),
+            _reference(
+                header[name],
+                phase=ValidationPhaseV3.GRAPH,
+                expected_schema_version={
+                    "capabilities_ref": "radjax_tome_capabilities_v1",
+                    "semantic_identity_ref": IDENTITY_SCHEMA_VERSION,
+                    "layout_ref": "radjax_tome_payload_layout_v2",
+                }[name],
+            ),
             phase=ValidationPhaseV3.GRAPH,
+            missing_code="graph_reference_missing",
         )
     if (
         header["capabilities_ref"] != cover["capabilities_ref"]
@@ -492,11 +546,16 @@ def _validate_root(
     )
     if identity["semantic_authority_identity"] != digest(
         DOMAIN_LABELS["semantic_authority"], authority
-    ) or identity["behavioral_policy_identity"] != digest(
+    ):
+        raise TomeV3ValidationError(
+            "semantic_authority_identity_mismatch",
+            phase=ValidationPhaseV3.SEMANTIC_ROOT,
+        )
+    if identity["behavioral_policy_identity"] != digest(
         DOMAIN_LABELS["behavioral_policy"], policy
     ):
         raise TomeV3ValidationError(
-            "semantic_governance_identity_mismatch",
+            "semantic_policy_identity_mismatch",
             phase=ValidationPhaseV3.SEMANTIC_ROOT,
         )
     layout = _load(
@@ -529,10 +588,16 @@ def _validate_root(
             "layout_identity_mismatch", phase=ValidationPhaseV3.INDEXES
         )
     payload_ref = _reference(
-        layout["payload_index_ref"], phase=ValidationPhaseV3.INDEXES, index=True
+        layout["payload_index_ref"],
+        phase=ValidationPhaseV3.INDEXES,
+        index=True,
+        expected_schema_version="radjax_tome_payload_index_v3",
     )
     shards_ref = _reference(
-        layout["shard_index_ref"], phase=ValidationPhaseV3.INDEXES, index=True
+        layout["shard_index_ref"],
+        phase=ValidationPhaseV3.INDEXES,
+        index=True,
+        expected_schema_version="radjax_tome_payload_shard_index_v2",
     )
     _verify_ref(members, payload_ref, phase=ValidationPhaseV3.INDEXES)
     _verify_ref(members, shards_ref, phase=ValidationPhaseV3.INDEXES)
@@ -636,13 +701,14 @@ def _validate_root(
             raise TomeV3ValidationError(
                 "shard_range_or_path_mismatch", phase=ValidationPhaseV3.INDEXES
             )
-        raw = members[row["path"]].read_bytes()
-        if _sha(raw) != row["sha256"] or len(raw) != row["size_bytes"]:
-            raise TomeV3ValidationError(
-                "shard_raw_mismatch",
-                phase=ValidationPhaseV3.RAW_MEMBERS,
-                location=row["path"],
-            )
+        if not defer_shard_raw:
+            raw = members[row["path"]].read_bytes()
+            if _sha(raw) != row["sha256"] or len(raw) != row["size_bytes"]:
+                raise TomeV3ValidationError(
+                    "shard_raw_mismatch",
+                    phase=ValidationPhaseV3.GRAPH,
+                    location=row["path"],
+                )
         expected_first += row["record_count"]
         shard_sources.append((members[row["path"]], dict(row)))
     if (
@@ -757,6 +823,7 @@ class StreamingTomeV3Reader:
                     self.root,
                     self.transport,
                     strict_transport=strict_transport,
+                    defer_shard_raw=True,
                 )
             )
         except Exception:
@@ -770,7 +837,7 @@ class StreamingTomeV3Reader:
             if _sha(raw) != shard["sha256"] or len(raw) != shard["size_bytes"]:
                 raise TomeV3ValidationError(
                     "shard_raw_mismatch",
-                    phase=ValidationPhaseV3.RAW_MEMBERS,
+                    phase=ValidationPhaseV3.GRAPH,
                     location=str(path),
                 )
             rows = [

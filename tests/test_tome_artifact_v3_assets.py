@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 
 from radjax_contract.tome.contract_publication import (
     TOME_ARTIFACT_V3_CONTRACT_PROFILE_ID,
@@ -15,6 +16,7 @@ from radjax_contract.tome.v3.codec import (
     record_sequence_digest,
     semantic_root,
 )
+from radjax_contract.tome.v3.issues import public_error_code_v3
 
 
 def test_final_contract_assets_are_discoverable_and_checksum_pinned() -> None:
@@ -54,3 +56,18 @@ def test_all_final_vectors_recompute_from_committed_inputs() -> None:
             == expected["sequence_digest"]
         )
         assert semantic_root(expected["root_input"]) == expected["semantic_root"]
+
+
+def test_runtime_error_adapter_is_closed_over_the_published_error_catalog() -> None:
+    """No implementation-local error escapes the release candidate ABI."""
+
+    errors = json.loads(asset_path("errors/errors_v3.json").read_text())
+    published = set(errors["codes"])
+    source_root = asset_path("contract.json").parents[3] / "tome" / "v3"
+    literals: set[str] = set()
+    for path in source_root.glob("*.py"):
+        literals.update(
+            re.findall(r'TomeV3ValidationError\(\s*"([a-z0-9_]+)"', path.read_text())
+        )
+    assert literals
+    assert {public_error_code_v3(code) for code in literals} <= published
