@@ -83,6 +83,7 @@ def public_error_code_v3(internal_code: str) -> str:
         "inventory_not_closed": "undeclared_member",
         "referenced_member_corrupt": "corrupt_member",
         "inventory_member_mismatch": "corrupt_member",
+        "inventory_public_member_invalid": "incoherent_package_graph",
         "shard_raw_mismatch": "corrupt_shard",
         "semantic_authority_identity_mismatch": "authority_mismatch",
         "semantic_policy_identity_mismatch": "policy_mismatch",

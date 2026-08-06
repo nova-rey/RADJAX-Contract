@@ -962,3 +962,15 @@ next minor publication is planned as `v0.5.0` after complete verification.
   attestation envelopes, and private journal recovery dispositions. This remains
   unreleased Contract-only work; it does not add a Tome producer, public package,
   Student behavior, migration, tag, or release.
+
+## 2026-08-06 - Tome artifact v3 independent-review closure correction
+
+- Closed the review-discovered public-member escape hatch: inventory roles are
+  now bound to their one legal public paths, payload shards must use the declared
+  shard path namespace, and the shard index must exactly equal inventoried shard
+  members. A producer-private journal therefore cannot become public evidence by
+  being inventoried under a familiar role.
+- Added direct PC55 external-evidence-boundary and PC56/PC57 historical native
+  dispatch tests. This remains an additive unreleased Contract implementation;
+  no historical format, Tome behavior, Student behavior, release, tag, or merge
+  changed.

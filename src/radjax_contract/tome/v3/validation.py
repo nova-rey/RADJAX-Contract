@@ -72,6 +72,16 @@ _INVENTORY_ROLES = frozenset(
         "payload_shard",
     }
 )
+_ROLE_PATHS = {
+    "semantic_identity": "provenance/semantic-identity.json",
+    "semantic_authority": "provenance/semantic-authority.json",
+    "behavioral_policy": "provenance/behavioral-policy.json",
+    "capabilities": "provenance/capabilities.json",
+    "payload_layout": "selected_exemplars/layout.json",
+    "payload_index": "selected_exemplars/payload-index.jsonl",
+    "payload_shard_index": "selected_exemplars/payload-shards.jsonl",
+}
+_SHARD_PATH_PREFIX = "selected_exemplars/shards/"
 
 
 def _sha(raw: bytes) -> str:
@@ -395,6 +405,20 @@ def _validate_root(
                 "inventory_row_invalid", phase=ValidationPhaseV3.GRAPH
             )
         path = _safe(row["path"])
+        role = row["member_role"]
+        if role == "payload_shard":
+            if not path.startswith(_SHARD_PATH_PREFIX) or not path.endswith(".jsonl"):
+                raise TomeV3ValidationError(
+                    "inventory_public_member_invalid",
+                    phase=ValidationPhaseV3.GRAPH,
+                    location=path,
+                )
+        elif _ROLE_PATHS.get(role) != path:
+            raise TomeV3ValidationError(
+                "inventory_public_member_invalid",
+                phase=ValidationPhaseV3.GRAPH,
+                location=path,
+            )
         if path in declared or path in _INVENTORY_EXCLUDES:
             raise TomeV3ValidationError(
                 "inventory_duplicate_or_control_member",
@@ -654,6 +678,7 @@ def _validate_root(
         members[shards_ref["path"]].read_bytes(), phase=ValidationPhaseV3.INDEXES
     )
     shard_sources: list[tuple[Path, dict[str, Any]]] = []
+    shard_member_paths: set[str] = set()
     expected_first = 0
     for expected_shard_id, row in enumerate(shard_rows):
         if not isinstance(row, Mapping):
@@ -701,6 +726,7 @@ def _validate_root(
             raise TomeV3ValidationError(
                 "shard_range_or_path_mismatch", phase=ValidationPhaseV3.INDEXES
             )
+        shard_member_paths.add(row["path"])
         if not defer_shard_raw:
             raw = members[row["path"]].read_bytes()
             if _sha(raw) != row["sha256"] or len(raw) != row["size_bytes"]:
@@ -717,6 +743,13 @@ def _validate_root(
     ):
         raise TomeV3ValidationError(
             "shard_count_or_range_mismatch", phase=ValidationPhaseV3.INDEXES
+        )
+    inventoried_shard_paths = {
+        row["path"] for row in inventory_rows if row["member_role"] == "payload_shard"
+    }
+    if inventoried_shard_paths != shard_member_paths:
+        raise TomeV3ValidationError(
+            "shard_inventory_mismatch", phase=ValidationPhaseV3.INDEXES
         )
     if _wire_int(
         shards_ref["record_count"],

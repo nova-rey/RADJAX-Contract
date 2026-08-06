@@ -85,6 +85,7 @@ def _rewrite_inventory_and_cover(
     _write(artifact, inventory_path, inventory_raw)
 
     header = json.loads((artifact / header_path).read_text())
+    header["entry_count"] = len(rows)
     header["inventory_ref"] = _ref(
         inventory_path, inventory_raw, "tome_content_manifest_inventory_v4"
     )
@@ -678,6 +679,31 @@ def test_pc06_allowed_extra_member_is_not_silently_nonpublic(tmp_path: Path) -> 
         validate_tome_artifact_v3(artifact)
 
 
+def test_public_package_rejects_an_inventoried_private_journal(tmp_path: Path) -> None:
+    """A private journal cannot become public by assigning it a known role."""
+
+    artifact = _valid_artifact(tmp_path / "private-journal")
+    journal_path = "private/journal.json"
+    journal_raw = b"{}"
+    _write(artifact, journal_path, journal_raw)
+
+    def mutate(rows: list[dict[str, object]]) -> None:
+        rows.append(
+            {
+                "path": journal_path,
+                "sha256": _digest(journal_raw),
+                "size_bytes": len(journal_raw),
+                "member_role": "payload_shard",
+                "classification": "operational",
+                "required_for_standard_validation": True,
+            }
+        )
+
+    _rewrite_inventory_and_cover(artifact, mutate)
+    with pytest.raises(TomeV3ValidationError, match="incoherent_package_graph"):
+        validate_tome_artifact_v3(artifact)
+
+
 def test_pc08_pc09_and_pc13_index_coverage_and_location_are_closed(
     tmp_path: Path,
 ) -> None:
@@ -903,6 +929,39 @@ def test_pc51_to_pc54_attestation_envelope_is_external_and_exact(
             requirement=AttestationRequirement.REQUIRED,
             evaluation_time_utc=datetime(2026, 8, 6, tzinfo=UTC),
         )
+
+
+def test_pc55_package_local_evidence_never_satisfies_external_attestation(
+    tmp_path: Path,
+) -> None:
+    artifact = _valid_artifact(tmp_path / "PC55")
+    with pytest.raises(TomeV3ValidationError, match="attestation_not_external"):
+        verify_external_tome_attestation_v3(
+            artifact,
+            artifact / "provenance/semantic-identity.json",
+            requirement=AttestationRequirement.REQUIRED,
+            evaluation_time_utc=datetime(2026, 8, 6, tzinfo=UTC),
+        )
+
+
+def test_pc56_pc57_historical_dispatch_remains_native_and_separate(
+    tmp_path: Path,
+) -> None:
+    """v3 imports neither normalize nor replace the frozen v1/v2 validators."""
+
+    from test_student_consumption_v2 import _v2_artifact
+    from test_tome_contract_publication import _student_artifact
+
+    from radjax_contract.tome import validate_and_resolve_student_consumption
+
+    v1 = validate_and_resolve_student_consumption(
+        _student_artifact(tmp_path / "PC56"), profile_id="native_v3_student_v1"
+    )
+    assert v1.ok, v1.issues
+    v2 = validate_and_resolve_student_consumption(
+        _v2_artifact(tmp_path / "PC57"), profile_id="native_v3_student_v2"
+    )
+    assert v2.ok, v2.issues
 
 
 def _governed_input(identity: dict[str, object]) -> dict[str, object]:
