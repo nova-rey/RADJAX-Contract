@@ -858,3 +858,16 @@ next minor publication is planned as `v0.5.0` after complete verification.
   governed evidence or a genuinely independent attestation to detect; honest
   production, uncompromised source/validator, and truthful teacher origin remain
   explicit nonclaims.
+
+## 2026-08-06 - Tome provenance v3 precision correction
+
+- Corrected the unreleased v3 design after independent review without altering
+  the accepted architecture. The draft now has fully expanded complete-record
+  vectors with framed authority, policy, logical-ID, sequence, and root
+  preimages; exact labels, numeric conversion, closed nested unions, closed
+  public-object registry, strict member/JSONL rules, and individually testable
+  conformance cases.
+- The correction remains a Contract design artifact only. It introduces no
+  released schema, validator, fixture, API, format adoption, Tome/Student
+  behavior, Golden evidence, M8 work, or M9 work. Historical v1/v2 validation
+  remains frozen; v2 open objects are migration context rather than v3 authority.

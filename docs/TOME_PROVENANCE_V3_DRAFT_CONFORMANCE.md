@@ -70,3 +70,66 @@ explicit default-transition review. It must also show one production correctness
 path and a material retained-payload reduction before any M8 rebaseline. Failure
 to detect a self-consistent replacement without a supplied external expectation
 is not a standard-integrity failure.
+
+## Precision-correction conformance cases
+
+Every case begins from a fully valid v3 draft package unless stated otherwise;
+all have stable identifiers, use the named validation mode, and prove only the
+listed operational claim—not producer honesty, truthful teacher origin, or
+validator integrity. `S` means standard validation, `G` adds external governed
+input, `A` adds independently supplied external attestation.
+
+| ID | Exact variation | Mode / expected stage-class | Mechanism and claim |
+| --- | --- | --- | --- |
+| PC01 | flip one shard byte | S / 4 `corrupt_shard`, before yield | shard receipt; raw localization |
+| PC02 | truncate one shard | S / 4 `corrupt_shard`, before yield | size/digest; incomplete transfer |
+| PC03 | append one shard byte | S / 4 `corrupt_shard`, before yield | exact raw receipt |
+| PC04 | delete declared shard | S / 3 `missing_member` | inventory closure |
+| PC05 | replace declared shard with another valid shard | S / 4 `corrupt_shard`, before yield | receipt binding |
+| PC06 | add extra regular archive member | S / 1 `undeclared_member` | allowlist/inventory closure |
+| PC07 | remove inventoried nonshard member | S / 3 `missing_member` | inventory closure |
+| PC08 | duplicate one semantic record | S / 5 `index_incoherent` | contiguous unique sequence |
+| PC09 | omit index row/record | S / 5 `index_incoherent` | count and coverage |
+| PC10 | delete record but leave receipt | S / 4 `corrupt_shard`, before yield | raw receipt |
+| PC11 | reorder records with stale indexes | S / 6 `semantic_sequence_mismatch` | ordered reconstruction |
+| PC12 | stale shard raw receipt | S / 4 `corrupt_shard`, before yield | receipt verification |
+| PC13 | stale payload-index row | S / 5 `index_incoherent` | location join |
+| PC14 | stale shard-index row | S / 4 `corrupt_shard` or 5 `index_incoherent` | range/receipt join |
+| PC15 | stale cover header reference | S / 3 `incoherent_package_graph` | cover/header binding |
+| PC16 | stale header inventory reference | S / 3 `incoherent_package_graph` | header/inventory binding |
+| PC17 | declared count mismatch | S / 5 `index_incoherent` | count agreement |
+| PC18 | shard logical-range gap/overlap | S / 5 `index_incoherent` | contiguous ranges |
+| PC19 | reference points to wrong path/schema | S / 3 `incoherent_package_graph` | closed reference |
+| PC20 | duplicate key in JSON object | S / 2 `malformed_schema` | strict parser |
+| PC21 | JSONL blank/CR/nonobject/missing final LF | S / 2 `malformed_jsonl` | strict JSONL bytes |
+| PC22 | unsupported cover/version | S / 2 `unsupported_version` | exact dispatch |
+| PC23 | profile/capability/header disagreement | S / 2 `incoherent_package_graph` | deterministic dispatch |
+| PC24 | change authority source with stale identity | S / 7 `authority_mismatch` | authority derivation |
+| PC25 | change contract version with stale identity | S / 7 `semantic_root_mismatch` | root binding |
+| PC26 | change policy source with stale identity | S / 7 `policy_mismatch` | policy derivation |
+| PC27 | change declared root | S / 7 `semantic_root_mismatch` | root recomputation |
+| PC28 | capacity-one reshard with same records | S / pass, same root | physical layout excluded |
+| PC29 | recompress/reorder members with same records | S / pass, same root | packaging excluded |
+| PC30 | alter token and recompute all internal receipts/root | S / pass | honest self-contained boundary |
+| PC31 | PC30 plus original governed input | G / 8 `governed_expected_root_mismatch` | immutable expected identity |
+| PC32 | PC30 plus original external attestation | A / 9 `attestation_mismatch` | independent expected identity |
+| PC33 | corrupt first streamed shard | S / no row yielded from shard | stage-4 prerequisite |
+| PC34 | corrupt later streamed shard | S / earlier valid rows only; no row from corrupt shard | per-shard prerequisite |
+| PC35 | stale journal configuration | producer / refuse resume | authority/config binding |
+| PC36 | mixed-run receipts | producer / refuse resume | transaction identity/range |
+| PC37 | cross-authority journal | producer / refuse resume | authority binding |
+| PC38 | unreceipted staged shard | producer / refuse resume | seal receipt rule |
+| PC39 | crash after each write, seal, range, complete, intent, rename, marker transition | producer / resume or nonconsumable as section 9 says | crash state machine |
+| PC40 | incomplete promotion marker absent | producer / retry or reject, never public accept | promotion visibility |
+| PC41 | v1 declared artifact | historical validator / native result | unchanged historical behavior |
+| PC42 | v2 declared artifact | historical validator / native result | unchanged historical behavior |
+
+Draft-vector cases `minimal_complete_record`, `several_ordered_records`,
+`changed_record_order`, `changed_semantic_payload`, `changed_authority`,
+`changed_contract_version`, `changed_behavioral_policy`,
+`reshard_same_semantics`, `repackage_same_semantics`, and the nonroot unknown/
+absent/empty cases provide the exact source inputs and expected preimages for
+PC24--PC32. Numeric vectors additionally require signed minima/maxima, one
+outside each bound, `-0`, `-0.0`, subnormal, overflow, and the three lexical
+positive-one spellings; these are parser/conversion cases and do not introduce
+an alternative root algorithm.

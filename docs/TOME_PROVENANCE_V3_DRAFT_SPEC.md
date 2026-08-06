@@ -2,7 +2,7 @@
 
 **Status:** Contract-owned, unreleased design artifact for independent review.
 It is not a released schema, validator, producer path, consumer API, or default.
-The proposed successor is `radjax_tome_artifact_contract` **3.0.0-draft**. It
+The proposed successor is `radjax_tome_artifact_contract` **3.0.0-draft.1**. It
 is parallel to the published v1/v2 Tome artifact-contract lineage, not a
 Student-consumption v7 profile and not a change to `radjax-contract` 0.8.3.
 
@@ -12,6 +12,10 @@ its conformance companion, and the draft vectors. Historical v1--v6 validators
 remain authoritative for their declared inputs. A v3 validator dispatches only
 on the exact v3 wire schema and fails closed otherwise; it MUST NOT normalize an
 older artifact into v3 and claim original-format validity.
+
+Sections preceding **Precision correction 1** are retained only as review
+history. Where they differ from that correction, they are nonnormative and the
+correction is the sole draft contract.
 
 ## Assurance layers and nonclaims
 
@@ -154,7 +158,7 @@ The identity map excluding `semantic_root` is exactly:
 
 ```text
 {"schema_version":"radjax_tome_semantic_identity_v3_draft",
- "contract_version":"radjax_tome_artifact_contract@3.0.0-draft",
+ "contract_version":"radjax_tome_artifact_contract@3.0.0-draft.1",
  "semantic_profile_id":..., "semantic_authority_identity":...,
  "behavioral_policy_identity":..., "record_count":N,
  "ordered_record_sequence_digest":"sha256:..."}
@@ -238,3 +242,168 @@ stream corruption proof; journal fault/resume proof; corrected threat-model
 mutations; governed/attestation fixtures; full suites; unchanged historical
 artifacts; explicit review/default decision. Only then may M8 rebaseline after
 format adoption; it is a separate performance gate.
+
+## Precision correction 1 — normative supersession
+
+This section supersedes every earlier conflicting or incomplete v3 draft rule.
+The exact draft format version is now `3.0.0-draft.1`; its profile is
+`selected_exemplar_semantic_profile_v3_draft`. The v2 asset at Contract tag
+`v0.8.0` commit `b3275b8769c36b6261f4f241c47f0066c651e869`,
+`src/radjax_contract/contracts/radjax_tome/v2/schemas/semantic_identity_v2.json`,
+is migration context only: its authority, payload reference, and object dynamic
+top-k shapes are open and are **not** incorporated normatively.
+
+### Exact FV3-1 bytes
+
+`FRAME(label,payload)` is exactly
+`52 4a 54 46 45 31 00 || U16BE(len(label)) || label || U64BE(len(payload)) || payload`.
+The magic is escaped `b"RJTFE1\\x00"`, hex `524a5446453100`, length 7; `\\x00`
+means one NUL octet `00`, never four printable characters. `U16BE` and `U64BE`
+are unsigned big-endian integers. `FV3-1` values are: null `00`; false `01`;
+true `02`; signed integer `10 || I64BE`; finite binary64 `11 || IEEE754BE`;
+text `20 || U64BE(length) || UTF8`; list `30 || U64BE(count) ||` length-prefixed
+FV3 values; map `40 || U64BE(count) ||` ascending UTF-8-byte key followed by a
+length-prefixed FV3 value. Keys are strict UTF-8 scalar text, unique, and sorted
+unsigned-bytewise. Every map is closed by its named schema. No arbitrary nested
+maps or parser-inferred numbers are legal.
+
+| Domain | escaped bytes | hex | length |
+| --- | --- | --- | ---: |
+| logical record ID | `b"radjax.tome.v3.logical-record-id.v1"` | `7261646a61782e746f6d652e76332e6c6f676963616c2d7265636f72642d69642e7631` | 35 |
+| authority identity | `b"radjax.tome.v3.semantic-authority.v1"` | `7261646a61782e746f6d652e76332e73656d616e7469632d617574686f726974792e7631` | 36 |
+| policy identity | `b"radjax.tome.v3.behavioral-policy.v1"` | `7261646a61782e746f6d652e76332e6265686176696f72616c2d706f6c6963792e7631` | 35 |
+| record sequence | `b"radjax.tome.v3.record-sequence.v1"` | `7261646a61782e746f6d652e76332e7265636f72642d73657175656e63652e7631` | 33 |
+| semantic root | `b"radjax.tome.v3.semantic-root.v1"` | `7261646a61782e746f6d652e76332e73656d616e7469632d726f6f742e7631` | 31 |
+
+`SHA256(FRAME(label,FV3(map)))` is emitted `sha256:` plus 64 lowercase hex.
+Digest text is framed as text in a containing map; it is not decoded unless a
+rule explicitly says raw digest bytes. Logical ID is that construction over
+the closed map `{selected_example_id:text,selected_position:i64}`. Sequence
+payload is `U64BE(N)` followed, for each actual `selection_index` in ascending
+contiguous `0..N-1`, by `U64BE(index) || 32 raw digest bytes of logical ID ||
+U64BE(len(FV3(record))) || FV3(record)`. Its hash is SHA-256 of the FRAME with
+the record-sequence label. Root input is the exact identity map in the vector;
+root is SHA-256 of its semantic-root FRAME.
+
+Integers are exactly signed `[-2^63,2^63-1]`; JSON integer source accepts only
+the JSON integer grammar (no plus, leading zero except `0`, decimal point, or
+exponent), parses exactly, and rejects out of range. Source numeric lexical
+form cannot choose a type: the field schema chooses i64 or binary64. For a
+binary64 field, retain the JSON number lexeme, interpret it as an exact decimal
+rational, then round IEEE-754 round-to-nearest ties-to-even to finite binary64;
+frame its eight big-endian bytes. `1`, `1.0`, and `1e0` in an f64 field are the
+same positive-one bytes; decimal/exponent forms in an i64 field reject. Negative
+zero source rejects before framing. Nonnegative underflow rounds to positive zero
+and is accepted; overflow, NaN, and infinities reject; subnormals are accepted.
+Identity binds the normalized binary64 value, not spelling.
+
+### Closed semantic schemas
+
+All base record fields are required, non-null, and participate in FV3 unless
+explicitly named ordering metadata. `selection_index` is a required u64 wire
+field, is not in the record map, and is only sequence order. Text is nonempty;
+integer fields below are nonnegative i64; f64 is finite as above.
+
+| Fields | exact type and constraints |
+| --- | --- |
+| IDs/positions | `selected_example_id`, `source_score_policy`, `selected_policy`, `source_delivery_path`, `long_tail_class`, `semantic_tail_tag`, `selected_board`, `corridor_fingerprint_id`, `corridor_assignment_status`: text; `selected_position`, `source_shard_id`, `source_row`, `source_position`, `score_top_token_id`, `source_top_token_id`, `effective_top_k`, `sequence_length`, `vocab_size`, `num_buckets`, `dynamic_top_k_max`: nonnegative i64; `sequence_length`, `vocab_size`, `effective_top_k`, `dynamic_top_k_max` >= 1. |
+| scores/masses | `selected_score`, `score_selected_position_entropy`, `source_score`, `teacher_entropy`: f64; `dynamic_mass_threshold`, `top_mass`, `tail_mass`, `effective_top_k_fraction_of_vocab`: f64 in [0,1]; `top_log_probs`: f64 list; `top_probs`, `bucket_masses`: f64 lists whose members are [0,1]. |
+| token/list flags | `top_token_ids`: nonnegative i64 list; `top_selection_mask`: boolean list; `long_tail_warnings`: text list; `top_k_saturated`: boolean. The first three top lists and mask have length exactly `effective_top_k`; every token ID is `< vocab_size`; bucket masses length is `num_buckets`; `effective_top_k <= vocab_size`; selected/source positions are `< sequence_length`; source top token equals first token ID. |
+| `payload_ref` | exact union by `kind`: `source_coordinate` has exactly `kind`, `source_shard_id`, `source_row`, `source_position`, all nonnegative i64. No other keys. |
+| `dynamic_top_k` | exact union: `disabled_v1` has exactly `{kind:"disabled_v1"}`; `mass_threshold` has exactly `{kind:"mass_threshold",threshold:f64[0,1],max_k:i64>=1}`. For mass threshold, threshold/max_k equal `dynamic_mass_threshold`/`dynamic_top_k_max`; for disabled, both outer values are zero and `top_k_saturated` false. |
+| corridor | `corridor_mode_id` is nonempty text (no integer variant); `corridor_fingerprint_id` nonempty text. |
+
+Unknown or duplicate fields at every depth reject. Missing is never equivalent to
+null or empty. No extension fields are allowed in draft. Future semantic
+extensions require a new profile and domain/vector set. This self-contained
+profile replaces v2 open objects; it does not silently import any experiment
+harness convention.
+
+Authority is a closed map with `schema_version`, `contract_version`,
+`semantic_profile_id`, and sorted `entries`. Every entry has exactly `role`
+(one of `teacher`, `tokenizer_vocabulary`, `corpus`, `score_pass`, `selection`,
+`delivery`), `schema_id` (nonempty text), and `identity` (sha256 digest). All
+six roles occur once, sorted by role UTF-8 bytes. Policy is closed with
+`schema_version`, `contract_version`, `semantic_profile_id`, `selection_policy`,
+`dynamic_top_k_policy`, and `corridor_link_policy`, all nonempty text. Authority
+identity is `SHA256(FRAME(authority-label,FV3(authority-map)))`; policy identity
+uses the policy label/map identically. Both maps bind version/profile and have
+no null/unknown fields. Their framed preimages, digests, source maps, mutations,
+and incorporation in the root are committed in the vector manifest.
+
+### Closed public package contract
+
+The only public regular members are fixed `cover_page.json`,
+`manifests/content-manifest-header.json`,
+`manifests/content-manifest-inventory.jsonl`,
+`provenance/semantic-identity.json`, `provenance/semantic-authority.json`,
+`provenance/behavioral-policy.json`, `provenance/capabilities.json`,
+`selected_exemplars/layout.json`, `selected_exemplars/payload-index.jsonl`,
+`selected_exemplars/payload-shards.jsonl`, and shard paths declared by receipt.
+No optional public extensions exist in this draft. Every discovered regular file
+must be fixed or appear exactly once in inventory; every inventory path must be
+a discovered regular file. Extra, undeclared, missing, duplicate, symlink,
+hardlink, device, FIFO, unsafe, or shadowing member rejects. Directories are
+container metadata only and cannot shadow a regular member.
+
+All object references are closed `{path:text,sha256:digest,size_bytes:i64>=0,
+schema_version:text}`; an index reference additionally has `record_count:i64>=0`.
+The machine-readable closed-field registry is
+`docs/drafts/tome_provenance_v3_field_registry.json`; it is unreleased design
+data and is authoritative for exact required-key/enum closure in this draft.
+Cover contains exact cover/contract/profile versions, package `{profile_id,
+transport}` (transport enum `directory|rtome|tgz`), capabilities reference,
+identity/authority/policy references, header reference, and record/shard counts.
+Capabilities are `{schema_version:"radjax_tome_capabilities_v1_draft",
+required:[unique sorted text],optional:[unique sorted text]}`; required includes
+`standard_integrity_v3_draft` and `streaming_shard_receipts_v3_draft`, unknown
+required rejects, unknown optional is ignored only if it has no v3 effect.
+Header contains its schema/contract/profile/capabilities, identity, layout, and
+inventory references plus inventory `entry_count`. Layout is
+`radjax_tome_payload_layout_v2_draft` with identity reference, both index
+references, `record_count`, and nonsemantic `shard_capacity:i64>=1`. Shard rows
+are exactly `{shard_id,path,sha256,size_bytes,first_selection_index,record_count}`;
+payload rows exactly `{logical_record_id,selection_index,shard_id,row}`; ranges
+are contiguous and cover `[0,N)`. Inventory rows are exactly `{path,sha256,
+size_bytes,member_role,classification,required_for_standard_validation}` with
+roles `semantic_identity|semantic_authority|behavioral_policy|capabilities|
+payload_layout|payload_index|payload_shard_index|payload_shard`; classifications
+`training_critical|integrity_or_provenance|diagnostic|human_readable|operational`.
+False means raw receipt still required but semantic parsing not required.
+
+Inventory excludes cover/header/inventory, so cover raw-receipts header; header
+raw-receipts inventory; inventory raw-receipts every remaining member; layout
+references indexes. This proves no directed raw-digest cycle. Strict JSON is
+UTF-8 no BOM, one object root, no duplicate keys/nonfinite numbers/trailing
+content. JSONL is UTF-8 no BOM, no CR/blank lines, each row object ends one LF,
+and nonempty JSONL requires a final LF; a zero-count index is zero bytes only.
+All cross-object version/profile/capability/reference/count values must agree;
+cover selects dispatch, disagreement fails `incoherent_package_graph` before
+semantic reconstruction. Archive receipt is external-only:
+`{schema_version:"radjax_tome_archive_receipt_v1_draft",algorithm_id:"sha256",
+archive_sha256,archive_size_bytes,transport,artifact_reference?}` and never a
+member/root input.
+
+### Closed comparison, attestation, and journal
+
+Governed input is external, closed `radjax_tome_governed_comparison_v1_draft`:
+schema version, expected root, expected authority identity, expected contract
+version, expected profile ID, expected policy identity, and optional text
+artifact reference. It is checked after standard root validation; mismatch is
+`governed_expected_root_mismatch`. Attestation is external, closed
+`radjax_tome_external_attestation_v1_draft`: the same five bindings, nonempty
+artifact reference/issuer ID, RFC3339 UTC `issued_at`, nullable RFC3339 UTC
+`expires_at`, `envelope_algorithm_id`, and base64 text `envelope`. The envelope
+payload is exactly FV3 of the closed attested-fields map (all fields except the
+envelope itself); cryptographic verification/trust policy is out of scope.
+Unsupported/expired/missing-required/mismatching attestation fails respectively;
+an attestation member inside the Tome is non-external and cannot satisfy mode.
+
+Private journal governs local POSIX filesystem construction only. Write+fsync
+staged shard; hash/size then fsync append sealed receipt; fsync contiguous-range
+commit; fsync COMPLETE_INTENT; fsync PROMOTION_INTENT; atomically same-filesystem
+`rename(no_replace)` staged public tree; fsync PROMOTED marker; then standard
+public validation reports success. A crash before marker leaves no consumable
+package and restart validates receipts/ranges then retries or removes staging.
+If durable replace/fsync or atomic same-filesystem rename is unavailable, the
+producer rejects that output transport. Journal state is never public/rooted.
