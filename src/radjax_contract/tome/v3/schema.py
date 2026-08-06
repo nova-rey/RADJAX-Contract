@@ -156,11 +156,12 @@ def _f64(
     value: Any, *, phase: ValidationPhaseV3, code: str, unit_interval: bool = False
 ) -> float:
     try:
-        result = (
-            decimal_to_binary64(str(value))
-            if isinstance(value, NumberLexeme)
-            else float(value)
-        )
+        if isinstance(value, NumberLexeme):
+            result = decimal_to_binary64(str(value))
+        elif isinstance(value, (int, float)) and not isinstance(value, bool):
+            result = float(value)
+        else:
+            _error(code, phase=phase)
     except (FV3Error, TypeError, ValueError):
         _error(code, phase=phase)
     if (

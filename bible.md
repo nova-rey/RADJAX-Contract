@@ -935,3 +935,15 @@ next minor publication is planned as `v0.5.0` after complete verification.
   their existing discovery roots, validators, profiles, and default behavior.
   Tome adoption remains explicitly outside this candidate until independent
   review and separate release authorization.
+
+## 2026-08-06 - Tome artifact v3 independent-review correction
+
+- Corrected the independent review's concrete closed-wire gaps: binary64
+  semantic fields now reject strings and booleans; discovered public paths obey
+  the published ASCII grammar; duplicate `.rtome` members reject before
+  extraction; and inventory role/classification/boolean constraints are enforced
+  even if an adversary coherently refreshes surrounding raw receipts.
+- Added adversarial tests for those cases and for retained numeric lexemes. The
+  candidate remains on its isolated branch and is not released, merged, tagged,
+  or adopted by Tome. Broader PC01--PC57 conformance evidence remains a required
+  review gate rather than an inferred claim.

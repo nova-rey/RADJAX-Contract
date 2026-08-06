@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import re
 import tarfile
 import tempfile
 from collections.abc import Iterator, Mapping
@@ -49,6 +50,28 @@ _INVENTORY_EXCLUDES = frozenset(
         "manifests/content-manifest-inventory.jsonl",
     }
 )
+_MEMBER_PATH = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]*\Z")
+_INVENTORY_CLASSIFICATIONS = frozenset(
+    {
+        "training_critical",
+        "integrity_or_provenance",
+        "diagnostic",
+        "human_readable",
+        "operational",
+    }
+)
+_INVENTORY_ROLES = frozenset(
+    {
+        "semantic_identity",
+        "semantic_authority",
+        "behavioral_policy",
+        "capabilities",
+        "payload_layout",
+        "payload_index",
+        "payload_shard_index",
+        "payload_shard",
+    }
+)
 
 
 def _sha(raw: bytes) -> str:
@@ -56,7 +79,11 @@ def _sha(raw: bytes) -> str:
 
 
 def _safe(relative: str) -> str:
-    if not isinstance(relative, str) or not relative or "\\" in relative:
+    if (
+        not isinstance(relative, str)
+        or not _MEMBER_PATH.fullmatch(relative)
+        or "\\" in relative
+    ):
         raise TomeV3ValidationError(
             "member_path_unsafe", phase=ValidationPhaseV3.DISCOVERY
         )
@@ -187,12 +214,20 @@ def _transport(
         root = Path(temporary.name)
         try:
             with tarfile.open(artifact, "r:*") as archive:
+                seen_members: set[str] = set()
                 for member in archive.getmembers():
                     if not member.isfile() and not member.isdir():
                         raise TomeV3ValidationError(
                             "member_type_invalid", phase=ValidationPhaseV3.DISCOVERY
                         )
                     name = _safe(member.name)
+                    if name in seen_members:
+                        raise TomeV3ValidationError(
+                            "member_duplicate",
+                            phase=ValidationPhaseV3.DISCOVERY,
+                            location=name,
+                        )
+                    seen_members.add(name)
                     if member.isdir():
                         continue
                     target = root / name
@@ -322,6 +357,14 @@ def _validate_root(
             phase=ValidationPhaseV3.GRAPH,
             code="inventory_row_invalid",
         )
+        if (
+            row["classification"] not in _INVENTORY_CLASSIFICATIONS
+            or row["member_role"] not in _INVENTORY_ROLES
+            or not isinstance(row["required_for_standard_validation"], bool)
+        ):
+            raise TomeV3ValidationError(
+                "inventory_row_invalid", phase=ValidationPhaseV3.GRAPH
+            )
         path = _safe(row["path"])
         if path in declared or path in _INVENTORY_EXCLUDES:
             raise TomeV3ValidationError(
@@ -386,9 +429,12 @@ def _validate_root(
         capabilities["schema_version"] != "radjax_tome_capabilities_v1"
         or not isinstance(capabilities["required"], list)
         or not isinstance(capabilities["optional"], list)
-        or not {"standard_integrity_v3", "streaming_shard_receipts_v3"}.issubset(
-            capabilities["required"]
-        )
+        or set(capabilities["required"])
+        != {"standard_integrity_v3", "streaming_shard_receipts_v3"}
+        or len(capabilities["required"]) != len(set(capabilities["required"]))
+        or not all(isinstance(value, str) for value in capabilities["optional"])
+        or len(capabilities["optional"]) != len(set(capabilities["optional"]))
+        or set(capabilities["optional"]) & set(capabilities["required"])
     ):
         raise TomeV3ValidationError(
             "capabilities_invalid", phase=ValidationPhaseV3.GRAPH

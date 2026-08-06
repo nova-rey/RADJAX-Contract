@@ -3,7 +3,11 @@
 from __future__ import annotations
 
 import hashlib
+import io
 import json
+import tarfile
+from collections.abc import Callable
+from copy import deepcopy
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -20,6 +24,7 @@ from radjax_contract.tome.v3.codec import (
 )
 from radjax_contract.tome.v3.issues import TomeV3ValidationError
 from radjax_contract.tome.v3.models import AttestationRequirement
+from radjax_contract.tome.v3.schema import normalize_semantic_record
 from radjax_contract.tome.v3.validation import (
     compare_governed_tome_artifact_v3,
     open_tome_artifact_v3,
@@ -55,6 +60,41 @@ def _write(path: Path, relative: str, raw: bytes) -> None:
     member = path / relative
     member.parent.mkdir(parents=True, exist_ok=True)
     member.write_bytes(raw)
+
+
+def _rewrite_inventory_and_cover(
+    artifact: Path, mutate: Callable[[list[dict[str, object]]], None]
+) -> None:
+    """Refresh only the graph receipts needed to exercise inventory semantics.
+
+    The mutation oracle is deliberately independent of the validator: it changes
+    the inventory claim, recomputes its containing references, and leaves every
+    unrelated member unchanged.  A rejection therefore demonstrates field
+    validation rather than detection of a stale digest.
+    """
+
+    inventory_path = "manifests/content-manifest-inventory.jsonl"
+    header_path = "manifests/content-manifest-header.json"
+    rows = [
+        json.loads(line)
+        for line in (artifact / inventory_path).read_text().splitlines()
+    ]
+    mutate(rows)
+    inventory_raw = b"".join(_raw(row, jsonl=True) for row in rows)
+    _write(artifact, inventory_path, inventory_raw)
+
+    header = json.loads((artifact / header_path).read_text())
+    header["inventory_ref"] = _ref(
+        inventory_path, inventory_raw, "tome_content_manifest_inventory_v4"
+    )
+    header_raw = _raw(header)
+    _write(artifact, header_path, header_raw)
+
+    cover = json.loads((artifact / "cover_page.json").read_text())
+    cover["manifest_header_ref"] = _ref(
+        header_path, header_raw, "tome_content_manifest_header_v4"
+    )
+    _write(artifact, "cover_page.json", _raw(cover))
 
 
 def _valid_artifact(root: Path) -> Path:
@@ -288,3 +328,86 @@ def test_governed_and_external_modes_use_expected_evidence_outside_artifact(
             requirement=AttestationRequirement.REQUIRED,
             evaluation_time_utc=datetime(2026, 8, 6, tzinfo=UTC),
         )
+
+
+@pytest.mark.parametrize(
+    ("field", "invalid_value", "error"),
+    [
+        ("selected_position", "1", "selected_position_invalid"),
+        ("selected_position", True, "selected_position_invalid"),
+        ("selected_score", "0.5", "selected_score_invalid"),
+        ("selected_score", False, "selected_score_invalid"),
+        ("top_token_ids", ["1"], "top_token_id_invalid"),
+        ("top_probs", [True], "top_prob_invalid"),
+    ],
+)
+def test_pc20_closed_semantic_numeric_fields_reject_strings_and_booleans(
+    field: str, invalid_value: object, error: str
+) -> None:
+    """PC20: field-selected semantic numeric types never infer JSON strings/bools."""
+
+    vectors = json.loads(
+        Path(
+            "src/radjax_contract/contracts/radjax_tome/v3/vectors/"
+            "tome_provenance_v3_vectors.json"
+        ).read_text()
+    )
+    record = deepcopy(vectors["normative_root_vectors"][0]["ordered_records"][0])
+    record.pop("selection_index")
+    record[field] = invalid_value
+    with pytest.raises(TomeV3ValidationError, match=error):
+        normalize_semantic_record(record)
+
+
+@pytest.mark.parametrize("invalid_name", ["bad space.txt", "bad:colon.txt", ".hidden"])
+def test_pc06_member_path_grammar_rejects_disallowed_public_names(
+    tmp_path: Path, invalid_name: str
+) -> None:
+    """PC06: discovery applies the published member-path grammar, not just safety."""
+
+    artifact = _valid_artifact(tmp_path / "artifact")
+    _write(artifact, invalid_name, b"unclassified")
+    with pytest.raises(TomeV3ValidationError, match="member_path_unsafe"):
+        validate_tome_artifact_v3(artifact)
+
+
+def test_pc06_duplicate_rtome_member_is_rejected_before_extraction(
+    tmp_path: Path,
+) -> None:
+    """PC06: archive member uniqueness applies to ``.rtome`` transports too."""
+
+    artifact = _valid_artifact(tmp_path / "directory")
+    archive_path = tmp_path / "duplicate.rtome"
+    with tarfile.open(archive_path, "w:gz") as archive:
+        for member in sorted(artifact.rglob("*")):
+            if member.is_file():
+                archive.add(member, arcname=member.relative_to(artifact).as_posix())
+        duplicate = artifact / "cover_page.json"
+        duplicate_info = tarfile.TarInfo("cover_page.json")
+        duplicate_info.size = duplicate.stat().st_size
+        archive.addfile(duplicate_info, io.BytesIO(duplicate.read_bytes()))
+    with pytest.raises(TomeV3ValidationError, match="member_duplicate"):
+        validate_tome_artifact_v3(archive_path)
+
+
+@pytest.mark.parametrize(
+    ("field", "invalid_value"),
+    [
+        ("classification", "not_a_v3_classification"),
+        ("required_for_standard_validation", "true"),
+        ("required_for_standard_validation", 1),
+    ],
+)
+def test_inventory_row_closed_types_are_enforced_after_receipts_are_refreshed(
+    tmp_path: Path, field: str, invalid_value: object
+) -> None:
+    """Inventory classification/flag are validation inputs, never descriptive hints."""
+
+    artifact = _valid_artifact(tmp_path / "artifact")
+
+    def mutate(rows: list[dict[str, object]]) -> None:
+        rows[0][field] = invalid_value
+
+    _rewrite_inventory_and_cover(artifact, mutate)
+    with pytest.raises(TomeV3ValidationError, match="inventory_row_invalid"):
+        validate_tome_artifact_v3(artifact)

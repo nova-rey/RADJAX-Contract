@@ -60,6 +60,8 @@ def load_jsonl(
         text = raw.decode("utf-8", "strict")
     except UnicodeDecodeError as exc:
         raise TomeV3ValidationError("jsonl_not_utf8", phase=phase) from exc
+    if "\r" in text:
+        raise TomeV3ValidationError("jsonl_cr_not_allowed", phase=phase)
     if not text.endswith("\n"):
         raise TomeV3ValidationError("jsonl_missing_final_newline", phase=phase)
     lines = text[:-1].split("\n")
