@@ -7,7 +7,10 @@ from pathlib import Path
 
 TOME_CONTRACT_ID = "radjax_tome_artifact_contract"
 TOME_CONTRACT_PUBLICATION_VERSION = "1.0.0"
+TOME_ARTIFACT_V3_CONTRACT_ID = TOME_CONTRACT_ID
 TOME_STREAMING_CONTRACT_PUBLICATION_VERSION = "2.0.0"
+TOME_ARTIFACT_V3_CONTRACT_PUBLICATION_VERSION = "3.0.0"
+TOME_ARTIFACT_V3_CONTRACT_PROFILE_ID = "selected_exemplar_semantic_profile_v3"
 TOME_STUDENT_CONSUMPTION_CONTRACT_ID = "radjax_tome_student_consumption_contract"
 TOME_STUDENT_CONSUMPTION_CONTRACT_PUBLICATION_VERSION = "1.0.0"
 TOME_STUDENT_CONSUMPTION_V2_CONTRACT_PUBLICATION_VERSION = "2.0.0"
@@ -58,6 +61,32 @@ def tome_streaming_contract_asset_path(relative_path: str) -> Path:
     asset = tome_streaming_contract_root() / relative_path
     if not asset.is_file():
         raise ValueError(f"unknown streaming Tome contract asset: {relative_path}")
+    return asset
+
+
+def tome_artifact_v3_contract_root() -> Path:
+    """Return installed final v3 Tome-artifact Contract assets.
+
+    This is an additive discovery entry point.  It deliberately does not alter
+    the historical v1 or v2 dispatch roots.
+    """
+
+    root = files("radjax_contract").joinpath("contracts", "radjax_tome", "v3")
+    return Path(str(root))
+
+
+def tome_artifact_v3_contract_asset_path(relative_path: str) -> Path:
+    """Return one final v3 artifact-contract asset after safe path checks."""
+
+    if (
+        not relative_path
+        or relative_path.startswith("/")
+        or ".." in relative_path.split("/")
+    ):
+        raise ValueError("contract asset path must be a normalized relative path")
+    asset = tome_artifact_v3_contract_root() / relative_path
+    if not asset.is_file():
+        raise ValueError(f"unknown v3 Tome artifact-contract asset: {relative_path}")
     return asset
 
 
@@ -218,6 +247,9 @@ def tome_student_consumption_v6_contract_asset_path(relative_path: str) -> Path:
 __all__ = [
     "TOME_CONTRACT_ID",
     "TOME_CONTRACT_PUBLICATION_VERSION",
+    "TOME_ARTIFACT_V3_CONTRACT_ID",
+    "TOME_ARTIFACT_V3_CONTRACT_PROFILE_ID",
+    "TOME_ARTIFACT_V3_CONTRACT_PUBLICATION_VERSION",
     "TOME_STREAMING_CONTRACT_PUBLICATION_VERSION",
     "TOME_STUDENT_CONSUMPTION_CONTRACT_ID",
     "TOME_STUDENT_CONSUMPTION_CONTRACT_PUBLICATION_VERSION",
@@ -228,6 +260,8 @@ __all__ = [
     "TOME_STUDENT_CONSUMPTION_V6_CONTRACT_PUBLICATION_VERSION",
     "tome_contract_asset_path",
     "tome_contract_root",
+    "tome_artifact_v3_contract_asset_path",
+    "tome_artifact_v3_contract_root",
     "tome_streaming_contract_asset_path",
     "tome_streaming_contract_root",
     "tome_student_consumption_contract_asset_path",

@@ -840,3 +840,137 @@ next minor publication is planned as `v0.5.0` after complete verification.
   installed-wheel public exports pass. Advanced package metadata to
   `radjax-contract` 0.8.3 without schema, semantic-identity, language,
   whole-resource, JSONL, M7, or archive-semantics changes.
+
+## 2026-08-06 - Tome provenance v3 Contract design draft
+
+- Added an unreleased, non-production `radjax_tome_artifact_contract` 3.0.0
+  draft specification and conformance design on the isolated
+  `design/tome-provenance-vnext` branch. The version follows the v1/v2 Tome
+  artifact-contract lineage; it is not a new Student-consumption profile.
+- The draft defines one lean public operational proof surface, an acyclic
+  cover-to-header-to-inventory graph, byte-exact framed semantic root rules,
+  private journal-only construction/resume state, governed expected-root
+  comparison, and an external-attestation interface. It explicitly preserves
+  historical validators and makes no released schema, API, fixture, Tome,
+  Student, Golden, M8, or M9 change.
+- Standard validation is intentionally limited to operational integrity. A
+  fully recomputed self-consistent replacement requires externally retained
+  governed evidence or a genuinely independent attestation to detect; honest
+  production, uncompromised source/validator, and truthful teacher origin remain
+  explicit nonclaims.
+
+## 2026-08-06 - Tome provenance v3 precision correction
+
+- Corrected the unreleased v3 design after independent review without altering
+  the accepted architecture. The draft now has fully expanded complete-record
+  vectors with framed authority, policy, logical-ID, sequence, and root
+  preimages; exact labels, numeric conversion, closed nested unions, closed
+  public-object registry, strict member/JSONL rules, and individually testable
+  conformance cases.
+- The correction remains a Contract design artifact only. It introduces no
+  released schema, validator, fixture, API, format adoption, Tome/Student
+  behavior, Golden evidence, M8 work, or M9 work. Historical v1/v2 validation
+  remains frozen; v2 open objects are migration context rather than v3 authority.
+
+## 2026-08-06 - Tome provenance v3 final specification cleanup
+
+- Removed stale wording that described normative vectors as compact or
+  incomplete; they are complete closed v3 semantic-record/vector inputs.
+- Reconciled the optional canonical artifact reference across external archive,
+  governed-comparison, and attestation records; specified the exact raw-base64
+  FV3 attestation envelope binding; and split every journal crash boundary into
+  its own conformance case. This remains unreleased design-only work.
+
+## 2026-08-06 - Tome artifact Contract v3 implementation foundation
+
+- Began the additive, unreleased implementation on
+  `impl/tome-artifact-contract-v3`, preserving the frozen v1/v2 paths. Added
+  final v3 static Contract assets, safe installed-resource discovery, checksum
+  closure, and final (non-draft) vectors with a draft-to-release mapping.
+- Added a separate v3 namespace for byte-exact FV3 framing, lexeme-preserving
+  duplicate-rejecting JSON, closed semantic profile normalization, public
+  proof-graph validation, pre-yield shard raw verification, pure private-journal
+  checks, governed comparison, and externally supplied raw-envelope interface.
+  No Tome producer, consumer, Student change, migration, release, tag, or
+  historical validator change is included.
+- The private journal uses the published uppercase transition vocabulary and is
+  excluded from public discovery and semantic framing. Focused static vector,
+  checksum, framing, and parser tests pass; full conformance and release-candidate
+  validation remain subsequent implementation work on this branch.
+
+## 2026-08-06 - Tome artifact Contract v3 proof-graph hardening
+
+- Added an end-to-end generated v3 test package that exercises the closed
+  cover/header/inventory graph, single shard receipt, payload index, authority,
+  policy, sequence identity, root, and streaming admission. Raw member damage
+  is rejected before a streaming reader can yield a row from the damaged shard.
+- Normalized every closed nonsemantic wire integer from the strict retained JSON
+  lexeme instead of relying on host parser coercion. The public validator now
+  enforces payload/shard index location coherence, count/range continuity,
+  header/cover/layout reference agreement, required capabilities, and the
+  private journal's published uppercase state vocabulary.
+- Governed comparison and external receipt inputs remain caller supplied and
+  external to the artifact under test. This is still unreleased Contract-only
+  work: no producer, consumer, historical v1/v2 behavior, Tome, Student, Golden,
+  M8, or M9 surface changed.
+
+## 2026-08-06 - Tome artifact v3 assurance-boundary tests
+
+- Added focused mode tests proving the intended distinction: a valid package
+  compares successfully against independently supplied governed evidence,
+  reports a governed-root mismatch without conflating it with standard package
+  integrity, and verifies the optional raw FV3 external-attestation interface
+  only when its receipt is supplied outside the artifact.
+- An artifact-local file cannot satisfy external-attestation mode. These tests
+  make no claim that an in-process test fixture proves real-world trust-domain
+  independence, signer safety, honest producer behavior, or truthful origin.
+
+## 2026-08-06 - Tome artifact v3 0.9.0 implementation candidate
+
+- Advanced the isolated Contract implementation branch's distribution metadata
+  to the planned `radjax-contract` 0.9.0 candidate after adding the parallel
+  `radjax_tome_artifact_contract@3.0.0` surface. This is branch-local candidate
+  metadata only: it neither publishes a package nor alters a released tag.
+- Historical v1/v2 Tome contracts and all Student-consumption versions retain
+  their existing discovery roots, validators, profiles, and default behavior.
+  Tome adoption remains explicitly outside this candidate until independent
+  review and separate release authorization.
+
+## 2026-08-06 - Tome artifact v3 independent-review correction
+
+- Corrected the independent review's concrete closed-wire gaps: binary64
+  semantic fields now reject strings and booleans; discovered public paths obey
+  the published ASCII grammar; duplicate `.rtome` members reject before
+  extraction; and inventory role/classification/boolean constraints are enforced
+  even if an adversary coherently refreshes surrounding raw receipts.
+- Added adversarial tests for those cases and for retained numeric lexemes. The
+  candidate remains on its isolated branch and is not released, merged, tagged,
+  or adopted by Tome. Broader PC01--PC57 conformance evidence remains a required
+  review gate rather than an inferred claim.
+
+## 2026-08-06 - Tome artifact v3 conformance-execution correction
+
+- Reconciled the runtime v3 validation ABI with the checksum-pinned published
+  error catalog: callers receive only documented machine codes while preserving
+  implementation-local diagnostics as non-public issue detail. Tightened closed
+  reference-schema checks, external archive-receipt references, raw-envelope
+  failures, and governed comparison refusal semantics.
+- Added coherent multi-shard adversarial construction fixtures that exercise raw
+  receipt damage, member closure, index/range/reference mismatch, semantic-order
+  drift, authority/policy/contract bindings, resharding/repackaging invariance,
+  self-consistent replacement boundaries, per-shard streaming, external receipts,
+  attestation envelopes, and private journal recovery dispositions. This remains
+  unreleased Contract-only work; it does not add a Tome producer, public package,
+  Student behavior, migration, tag, or release.
+
+## 2026-08-06 - Tome artifact v3 independent-review closure correction
+
+- Closed the review-discovered public-member escape hatch: inventory roles are
+  now bound to their one legal public paths, payload shards must use the declared
+  shard path namespace, and the shard index must exactly equal inventoried shard
+  members. A producer-private journal therefore cannot become public evidence by
+  being inventoried under a familiar role.
+- Added direct PC55 external-evidence-boundary and PC56/PC57 historical native
+  dispatch tests. This remains an additive unreleased Contract implementation;
+  no historical format, Tome behavior, Student behavior, release, tag, or merge
+  changed.
