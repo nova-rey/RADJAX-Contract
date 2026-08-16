@@ -996,3 +996,11 @@ headers now carry and verify header/payload CRC32 values; M8G semantic digests
 use length-framed domain labels; and manifest/receipt identity fields use
 fixed 32-byte digests. Body framing, truncation, and CRC failures are rejected
 before projection validation. The amendment remains opt-in and unreleased.
+
+2026-08-16 — M8G binding and recovery evidence correction
+
+Manifest validation now binds the declared body raw digest to the canonical
+encoded body and enforces closed field/type rules. Journal receipts require
+body evidence after body promotion and manifest evidence after manifest
+promotion; the body-only manifest-length header field is explicitly
+zero-bound. This remains an unreleased opt-in amendment.

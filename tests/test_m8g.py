@@ -91,13 +91,15 @@ def test_manifest_requires_closed_binding_and_body_identity() -> None:
         "selection_obligation_count": 0,
         "selection_obligations": [],
         "body_semantic_id": body.semantic_id,
-        "body_raw_digest": b"\x00" * 32,
+        "body_raw_digest": body_raw_digest(encode_compact_body(body)),
         "authority_id": b"\x01" * 32,
         "selection_authority_id": b"\x02" * 32,
         "package_role": "student",
     }
     manifest["manifest_semantic_id"] = manifest_semantic_id(manifest)
     validate_manifest(manifest, body)
+    with pytest.raises(M8GError):
+        validate_manifest({**manifest, "body_raw_digest": b"\x00" * 32}, body)
     with pytest.raises(M8GError):
         validate_manifest({**manifest, "unexpected": True}, body)
 
@@ -124,3 +126,5 @@ def test_receipt_binds_profile_and_legal_next_state() -> None:
     validate_receipt(receipt)
     with pytest.raises(M8GError):
         validate_receipt({**receipt, "committed_next_state": 12})
+    with pytest.raises(M8GError):
+        validate_receipt({**receipt, "state": int(JournalState.BODY_PROMOTED)})

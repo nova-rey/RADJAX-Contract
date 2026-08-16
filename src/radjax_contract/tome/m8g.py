@@ -21,6 +21,22 @@ from radjax_contract.tome.v3.codec import fv3
 COMPACT_SCHEMA = "selected_exemplar_payload_compact_v1"
 BODY_SCHEMA = "selected_exemplar_body_v1"
 MANIFEST_SCHEMA = "selected_exemplar_manifest_v1"
+_MANIFEST_FIELDS = {
+    "schema_version",
+    "profile",
+    "selected_example_id",
+    "selected_position",
+    "source_passport_id",
+    "corridor_mode_id",
+    "corridor_fingerprint_id",
+    "selection_obligation_count",
+    "selection_obligations",
+    "body_semantic_id",
+    "body_raw_digest",
+    "authority_id",
+    "selection_authority_id",
+    "package_role",
+}
 M8G_VERSION = "radjax_contract_m8g_v1"
 PROFILE_CODES = {1: "student", 2: "full_debug", 3: "producer_evidence"}
 PROFILE_NAMES = {value: key for key, value in PROFILE_CODES.items()}
@@ -102,6 +118,16 @@ def validate_receipt(receipt: Mapping[str, Any]) -> None:
             validate_transition(state, JournalState(proposed))
     except (TypeError, ValueError) as exc:
         raise M8GError("receipt_state_invalid") from exc
+    if state >= JournalState.BODY_PROMOTED and (
+        receipt["body_path"] is None
+        or receipt["body_raw_digest"] is None
+        or receipt["body_size_bytes"] is None
+    ):
+        raise M8GError("receipt_body_evidence_missing")
+    if state >= JournalState.MANIFEST_PROMOTED and (
+        receipt["manifest_path"] is None or receipt["manifest_raw_digest"] is None
+    ):
+        raise M8GError("receipt_manifest_evidence_missing")
     if not isinstance(receipt["transaction_id"], str) or not receipt["transaction_id"]:
         raise M8GError("receipt_identity_invalid")
     for key in (
@@ -361,13 +387,14 @@ def body_raw_digest(body_bytes: bytes) -> bytes:
     if len(body_bytes) < 48 or not body_bytes.startswith(MAGIC):
         raise M8GError("body_magic_invalid")
     prefix = body_bytes[:40]
-    _, version, _, _, _, _, _, payload_size, _ = struct.unpack(
+    _, version, _, _, _, _, _, payload_size, manifest_bytes = struct.unpack(
         "<4sHHIIIIQQ", body_bytes[:40]
     )
     header_crc, payload_crc = struct.unpack("<II", body_bytes[40:48])
     payload = body_bytes[48:]
     if (
         version != 1
+        or manifest_bytes != 0
         or len(body_bytes) != 48 + payload_size
         or zlib.crc32(prefix) & 0xFFFFFFFF != header_crc
         or zlib.crc32(payload) & 0xFFFFFFFF != payload_crc
@@ -388,7 +415,7 @@ def validate_body_bytes(body_bytes: bytes, *, profile: str) -> CompactBody:
         vocab_size,
         num_buckets,
         payload_size,
-        _,
+        manifest_bytes,
     ) = struct.unpack("<4sHHIIIIQQ", body_bytes[:40])
     if version != 1 or PROFILE_CODES.get(profile_code) != profile:
         raise M8GError("body_profile_invalid")
@@ -397,6 +424,7 @@ def validate_body_bytes(body_bytes: bytes, *, profile: str) -> CompactBody:
     payload = body_bytes[48:]
     if (
         len(payload) != payload_size
+        or manifest_bytes != 0
         or zlib.crc32(prefix) & 0xFFFFFFFF != header_crc
         or zlib.crc32(payload) & 0xFFFFFFFF != payload_crc
     ):
@@ -520,6 +548,10 @@ def _decode_fv3(value: bytes, offset: int) -> tuple[Any, int]:
 def manifest_semantic_id(manifest: Mapping[str, Any]) -> bytes:
     if manifest.get("schema_version") != MANIFEST_SCHEMA:
         raise M8GError("manifest_schema_invalid")
+    if set(manifest) != _MANIFEST_FIELDS and set(manifest) != (
+        _MANIFEST_FIELDS | {"manifest_semantic_id"}
+    ):
+        raise M8GError("manifest_fields_invalid")
     if "manifest_semantic_id" in manifest:
         manifest = {
             key: value
@@ -530,23 +562,7 @@ def manifest_semantic_id(manifest: Mapping[str, Any]) -> bytes:
 
 
 def validate_manifest(manifest: Mapping[str, Any], body: CompactBody) -> None:
-    required = {
-        "schema_version",
-        "profile",
-        "selected_example_id",
-        "selected_position",
-        "source_passport_id",
-        "corridor_mode_id",
-        "corridor_fingerprint_id",
-        "selection_obligation_count",
-        "selection_obligations",
-        "body_semantic_id",
-        "body_raw_digest",
-        "authority_id",
-        "selection_authority_id",
-        "package_role",
-        "manifest_semantic_id",
-    }
+    required = _MANIFEST_FIELDS | {"manifest_semantic_id"}
     if set(manifest) != required:
         raise M8GError("manifest_fields_invalid")
     if (
@@ -557,6 +573,24 @@ def validate_manifest(manifest: Mapping[str, Any], body: CompactBody) -> None:
     if manifest["body_semantic_id"] != body.semantic_id:
         raise M8GError("manifest_body_semantic_mismatch")
     if (
+        not isinstance(manifest["selected_example_id"], str)
+        or not manifest["selected_example_id"]
+        or type(manifest["selected_position"]) is not int
+        or manifest["selected_position"] < 0
+        or not isinstance(manifest["source_passport_id"], str)
+        or not manifest["source_passport_id"]
+        or any(
+            value is not None and (not isinstance(value, str) or not value)
+            for value in (
+                manifest["corridor_mode_id"],
+                manifest["corridor_fingerprint_id"],
+            )
+        )
+        or not isinstance(manifest["package_role"], str)
+        or manifest["package_role"] != manifest["profile"]
+    ):
+        raise M8GError("manifest_field_type_invalid")
+    if (
         not isinstance(manifest["body_raw_digest"], bytes)
         or len(manifest["body_raw_digest"]) != 32
         or not isinstance(manifest["authority_id"], bytes)
@@ -564,10 +598,14 @@ def validate_manifest(manifest: Mapping[str, Any], body: CompactBody) -> None:
         or not isinstance(manifest["selection_authority_id"], bytes)
         or len(manifest["selection_authority_id"]) != 32
         or not isinstance(manifest["selection_obligations"], list)
+        or type(manifest["selection_obligation_count"]) is not int
+        or manifest["selection_obligation_count"] < 0
         or manifest["selection_obligation_count"]
         != len(manifest["selection_obligations"])
     ):
         raise M8GError("manifest_binding_fields_invalid")
+    if manifest["body_raw_digest"] != body_raw_digest(encode_compact_body(body)):
+        raise M8GError("manifest_body_raw_mismatch")
     if any(
         not isinstance(item, Mapping)
         or set(item) != {"role", "source_id", "rank", "score", "collision_kind"}
@@ -577,11 +615,7 @@ def validate_manifest(manifest: Mapping[str, Any], body: CompactBody) -> None:
         or isinstance(item["rank"], bool)
         or item["rank"] < 1
         or item["score"] is not None
-        and (
-            not isinstance(item["score"], (int, float))
-            or isinstance(item["score"], bool)
-            or not math.isfinite(float(item["score"]))
-        )
+        and (type(item["score"]) is not float or not math.isfinite(item["score"]))
         or item["collision_kind"] not in {0, 1, 2}
         for item in manifest["selection_obligations"]
     ):
