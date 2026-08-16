@@ -193,10 +193,7 @@ def _m8g_fv3(value: Any) -> bytes:
 
 def _finite(values: Sequence[float], field: str) -> None:
     if any(
-        not isinstance(value, (int, float))
-        or isinstance(value, bool)
-        or not math.isfinite(float(value))
-        for value in values
+        type(value) is not float or not math.isfinite(float(value)) for value in values
     ):
         raise M8GError(f"{field}_non_finite")
 
@@ -356,6 +353,10 @@ def validate_compact_monolithic_projection(
         or projection["storage_flavor"] != "compact_k_monolithic"
         or projection["profile"] != profile
         or projection["record_count"] != 1
+        or type(projection["position_count"]) is not int
+        or type(projection["vocab_size"]) is not int
+        or type(projection["num_buckets"]) is not int
+        or projection["position_count"] != len(projection["top_lengths"])
     ):
         raise M8GError("compact_monolithic_flavor_invalid")
     body = CompactBody(

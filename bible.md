@@ -1024,3 +1024,10 @@ Added the explicit closed `compact_k_monolithic` profile and canonical
 projection/codec/identity helpers. It is distinct from padded payloads and
 split immutable bodies while reusing the governed compact-K fields. The
 amendment remains unreleased and opt-in.
+
+2026-08-16 — M8G compact monolithic strictness correction
+
+Compact-monolithic projections now reject noncanonical numeric types, bool
+dimensions, inconsistent position counts, unknown fields, and integer values
+in binary32 float fields. Adversarial shape/type/unknown-field fixtures were
+added; the Contract remains unreleased.

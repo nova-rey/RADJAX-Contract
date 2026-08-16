@@ -163,3 +163,30 @@ def test_compact_monolithic_is_closed_and_round_trips() -> None:
         m8g.validate_compact_monolithic_projection(
             {**m8g.compact_monolithic_projection(body), "top_probs": [0.6]}
         )
+    projection = m8g.compact_monolithic_projection(body)
+    with pytest.raises(M8GError):
+        m8g.validate_compact_monolithic_projection({**projection, "position_count": 2})
+    with pytest.raises(M8GError):
+        m8g.validate_compact_monolithic_projection({**projection, "vocab_size": "8"})
+    with pytest.raises(M8GError):
+        m8g.validate_compact_monolithic_projection({**projection, "num_buckets": True})
+    with pytest.raises(M8GError):
+        m8g.validate_compact_monolithic_projection({**projection, "unknown": 1})
+
+
+def test_compact_monolithic_rejects_integer_float_fields() -> None:
+    with pytest.raises(M8GError):
+        CompactBody(
+            profile="compact_k_monolithic",
+            vocab_size=8,
+            num_buckets=2,
+            top_offsets=(0, 1),
+            top_lengths=(1,),
+            top_token_ids=(2,),
+            top_probs=(1,),
+            top_log_probs=(-1.0,),
+            effective_top_k=(1,),
+            top_mass=(1.0,),
+            tail_mass=(0.0,),
+            bucket_masses=(0.0, 0.0),
+        )
