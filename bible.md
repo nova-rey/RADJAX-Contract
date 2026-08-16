@@ -1004,3 +1004,10 @@ encoded body and enforces closed field/type rules. Journal receipts require
 body evidence after body promotion and manifest evidence after manifest
 promotion; the body-only manifest-length header field is explicitly
 zero-bound. This remains an unreleased opt-in amendment.
+
+2026-08-16 — M8G raw body digest domain correction
+
+Bound body raw integrity to the approved `RDX-BODY-RAW-1` domain before hashing,
+so Contract manifests and receipts derive the same digest as the future Tome
+writer. Added a fixed domain-vector assertion; no release or consumer default
+changed.
