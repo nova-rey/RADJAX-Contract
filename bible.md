@@ -1017,3 +1017,10 @@ changed.
 Corrected the body raw digest domain to use the approved two-byte little-endian
 label-length framing, and added a fixed vector that checks the framed preimage.
 No release, tag, or default behavior changed.
+
+2026-08-16 — M8G compact monolithic profile
+
+Added the explicit closed `compact_k_monolithic` profile and canonical
+projection/codec/identity helpers. It is distinct from padded payloads and
+split immutable bodies while reusing the governed compact-K fields. The
+amendment remains unreleased and opt-in.

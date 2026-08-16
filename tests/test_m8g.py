@@ -135,3 +135,31 @@ def test_receipt_binds_profile_and_legal_next_state() -> None:
         validate_receipt({**receipt, "committed_next_state": 12})
     with pytest.raises(M8GError):
         validate_receipt({**receipt, "state": int(JournalState.BODY_PROMOTED)})
+
+
+def test_compact_monolithic_is_closed_and_round_trips() -> None:
+    body = CompactBody(
+        profile="compact_k_monolithic",
+        vocab_size=8,
+        num_buckets=2,
+        top_offsets=(0, 2),
+        top_lengths=(2,),
+        top_token_ids=(2, 1),
+        top_probs=(0.6, 0.2),
+        top_log_probs=(-0.5108256, -1.609438),
+        effective_top_k=(2,),
+        top_mass=(0.8,),
+        tail_mass=(0.2,),
+        bucket_masses=(0.1, 0.1),
+    )
+    encoded = m8g.encode_compact_monolithic(body)
+    decoded = m8g.decode_compact_monolithic(encoded)
+    assert decoded.profile == body.profile
+    assert decoded.top_token_ids == body.top_token_ids
+    assert decoded.top_probs == pytest.approx(body.top_probs)
+    assert decoded.top_log_probs == pytest.approx(body.top_log_probs)
+    assert m8g.compact_monolithic_semantic_id(body) != body.semantic_id
+    with pytest.raises(M8GError):
+        m8g.validate_compact_monolithic_projection(
+            {**m8g.compact_monolithic_projection(body), "top_probs": [0.6]}
+        )

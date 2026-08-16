@@ -19,6 +19,7 @@ from typing import Any
 from radjax_contract.tome.v3.codec import fv3
 
 COMPACT_SCHEMA = "selected_exemplar_payload_compact_v1"
+COMPACT_MONOLITHIC_SCHEMA = "selected_exemplar_compact_monolithic_v1"
 BODY_SCHEMA = "selected_exemplar_body_v1"
 MANIFEST_SCHEMA = "selected_exemplar_manifest_v1"
 _MANIFEST_FIELDS = {
@@ -38,7 +39,12 @@ _MANIFEST_FIELDS = {
     "package_role",
 }
 M8G_VERSION = "radjax_contract_m8g_v1"
-PROFILE_CODES = {1: "student", 2: "full_debug", 3: "producer_evidence"}
+PROFILE_CODES = {
+    1: "student",
+    2: "full_debug",
+    3: "producer_evidence",
+    4: "compact_k_monolithic",
+}
 PROFILE_NAMES = {value: key for key, value in PROFILE_CODES.items()}
 MAGIC = b"RDXC"
 
@@ -299,6 +305,87 @@ class CompactBody:
     @property
     def semantic_id(self) -> bytes:
         return _digest(b"RDX-BODY-SEM-1", _m8g_fv3(self.projection()))
+
+
+def compact_monolithic_projection(body: CompactBody) -> dict[str, Any]:
+    """Return the closed monolithic compact package record.
+
+    The body fields remain the governed compact representation; this wrapper
+    adds an explicit package flavor so consumers cannot confuse it with a
+    split immutable body or a legacy padded payload.
+    """
+
+    projection = body.projection()
+    projection["schema_version"] = COMPACT_MONOLITHIC_SCHEMA
+    projection["storage_flavor"] = "compact_k_monolithic"
+    return projection
+
+
+def compact_monolithic_semantic_id(body: CompactBody) -> bytes:
+    return _digest(
+        b"RDX-COMPACT-MONO-SEM-1",
+        _m8g_fv3(compact_monolithic_projection(body)),
+    )
+
+
+def validate_compact_monolithic_projection(
+    projection: Mapping[str, Any], *, profile: str = "compact_k_monolithic"
+) -> CompactBody:
+    expected = {
+        "schema_version",
+        "storage_flavor",
+        "profile",
+        "record_count",
+        "position_count",
+        "vocab_size",
+        "num_buckets",
+        "top_offsets",
+        "top_lengths",
+        "top_token_ids",
+        "top_probs",
+        "top_log_probs",
+        "effective_top_k",
+        "top_mass",
+        "tail_mass",
+        "bucket_masses",
+    }
+    if set(projection) != expected:
+        raise M8GError("compact_monolithic_fields_invalid")
+    if (
+        projection["schema_version"] != COMPACT_MONOLITHIC_SCHEMA
+        or projection["storage_flavor"] != "compact_k_monolithic"
+        or projection["profile"] != profile
+        or projection["record_count"] != 1
+    ):
+        raise M8GError("compact_monolithic_flavor_invalid")
+    body = CompactBody(
+        profile=profile,
+        vocab_size=int(projection["vocab_size"]),
+        num_buckets=int(projection["num_buckets"]),
+        top_offsets=tuple(projection["top_offsets"]),
+        top_lengths=tuple(projection["top_lengths"]),
+        top_token_ids=tuple(projection["top_token_ids"]),
+        top_probs=tuple(projection["top_probs"]),
+        top_log_probs=tuple(projection["top_log_probs"]),
+        effective_top_k=tuple(projection["effective_top_k"]),
+        top_mass=tuple(projection["top_mass"]),
+        tail_mass=tuple(projection["tail_mass"]),
+        bucket_masses=tuple(projection["bucket_masses"]),
+    )
+    return body
+
+
+def encode_compact_monolithic(body: CompactBody) -> bytes:
+    return _m8g_fv3(compact_monolithic_projection(body))
+
+
+def decode_compact_monolithic(
+    payload: bytes, *, profile: str = "compact_k_monolithic"
+) -> CompactBody:
+    value, offset = _decode_fv3(payload, 0)
+    if offset != len(payload) or not isinstance(value, Mapping):
+        raise M8GError("compact_monolithic_payload_invalid")
+    return validate_compact_monolithic_projection(value, profile=profile)
 
 
 def compact_from_padded(padded: Mapping[str, Any], *, profile: str) -> CompactBody:
