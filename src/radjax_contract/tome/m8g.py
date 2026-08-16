@@ -151,7 +151,7 @@ def _digest(label: bytes, payload: bytes) -> bytes:
 
 
 def _raw_digest(payload: bytes) -> bytes:
-    return hashlib.sha256(b"RDX-BODY-RAW-1" + payload).digest()
+    return hashlib.sha256(_domain(b"RDX-BODY-RAW-1", payload)).digest()
 
 
 def _m8g_fv3(value: Any) -> bytes:

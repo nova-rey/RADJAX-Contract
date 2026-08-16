@@ -1011,3 +1011,9 @@ Bound body raw integrity to the approved `RDX-BODY-RAW-1` domain before hashing,
 so Contract manifests and receipts derive the same digest as the future Tome
 writer. Added a fixed domain-vector assertion; no release or consumer default
 changed.
+
+2026-08-16 — M8G raw digest framing correction
+
+Corrected the body raw digest domain to use the approved two-byte little-endian
+label-length framing, and added a fixed vector that checks the framed preimage.
+No release, tag, or default behavior changed.

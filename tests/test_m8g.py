@@ -47,8 +47,10 @@ def test_compact_body_round_trip_and_raw_digest() -> None:
     assert decoded.top_log_probs == pytest.approx(body.top_log_probs, rel=1e-6)
     assert isinstance(body_raw_digest(encoded), bytes)
     assert len(body_raw_digest(encoded)) == 32
+    label = b"RDX-BODY-RAW-1"
     assert (
-        body_raw_digest(encoded) == hashlib.sha256(b"RDX-BODY-RAW-1" + encoded).digest()
+        body_raw_digest(encoded)
+        == hashlib.sha256(len(label).to_bytes(2, "little") + label + encoded).digest()
     )
     with pytest.raises(M8GError):
         validate_body_bytes(encoded[:-1], profile="student")
