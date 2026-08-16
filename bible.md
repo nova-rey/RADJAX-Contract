@@ -974,3 +974,9 @@ next minor publication is planned as `v0.5.0` after complete verification.
   dispatch tests. This remains an additive unreleased Contract implementation;
   no historical format, Tome behavior, Student behavior, release, tag, or merge
   changed.
+2026-08-16 — M8G compact-body Contract checkpoint
+
+Added the opt-in M8G Contract primitives for compact active-entry selected
+exemplar bodies, padded-to-compact projection, explicit body framing, body
+semantic/raw identities, manifest binding, and journal state validation. Legacy
+Contract profiles remain untouched; no release or tag was published.
