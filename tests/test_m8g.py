@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+from radjax_contract.tome import m8g
 from radjax_contract.tome.m8g import (
     CompactBody,
     JournalState,
@@ -37,10 +38,11 @@ def _body() -> CompactBody:
 def test_compact_body_round_trip_and_raw_digest() -> None:
     body = _body()
     encoded = encode_compact_body(body)
-    assert (
-        validate_body_bytes(encoded, profile="student").projection()
-        == body.projection()
-    )
+    decoded = validate_body_bytes(encoded, profile="student")
+    assert decoded.top_token_ids == body.top_token_ids
+    assert decoded.effective_top_k == body.effective_top_k
+    assert decoded.top_probs == pytest.approx(body.top_probs, rel=1e-6)
+    assert decoded.top_log_probs == pytest.approx(body.top_log_probs, rel=1e-6)
     assert body_raw_digest(encoded).startswith("sha256:")
 
 
@@ -110,10 +112,12 @@ def test_receipt_binds_profile_and_legal_next_state() -> None:
         "body_size_bytes": None,
         "manifest_raw_digest": None,
         "committed_next_state": 2,
-        "configuration_identity": "config-1",
-        "semantic_authority_identity": "authority-1",
-        "receipt_digest": "receipt-1",
+        "configuration_identity": "sha256:" + "1" * 64,
+        "semantic_authority_identity": "sha256:" + "2" * 64,
+        "receipt_digest": "",
     }
+    unsigned = {key: value for key, value in receipt.items() if key != "receipt_digest"}
+    receipt["receipt_digest"] = m8g._digest(b"RDX-RECEIPT-1", m8g._m8g_fv3(unsigned))
     validate_receipt(receipt)
     with pytest.raises(M8GError):
         validate_receipt({**receipt, "committed_next_state": 12})

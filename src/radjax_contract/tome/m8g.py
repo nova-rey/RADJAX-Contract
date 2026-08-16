@@ -78,6 +78,26 @@ def validate_receipt(receipt: Mapping[str, Any]) -> None:
         or receipt["profile_code"] not in PROFILE_CODES
     ):
         raise M8GError("receipt_profile_invalid")
+    for key in ("body_raw_digest", "manifest_raw_digest"):
+        value = receipt[key]
+        if value is not None and (
+            not isinstance(value, str)
+            or not value.startswith("sha256:")
+            or len(value) != 71
+        ):
+            raise M8GError("receipt_digest_field_invalid")
+    if receipt["body_size_bytes"] is not None and (
+        not isinstance(receipt["body_size_bytes"], int)
+        or isinstance(receipt["body_size_bytes"], bool)
+        or receipt["body_size_bytes"] < 0
+    ):
+        raise M8GError("receipt_size_invalid")
+    for key in ("parent_transaction_id", "body_path", "manifest_path"):
+        value = receipt[key]
+        if value is not None and (
+            not isinstance(value, str) or not value or ".." in value.split("/")
+        ):
+            raise M8GError("receipt_path_invalid")
     try:
         state = JournalState(receipt["state"])
         proposed = receipt["committed_next_state"]
@@ -91,8 +111,15 @@ def validate_receipt(receipt: Mapping[str, Any]) -> None:
         "semantic_authority_identity",
         "receipt_digest",
     ):
-        if not isinstance(receipt[key], str) or not receipt[key]:
+        if (
+            not isinstance(receipt[key], str)
+            or not receipt[key]
+            or (key != "transaction_id" and not receipt[key].startswith("sha256:"))
+        ):
             raise M8GError("receipt_identity_invalid")
+    unsigned = {key: value for key, value in receipt.items() if key != "receipt_digest"}
+    if receipt["receipt_digest"] != _digest(b"RDX-RECEIPT-1", _m8g_fv3(unsigned)):
+        raise M8GError("receipt_digest_invalid")
 
 
 def _digest(label: bytes, payload: bytes) -> str:
@@ -101,6 +128,34 @@ def _digest(label: bytes, payload: bytes) -> str:
 
 def _raw_digest(payload: bytes) -> str:
     return "sha256:" + hashlib.sha256(payload).hexdigest()
+
+
+def _m8g_fv3(value: Any) -> bytes:
+    """M8G FV3 subset with governed binary32 float fields."""
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            raise M8GError("binary32_invalid")
+        return b"\x12" + struct.pack(">f", value)
+    if isinstance(value, Mapping):
+        pairs = []
+        for key in sorted(value, key=lambda item: item.encode("utf-8")):
+            key_bytes = key.encode("utf-8")
+            encoded = _m8g_fv3(value[key])
+            pairs.append(
+                len(key_bytes).to_bytes(8, "big")
+                + key_bytes
+                + len(encoded).to_bytes(8, "big")
+                + encoded
+            )
+        return b"\x40" + len(pairs).to_bytes(8, "big") + b"".join(pairs)
+    if isinstance(value, Sequence) and not isinstance(value, (bytes, bytearray, str)):
+        encoded = [_m8g_fv3(item) for item in value]
+        return (
+            b"\x30"
+            + len(encoded).to_bytes(8, "big")
+            + b"".join(len(item).to_bytes(8, "big") + item for item in encoded)
+        )
+    return fv3(value)
 
 
 def _finite(values: Sequence[float], field: str) -> None:
@@ -216,7 +271,7 @@ class CompactBody:
 
     @property
     def semantic_id(self) -> str:
-        return _digest(b"RDX-BODY-SEM-1", fv3(self.projection()))
+        return _digest(b"RDX-BODY-SEM-1", _m8g_fv3(self.projection()))
 
 
 def compact_from_padded(padded: Mapping[str, Any], *, profile: str) -> CompactBody:
@@ -283,7 +338,7 @@ def compact_from_padded(padded: Mapping[str, Any], *, profile: str) -> CompactBo
 def encode_compact_body(body: CompactBody) -> bytes:
     """Encode a deterministic opt-in body resource with explicit shape header."""
 
-    payload = fv3(body.projection())
+    payload = _m8g_fv3(body.projection())
     header = struct.pack(
         "<4sHHIIIIQQ",
         MAGIC,
@@ -300,8 +355,13 @@ def encode_compact_body(body: CompactBody) -> bytes:
 
 
 def body_raw_digest(body_bytes: bytes) -> str:
-    if not body_bytes.startswith(MAGIC):
+    if len(body_bytes) < 40 or not body_bytes.startswith(MAGIC):
         raise M8GError("body_magic_invalid")
+    _, version, _, _, _, _, _, payload_size, _ = struct.unpack(
+        "<4sHHIIIIQQ", body_bytes[:40]
+    )
+    if version != 1 or len(body_bytes) != 40 + payload_size:
+        raise M8GError("body_framing_invalid")
     return _raw_digest(body_bytes)
 
 
@@ -379,6 +439,10 @@ def _decode_fv3(value: bytes, offset: int) -> tuple[Any, int]:
         if offset + 8 > len(value):
             raise M8GError("fv3_truncated")
         return struct.unpack(">d", value[offset : offset + 8])[0], offset + 8
+    if tag == 0x12:
+        if offset + 4 > len(value):
+            raise M8GError("fv3_truncated")
+        return struct.unpack(">f", value[offset : offset + 4])[0], offset + 4
     if tag == 0x20:
         if offset + 8 > len(value):
             raise M8GError("fv3_truncated")
@@ -437,7 +501,7 @@ def manifest_semantic_id(manifest: Mapping[str, Any]) -> str:
             for key, value in manifest.items()
             if key != "manifest_semantic_id"
         }
-    return _digest(b"RDX-MANIFEST-SEM-1", fv3(dict(manifest)))
+    return _digest(b"RDX-MANIFEST-SEM-1", _m8g_fv3(dict(manifest)))
 
 
 def validate_manifest(manifest: Mapping[str, Any], body: CompactBody) -> None:
@@ -478,6 +542,24 @@ def validate_manifest(manifest: Mapping[str, Any], body: CompactBody) -> None:
         != len(manifest["selection_obligations"])
     ):
         raise M8GError("manifest_binding_fields_invalid")
+    if any(
+        not isinstance(item, Mapping)
+        or set(item) != {"role", "source_id", "rank", "score", "collision_kind"}
+        or item["role"] not in {1, 2}
+        or not isinstance(item["source_id"], str)
+        or not isinstance(item["rank"], int)
+        or isinstance(item["rank"], bool)
+        or item["rank"] < 1
+        or item["score"] is not None
+        and (
+            not isinstance(item["score"], (int, float))
+            or isinstance(item["score"], bool)
+            or not math.isfinite(float(item["score"]))
+        )
+        or item["collision_kind"] not in {0, 1, 2}
+        for item in manifest["selection_obligations"]
+    ):
+        raise M8GError("manifest_obligations_invalid")
     if manifest["manifest_semantic_id"] != manifest_semantic_id(manifest):
         raise M8GError("manifest_digest_invalid")
 
