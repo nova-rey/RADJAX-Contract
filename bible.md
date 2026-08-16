@@ -988,3 +988,11 @@ cross-checks, closed manifest bindings, duplicate-key rejection, padded-input
 shape validation, and explicit journal receipt validation. This is a follow-up
 to the independently blocked initial Contract checkpoint; no release was
 published.
+
+2026-08-16 — M8G framing and identity conformance correction
+
+Completed the reviewed wire-level corrections: 48-byte little-endian body
+headers now carry and verify header/payload CRC32 values; M8G semantic digests
+use length-framed domain labels; and manifest/receipt identity fields use
+fixed 32-byte digests. Body framing, truncation, and CRC failures are rejected
+before projection validation. The amendment remains opt-in and unreleased.

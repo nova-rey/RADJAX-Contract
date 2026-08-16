@@ -43,7 +43,10 @@ def test_compact_body_round_trip_and_raw_digest() -> None:
     assert decoded.effective_top_k == body.effective_top_k
     assert decoded.top_probs == pytest.approx(body.top_probs, rel=1e-6)
     assert decoded.top_log_probs == pytest.approx(body.top_log_probs, rel=1e-6)
-    assert body_raw_digest(encoded).startswith("sha256:")
+    assert isinstance(body_raw_digest(encoded), bytes)
+    assert len(body_raw_digest(encoded)) == 32
+    with pytest.raises(M8GError):
+        validate_body_bytes(encoded[:-1], profile="student")
 
 
 def test_padded_projection_copies_only_masked_entries() -> None:
@@ -88,9 +91,9 @@ def test_manifest_requires_closed_binding_and_body_identity() -> None:
         "selection_obligation_count": 0,
         "selection_obligations": [],
         "body_semantic_id": body.semantic_id,
-        "body_raw_digest": "sha256:" + "0" * 64,
-        "authority_id": "authority-1",
-        "selection_authority_id": "selection-1",
+        "body_raw_digest": b"\x00" * 32,
+        "authority_id": b"\x01" * 32,
+        "selection_authority_id": b"\x02" * 32,
         "package_role": "student",
     }
     manifest["manifest_semantic_id"] = manifest_semantic_id(manifest)
@@ -112,9 +115,9 @@ def test_receipt_binds_profile_and_legal_next_state() -> None:
         "body_size_bytes": None,
         "manifest_raw_digest": None,
         "committed_next_state": 2,
-        "configuration_identity": "sha256:" + "1" * 64,
-        "semantic_authority_identity": "sha256:" + "2" * 64,
-        "receipt_digest": "",
+        "configuration_identity": b"\x01" * 32,
+        "semantic_authority_identity": b"\x02" * 32,
+        "receipt_digest": b"",
     }
     unsigned = {key: value for key, value in receipt.items() if key != "receipt_digest"}
     receipt["receipt_digest"] = m8g._digest(b"RDX-RECEIPT-1", m8g._m8g_fv3(unsigned))

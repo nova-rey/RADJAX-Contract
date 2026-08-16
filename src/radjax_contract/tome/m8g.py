@@ -10,6 +10,7 @@ from __future__ import annotations
 import hashlib
 import math
 import struct
+import zlib
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from enum import IntEnum
@@ -80,11 +81,7 @@ def validate_receipt(receipt: Mapping[str, Any]) -> None:
         raise M8GError("receipt_profile_invalid")
     for key in ("body_raw_digest", "manifest_raw_digest"):
         value = receipt[key]
-        if value is not None and (
-            not isinstance(value, str)
-            or not value.startswith("sha256:")
-            or len(value) != 71
-        ):
+        if value is not None and (not isinstance(value, bytes) or len(value) != 32):
             raise M8GError("receipt_digest_field_invalid")
     if receipt["body_size_bytes"] is not None and (
         not isinstance(receipt["body_size_bytes"], int)
@@ -105,29 +102,30 @@ def validate_receipt(receipt: Mapping[str, Any]) -> None:
             validate_transition(state, JournalState(proposed))
     except (TypeError, ValueError) as exc:
         raise M8GError("receipt_state_invalid") from exc
+    if not isinstance(receipt["transaction_id"], str) or not receipt["transaction_id"]:
+        raise M8GError("receipt_identity_invalid")
     for key in (
-        "transaction_id",
         "configuration_identity",
         "semantic_authority_identity",
         "receipt_digest",
     ):
-        if (
-            not isinstance(receipt[key], str)
-            or not receipt[key]
-            or (key != "transaction_id" and not receipt[key].startswith("sha256:"))
-        ):
+        if not isinstance(receipt[key], bytes) or len(receipt[key]) != 32:
             raise M8GError("receipt_identity_invalid")
     unsigned = {key: value for key, value in receipt.items() if key != "receipt_digest"}
     if receipt["receipt_digest"] != _digest(b"RDX-RECEIPT-1", _m8g_fv3(unsigned)):
         raise M8GError("receipt_digest_invalid")
 
 
-def _digest(label: bytes, payload: bytes) -> str:
-    return "sha256:" + hashlib.sha256(label + payload).hexdigest()
+def _domain(label: bytes, payload: bytes) -> bytes:
+    return len(label).to_bytes(2, "little") + label + payload
 
 
-def _raw_digest(payload: bytes) -> str:
-    return "sha256:" + hashlib.sha256(payload).hexdigest()
+def _digest(label: bytes, payload: bytes) -> bytes:
+    return hashlib.sha256(_domain(label, payload)).digest()
+
+
+def _raw_digest(payload: bytes) -> bytes:
+    return hashlib.sha256(payload).digest()
 
 
 def _m8g_fv3(value: Any) -> bytes:
@@ -136,6 +134,9 @@ def _m8g_fv3(value: Any) -> bytes:
         if not math.isfinite(value):
             raise M8GError("binary32_invalid")
         return b"\x12" + struct.pack(">f", value)
+    if isinstance(value, (bytes, bytearray)):
+        raw = bytes(value)
+        return b"\x21" + len(raw).to_bytes(8, "big") + raw
     if isinstance(value, Mapping):
         pairs = []
         for key in sorted(value, key=lambda item: item.encode("utf-8")):
@@ -270,7 +271,7 @@ class CompactBody:
         }
 
     @property
-    def semantic_id(self) -> str:
+    def semantic_id(self) -> bytes:
         return _digest(b"RDX-BODY-SEM-1", _m8g_fv3(self.projection()))
 
 
@@ -339,7 +340,7 @@ def encode_compact_body(body: CompactBody) -> bytes:
     """Encode a deterministic opt-in body resource with explicit shape header."""
 
     payload = _m8g_fv3(body.projection())
-    header = struct.pack(
+    prefix = struct.pack(
         "<4sHHIIIIQQ",
         MAGIC,
         1,
@@ -351,22 +352,32 @@ def encode_compact_body(body: CompactBody) -> bytes:
         len(payload),
         0,
     )
-    return header + payload
+    header_crc = zlib.crc32(prefix) & 0xFFFFFFFF
+    payload_crc = zlib.crc32(payload) & 0xFFFFFFFF
+    return prefix + struct.pack("<II", header_crc, payload_crc) + payload
 
 
-def body_raw_digest(body_bytes: bytes) -> str:
-    if len(body_bytes) < 40 or not body_bytes.startswith(MAGIC):
+def body_raw_digest(body_bytes: bytes) -> bytes:
+    if len(body_bytes) < 48 or not body_bytes.startswith(MAGIC):
         raise M8GError("body_magic_invalid")
+    prefix = body_bytes[:40]
     _, version, _, _, _, _, _, payload_size, _ = struct.unpack(
         "<4sHHIIIIQQ", body_bytes[:40]
     )
-    if version != 1 or len(body_bytes) != 40 + payload_size:
+    header_crc, payload_crc = struct.unpack("<II", body_bytes[40:48])
+    payload = body_bytes[48:]
+    if (
+        version != 1
+        or len(body_bytes) != 48 + payload_size
+        or zlib.crc32(prefix) & 0xFFFFFFFF != header_crc
+        or zlib.crc32(payload) & 0xFFFFFFFF != payload_crc
+    ):
         raise M8GError("body_framing_invalid")
     return _raw_digest(body_bytes)
 
 
 def validate_body_bytes(body_bytes: bytes, *, profile: str) -> CompactBody:
-    if len(body_bytes) < 40 or not body_bytes.startswith(MAGIC):
+    if len(body_bytes) < 48 or not body_bytes.startswith(MAGIC):
         raise M8GError("body_truncated_or_magic_invalid")
     (
         _,
@@ -381,8 +392,14 @@ def validate_body_bytes(body_bytes: bytes, *, profile: str) -> CompactBody:
     ) = struct.unpack("<4sHHIIIIQQ", body_bytes[:40])
     if version != 1 or PROFILE_CODES.get(profile_code) != profile:
         raise M8GError("body_profile_invalid")
-    payload = body_bytes[40:]
-    if len(payload) != payload_size:
+    prefix = body_bytes[:40]
+    header_crc, payload_crc = struct.unpack("<II", body_bytes[40:48])
+    payload = body_bytes[48:]
+    if (
+        len(payload) != payload_size
+        or zlib.crc32(prefix) & 0xFFFFFFFF != header_crc
+        or zlib.crc32(payload) & 0xFFFFFFFF != payload_crc
+    ):
         raise M8GError("body_payload_size_mismatch")
     value, offset = _decode_fv3(payload, 0)
     if offset != len(payload) or not isinstance(value, Mapping):
@@ -451,6 +468,14 @@ def _decode_fv3(value: bytes, offset: int) -> tuple[Any, int]:
         if offset + size > len(value):
             raise M8GError("fv3_truncated")
         return value[offset : offset + size].decode("utf-8"), offset + size
+    if tag == 0x21:
+        if offset + 8 > len(value):
+            raise M8GError("fv3_truncated")
+        size = int.from_bytes(value[offset : offset + 8], "big")
+        offset += 8
+        if offset + size > len(value):
+            raise M8GError("fv3_truncated")
+        return value[offset : offset + size], offset + size
     if tag in (0x30, 0x40):
         if offset + 8 > len(value):
             raise M8GError("fv3_truncated")
@@ -492,7 +517,7 @@ def _decode_fv3(value: bytes, offset: int) -> tuple[Any, int]:
     raise M8GError("fv3_tag_invalid")
 
 
-def manifest_semantic_id(manifest: Mapping[str, Any]) -> str:
+def manifest_semantic_id(manifest: Mapping[str, Any]) -> bytes:
     if manifest.get("schema_version") != MANIFEST_SCHEMA:
         raise M8GError("manifest_schema_invalid")
     if "manifest_semantic_id" in manifest:
@@ -532,11 +557,12 @@ def validate_manifest(manifest: Mapping[str, Any], body: CompactBody) -> None:
     if manifest["body_semantic_id"] != body.semantic_id:
         raise M8GError("manifest_body_semantic_mismatch")
     if (
-        not isinstance(manifest["body_raw_digest"], str)
-        or not manifest["body_raw_digest"].startswith("sha256:")
-        or len(manifest["body_raw_digest"]) != 71
-        or not isinstance(manifest["authority_id"], str)
-        or not isinstance(manifest["selection_authority_id"], str)
+        not isinstance(manifest["body_raw_digest"], bytes)
+        or len(manifest["body_raw_digest"]) != 32
+        or not isinstance(manifest["authority_id"], bytes)
+        or len(manifest["authority_id"]) != 32
+        or not isinstance(manifest["selection_authority_id"], bytes)
+        or len(manifest["selection_authority_id"]) != 32
         or not isinstance(manifest["selection_obligations"], list)
         or manifest["selection_obligation_count"]
         != len(manifest["selection_obligations"])
