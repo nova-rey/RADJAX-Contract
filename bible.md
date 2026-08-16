@@ -980,3 +980,11 @@ Added the opt-in M8G Contract primitives for compact active-entry selected
 exemplar bodies, padded-to-compact projection, explicit body framing, body
 semantic/raw identities, manifest binding, and journal state validation. Legacy
 Contract profiles remain untouched; no release or tag was published.
+
+2026-08-16 — M8G Contract validation correction
+
+Corrected compact-body framing to little-endian with header/payload shape
+cross-checks, closed manifest bindings, duplicate-key rejection, padded-input
+shape validation, and explicit journal receipt validation. This is a follow-up
+to the independently blocked initial Contract checkpoint; no release was
+published.

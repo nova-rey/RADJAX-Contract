@@ -52,6 +52,49 @@ _NEXT = {
 }
 
 
+def validate_receipt(receipt: Mapping[str, Any]) -> None:
+    """Validate the closed evidence required for one journal transition."""
+
+    fields = {
+        "transaction_id",
+        "schema_version",
+        "profile_code",
+        "state",
+        "parent_transaction_id",
+        "body_path",
+        "manifest_path",
+        "body_raw_digest",
+        "body_size_bytes",
+        "manifest_raw_digest",
+        "committed_next_state",
+        "configuration_identity",
+        "semantic_authority_identity",
+        "receipt_digest",
+    }
+    if set(receipt) != fields:
+        raise M8GError("receipt_fields_invalid")
+    if (
+        receipt["schema_version"] != M8G_VERSION
+        or receipt["profile_code"] not in PROFILE_CODES
+    ):
+        raise M8GError("receipt_profile_invalid")
+    try:
+        state = JournalState(receipt["state"])
+        proposed = receipt["committed_next_state"]
+        if proposed is not None:
+            validate_transition(state, JournalState(proposed))
+    except (TypeError, ValueError) as exc:
+        raise M8GError("receipt_state_invalid") from exc
+    for key in (
+        "transaction_id",
+        "configuration_identity",
+        "semantic_authority_identity",
+        "receipt_digest",
+    ):
+        if not isinstance(receipt[key], str) or not receipt[key]:
+            raise M8GError("receipt_identity_invalid")
+
+
 def _digest(label: bytes, payload: bytes) -> str:
     return "sha256:" + hashlib.sha256(label + payload).hexdigest()
 
@@ -185,6 +228,24 @@ def compact_from_padded(padded: Mapping[str, Any], *, profile: str) -> CompactBo
     logs = padded.get("top_log_probs")
     if not all(isinstance(value, Sequence) for value in (mask, ids, probs, logs)):
         raise M8GError("padded_fields_missing")
+    if not all(
+        len(rows) == len(mask)
+        for rows in (
+            ids,
+            probs,
+            logs,
+            padded.get("effective_top_k", ()),
+            padded.get("top_mass", ()),
+            padded.get("tail_mass", ()),
+            padded.get("bucket_masses", ()),
+        )
+    ):
+        raise M8GError("padded_row_count_mismatch")
+    widths = {len(row) for row in (mask, ids, probs, logs)}
+    if len(widths) != 1 or any(
+        not isinstance(bit, bool) for row in mask for bit in row
+    ):
+        raise M8GError("padded_shape_invalid")
     offsets = [0]
     lengths: list[int] = []
     compact_ids: list[int] = []
@@ -224,7 +285,7 @@ def encode_compact_body(body: CompactBody) -> bytes:
 
     payload = fv3(body.projection())
     header = struct.pack(
-        ">4sHHIIIIQQ",
+        "<4sHHIIIIQQ",
         MAGIC,
         1,
         PROFILE_NAMES[body.profile],
@@ -247,9 +308,17 @@ def body_raw_digest(body_bytes: bytes) -> str:
 def validate_body_bytes(body_bytes: bytes, *, profile: str) -> CompactBody:
     if len(body_bytes) < 40 or not body_bytes.startswith(MAGIC):
         raise M8GError("body_truncated_or_magic_invalid")
-    _, version, profile_code, _, _, _, _, payload_size, _ = struct.unpack(
-        ">4sHHIIIIQQ", body_bytes[:40]
-    )
+    (
+        _,
+        version,
+        profile_code,
+        record_count,
+        position_count,
+        vocab_size,
+        num_buckets,
+        payload_size,
+        _,
+    ) = struct.unpack("<4sHHIIIIQQ", body_bytes[:40])
     if version != 1 or PROFILE_CODES.get(profile_code) != profile:
         raise M8GError("body_profile_invalid")
     payload = body_bytes[40:]
@@ -258,6 +327,17 @@ def validate_body_bytes(body_bytes: bytes, *, profile: str) -> CompactBody:
     value, offset = _decode_fv3(payload, 0)
     if offset != len(payload) or not isinstance(value, Mapping):
         raise M8GError("body_projection_invalid")
+    if any(
+        (
+            value.get("record_count") != record_count,
+            value.get("position_count") != position_count,
+            value.get("vocab_size") != vocab_size,
+            value.get("num_buckets") != num_buckets,
+            value.get("schema_version") != COMPACT_SCHEMA,
+            value.get("profile") != profile,
+        )
+    ):
+        raise M8GError("body_header_projection_mismatch")
     try:
         body = CompactBody(
             profile=str(value["profile"]),
@@ -333,6 +413,8 @@ def _decode_fv3(value: bytes, offset: int) -> tuple[Any, int]:
             offset += 8
             key = value[offset : offset + key_size].decode("utf-8")
             offset += key_size
+            if key in result:
+                raise M8GError("fv3_duplicate_map_key")
             if offset + 8 > len(value):
                 raise M8GError("fv3_truncated")
             item_size = int.from_bytes(value[offset : offset + 8], "big")
@@ -364,9 +446,16 @@ def validate_manifest(manifest: Mapping[str, Any], body: CompactBody) -> None:
         "profile",
         "selected_example_id",
         "selected_position",
+        "source_passport_id",
+        "corridor_mode_id",
+        "corridor_fingerprint_id",
+        "selection_obligation_count",
+        "selection_obligations",
         "body_semantic_id",
         "body_raw_digest",
+        "authority_id",
         "selection_authority_id",
+        "package_role",
         "manifest_semantic_id",
     }
     if set(manifest) != required:
@@ -378,6 +467,17 @@ def validate_manifest(manifest: Mapping[str, Any], body: CompactBody) -> None:
         raise M8GError("manifest_profile_invalid")
     if manifest["body_semantic_id"] != body.semantic_id:
         raise M8GError("manifest_body_semantic_mismatch")
+    if (
+        not isinstance(manifest["body_raw_digest"], str)
+        or not manifest["body_raw_digest"].startswith("sha256:")
+        or len(manifest["body_raw_digest"]) != 71
+        or not isinstance(manifest["authority_id"], str)
+        or not isinstance(manifest["selection_authority_id"], str)
+        or not isinstance(manifest["selection_obligations"], list)
+        or manifest["selection_obligation_count"]
+        != len(manifest["selection_obligations"])
+    ):
+        raise M8GError("manifest_binding_fields_invalid")
     if manifest["manifest_semantic_id"] != manifest_semantic_id(manifest):
         raise M8GError("manifest_digest_invalid")
 

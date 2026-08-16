@@ -9,7 +9,10 @@ from radjax_contract.tome.m8g import (
     body_raw_digest,
     compact_from_padded,
     encode_compact_body,
+    manifest_semantic_id,
     validate_body_bytes,
+    validate_manifest,
+    validate_receipt,
     validate_transition,
 )
 
@@ -68,3 +71,49 @@ def test_invalid_journal_transition_rejected() -> None:
 
 def test_committed_transition_is_idempotent() -> None:
     validate_transition(JournalState.COMMITTED, JournalState.COMMITTED)
+
+
+def test_manifest_requires_closed_binding_and_body_identity() -> None:
+    body = _body()
+    manifest = {
+        "schema_version": "selected_exemplar_manifest_v1",
+        "profile": "student",
+        "selected_example_id": "example-1",
+        "selected_position": 2,
+        "source_passport_id": "passport-1",
+        "corridor_mode_id": None,
+        "corridor_fingerprint_id": None,
+        "selection_obligation_count": 0,
+        "selection_obligations": [],
+        "body_semantic_id": body.semantic_id,
+        "body_raw_digest": "sha256:" + "0" * 64,
+        "authority_id": "authority-1",
+        "selection_authority_id": "selection-1",
+        "package_role": "student",
+    }
+    manifest["manifest_semantic_id"] = manifest_semantic_id(manifest)
+    validate_manifest(manifest, body)
+    with pytest.raises(M8GError):
+        validate_manifest({**manifest, "unexpected": True}, body)
+
+
+def test_receipt_binds_profile_and_legal_next_state() -> None:
+    receipt = {
+        "transaction_id": "tx-1",
+        "schema_version": "radjax_contract_m8g_v1",
+        "profile_code": 1,
+        "state": 1,
+        "parent_transaction_id": None,
+        "body_path": None,
+        "manifest_path": None,
+        "body_raw_digest": None,
+        "body_size_bytes": None,
+        "manifest_raw_digest": None,
+        "committed_next_state": 2,
+        "configuration_identity": "config-1",
+        "semantic_authority_identity": "authority-1",
+        "receipt_digest": "receipt-1",
+    }
+    validate_receipt(receipt)
+    with pytest.raises(M8GError):
+        validate_receipt({**receipt, "committed_next_state": 12})
