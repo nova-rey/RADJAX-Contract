@@ -171,6 +171,8 @@ def test_compact_monolithic_is_closed_and_round_trips() -> None:
     with pytest.raises(M8GError):
         m8g.validate_compact_monolithic_projection({**projection, "num_buckets": True})
     with pytest.raises(M8GError):
+        m8g.validate_compact_monolithic_projection({**projection, "record_count": True})
+    with pytest.raises(M8GError):
         m8g.validate_compact_monolithic_projection({**projection, "unknown": 1})
 
 

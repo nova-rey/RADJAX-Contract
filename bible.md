@@ -1031,3 +1031,8 @@ Compact-monolithic projections now reject noncanonical numeric types, bool
 dimensions, inconsistent position counts, unknown fields, and integer values
 in binary32 float fields. Adversarial shape/type/unknown-field fixtures were
 added; the Contract remains unreleased.
+
+2026-08-16 — M8G compact monolithic record-count closure
+
+The compact-monolithic codec now rejects boolean record counts as well as
+other noncanonical dimension values.

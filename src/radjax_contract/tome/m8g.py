@@ -352,6 +352,7 @@ def validate_compact_monolithic_projection(
         projection["schema_version"] != COMPACT_MONOLITHIC_SCHEMA
         or projection["storage_flavor"] != "compact_k_monolithic"
         or projection["profile"] != profile
+        or type(projection["record_count"]) is not int
         or projection["record_count"] != 1
         or type(projection["position_count"]) is not int
         or type(projection["vocab_size"]) is not int
