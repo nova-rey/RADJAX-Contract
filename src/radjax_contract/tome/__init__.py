@@ -66,6 +66,14 @@ from radjax_contract.tome.language_tokenizer_binding_v1 import (
     validate_and_resolve_language_tokenizer_binding,
 )
 from radjax_contract.tome.manifest import TomeManifest, TomeRole
+from radjax_contract.tome.workload import (
+    SCHEMA_VERSION as M8G_WORKLOAD_SCHEMA_VERSION,
+    canonical_json_bytes as workload_canonical_json_bytes,
+    digest as workload_digest,
+    inventory_root as workload_inventory_root,
+    validate_checkpoint_manifest,
+    validate_workload_authority,
+)
 from radjax_contract.tome.payloads import TomePayloadFormat
 from radjax_contract.tome.production import (
     ArtifactLocalFingerprintId,

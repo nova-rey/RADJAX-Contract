@@ -1036,3 +1036,22 @@ added; the Contract remains unreleased.
 
 The compact-monolithic codec now rejects boolean record counts as well as
 other noncanonical dimension values.
+
+2026-08-20 — M8G portable workload authority contract
+
+Added the closed public workload authority/checkpoint manifest contract,
+canonical JSON identity, portable inventory validation, and deterministic
+inventory roots for finalized replay workloads. The Contract remains
+unreleased and untagged.
+
+Follow-up hardening added strict digest, path, commit, count, and nested
+checkpoint/authority validation before any Tome finalizer can consume the
+workload contract.
+
+Added closed workload record encoders and validators for source-row closure,
+teacher inventory, finalization receipts, and replay preflight, with focused
+tamper and fail-closed tests.
+
+Workload record encoding now dispatches through record validators, model roots
+and provenance paths are required to be portable, and replay modes are closed
+to the three approved representation names.
