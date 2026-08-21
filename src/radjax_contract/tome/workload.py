@@ -374,6 +374,10 @@ def validate_replay_preflight(result: Mapping[str, Any]) -> None:
     ):
         if not isinstance(result[key], str) or not _DIGEST.fullmatch(result[key]):
             raise ValueError("replay identity invalid")
+    if result["resume_identity"] != digest(
+        {"workload": result["workload_identity"], "mode": result["mode"]}
+    ):
+        raise ValueError("replay resume identity is not mode-bound")
 
 
 def validate_workload_authority(authority: Mapping[str, Any]) -> None:

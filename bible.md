@@ -1060,3 +1060,8 @@ to the three approved representation names.
 
 Finalization receipt validation now identifies the exact digest field on
 failure, preserving fail-closed authority diagnostics.
+
+2026-08-20 — M8G mode-bound resume identity
+
+Replay preflight now recomputes the mode-bound resume identity and rejects a
+record whose representation mode has been changed without rebinding it.
