@@ -2,6 +2,7 @@ import pytest
 
 from radjax_contract.tome.workload import (
     decode_workload_record,
+    digest,
     encode_workload_record,
     inventory_root,
     validate_finalization_receipt,
@@ -51,6 +52,9 @@ def test_replay_preflight_is_closed_and_fail_closed() -> None:
         "publication_performed": False,
         "resume_identity": "sha256:" + "3" * 64,
     }
+    result["resume_identity"] = digest(
+        {"workload": result["workload_identity"], "mode": result["mode"]}
+    )
     validate_replay_preflight(result)
     encoded = encode_workload_record({**result, "record_type": "replay_preflight"})
     assert decode_workload_record(encoded)["mode"] == result["mode"]
