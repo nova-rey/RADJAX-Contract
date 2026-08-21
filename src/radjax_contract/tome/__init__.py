@@ -66,14 +66,6 @@ from radjax_contract.tome.language_tokenizer_binding_v1 import (
     validate_and_resolve_language_tokenizer_binding,
 )
 from radjax_contract.tome.manifest import TomeManifest, TomeRole
-from radjax_contract.tome.workload import (
-    SCHEMA_VERSION as M8G_WORKLOAD_SCHEMA_VERSION,
-    canonical_json_bytes as workload_canonical_json_bytes,
-    digest as workload_digest,
-    inventory_root as workload_inventory_root,
-    validate_checkpoint_manifest,
-    validate_workload_authority,
-)
 from radjax_contract.tome.payloads import TomePayloadFormat
 from radjax_contract.tome.production import (
     ArtifactLocalFingerprintId,
@@ -166,6 +158,28 @@ from radjax_contract.tome.validation import (
     TomeValidationResult,
     validate_tome,
     validate_tome_split_disjointness,
+)
+from radjax_contract.tome.workload import (
+    SCHEMA_VERSION as M8G_WORKLOAD_SCHEMA_VERSION,
+)
+from radjax_contract.tome.workload import (
+    canonical_json_bytes as workload_canonical_json_bytes,
+)
+from radjax_contract.tome.workload import (
+    decode_workload_record,
+    encode_workload_record,
+    validate_checkpoint_manifest,
+    validate_finalization_receipt,
+    validate_replay_preflight,
+    validate_source_row_closure,
+    validate_teacher_inventory,
+    validate_workload_authority,
+)
+from radjax_contract.tome.workload import (
+    digest as workload_digest,
+)
+from radjax_contract.tome.workload import (
+    inventory_root as workload_inventory_root,
 )
 
 __all__ = [
@@ -297,4 +311,16 @@ __all__ = [
     "validate_tome_artifact_v3",
     "verify_attestation_v3",
     "verify_external_tome_attestation_v3",
+    "M8G_WORKLOAD_SCHEMA_VERSION",
+    "workload_canonical_json_bytes",
+    "workload_digest",
+    "workload_inventory_root",
+    "decode_workload_record",
+    "encode_workload_record",
+    "validate_checkpoint_manifest",
+    "validate_finalization_receipt",
+    "validate_replay_preflight",
+    "validate_source_row_closure",
+    "validate_teacher_inventory",
+    "validate_workload_authority",
 ]

@@ -86,17 +86,21 @@ def inventory_root(entries: list[Mapping[str, Any]]) -> str:
 
 
 def encode_workload_record(record: Mapping[str, Any]) -> bytes:
-    """Canonical closed-record encoding used for every workload authority record."""
-    if not isinstance(record, Mapping) or "schema_version" not in record:
-        raise ValueError("workload record schema missing")
-    if record["schema_version"] != SCHEMA_VERSION:
-        raise ValueError("unsupported workload record schema")
-    if "mode" in record:
-        validate_replay_preflight(record)
-    elif "finalization_identity" in record and "status" in record:
-        validate_finalization_receipt(record)
-    elif "model_root" in record:
-        validate_teacher_inventory(record)
+    """Canonical encoding with explicit record-type dispatch and validation."""
+    if not isinstance(record, Mapping) or "record_type" not in record:
+        raise ValueError("workload record_type is required")
+    record_type = record["record_type"]
+    validators = {
+        "workload_authority": validate_workload_authority,
+        "checkpoint_manifest": validate_checkpoint_manifest,
+        "teacher_inventory": validate_teacher_inventory,
+        "finalization_receipt": validate_finalization_receipt,
+        "replay_preflight": validate_replay_preflight,
+    }
+    validator = validators.get(record_type)
+    if validator is None:
+        raise ValueError("unsupported workload record_type")
+    validator(record)
     return canonical_json_bytes(record) + b"\n"
 
 
@@ -104,6 +108,10 @@ def decode_workload_record(payload: bytes) -> dict[str, Any]:
     value = json.loads(payload.decode("utf-8"))
     if not isinstance(value, dict):
         raise ValueError("workload record must be an object")
+    if "record_type" not in value:
+        raise ValueError("workload record_type is required")
+    # Reuse the same closed validation and dispatch as encoding.
+    encode_workload_record(value)
     return value
 
 
@@ -115,6 +123,9 @@ def validate_source_row_closure(rows: list[Mapping[str, Any]]) -> None:
         or len({r.get("source_id") for r in rows}) != 1000
     ):
         raise ValueError("source-row closure identity invalid")
+    paths: set[str] = set()
+    selected_sources = 0
+    selected_coordinates: list[tuple[str, int]] = []
     for row in rows:
         required = {
             "row_index",
@@ -129,20 +140,56 @@ def validate_source_row_closure(rows: list[Mapping[str, Any]]) -> None:
         }
         if set(row) != required or not isinstance(row["selected_coordinates"], list):
             raise ValueError("source-row fields invalid")
+        if type(row["row_index"]) is not int or not isinstance(
+            row["example_id"], str
+        ) or not isinstance(row["source_id"], str):
+            raise ValueError("source-row identity types invalid")
+        if type(row["selected"]) is not bool:
+            raise ValueError("source-row selected flag invalid")
         validate_relative_path(row["source_relative_path"])
+        if row["source_relative_path"] in paths:
+            raise ValueError("duplicate source-row path")
+        paths.add(row["source_relative_path"])
         for key in ("source_file_digest", "row_digest", "corpus_identity"):
             if not isinstance(row[key], str) or not _DIGEST.fullmatch(row[key]):
                 raise ValueError("source-row digest invalid")
+        if row["selected"]:
+            selected_sources += 1
+        for coordinate in row["selected_coordinates"]:
+            if not isinstance(coordinate, Mapping) or set(coordinate) != {
+                "example_id",
+                "position",
+            }:
+                raise ValueError("selected-coordinate fields invalid")
+            if coordinate["example_id"] != row["example_id"]:
+                raise ValueError("selected-coordinate source mismatch")
+            if not isinstance(coordinate["example_id"], str) or type(
+                coordinate["position"]
+            ) is not int or coordinate["position"] < 0:
+                raise ValueError("selected-coordinate value invalid")
+            selected_coordinates.append(
+                (coordinate["example_id"], coordinate["position"])
+            )
+        if bool(row["selected_coordinates"]) != row["selected"]:
+            raise ValueError("selected-source flag mismatch")
+    if selected_sources != 253 or len(selected_coordinates) != 253:
+        raise ValueError("selected source/coordinate count invalid")
+    if len(set(selected_coordinates)) != 253:
+        raise ValueError("duplicate selected coordinate")
 
 
 def validate_teacher_inventory(inventory: Mapping[str, Any]) -> None:
-    if set(inventory) != {
+    required = {
         "schema_version",
         "model_root",
         "provenance",
         "model_files",
         "identity",
-    }:
+    }
+    if set(inventory) not in (required, required | {"record_type"}) or (
+        "record_type" in inventory
+        and inventory["record_type"] != "teacher_inventory"
+    ):
         raise ValueError("teacher inventory fields invalid")
     if inventory["schema_version"] != SCHEMA_VERSION or not isinstance(
         inventory["model_files"], list
@@ -150,6 +197,10 @@ def validate_teacher_inventory(inventory: Mapping[str, Any]) -> None:
         raise ValueError("teacher inventory schema invalid")
     validate_relative_path(inventory["model_root"])
     validate_relative_path(inventory["provenance"])
+    if not isinstance(inventory["identity"], str) or not _DIGEST.fullmatch(
+        inventory["identity"]
+    ):
+        raise ValueError("teacher inventory identity invalid")
     for entry in inventory["model_files"]:
         if (
             set(entry)
@@ -166,8 +217,19 @@ def validate_teacher_inventory(inventory: Mapping[str, Any]) -> None:
             or entry.get("role") != "model_member"
         ):
             raise ValueError("teacher inventory role invalid")
-    if not _DIGEST.fullmatch(inventory["identity"]):
-        raise ValueError("teacher inventory identity invalid")
+        validate_relative_path(entry["path"])
+        if type(entry["size_bytes"]) is not int or entry["size_bytes"] < 0:
+            raise ValueError("teacher inventory size invalid")
+        if not isinstance(entry["sha256"], str) or not _DIGEST.fullmatch(
+            entry["sha256"]
+        ):
+            raise ValueError("teacher inventory digest invalid")
+        if not isinstance(entry["declaring_record"], str) or not isinstance(
+            entry["reason"], str
+        ):
+            raise ValueError("teacher inventory provenance invalid")
+    if inventory_root(inventory["model_files"]) != inventory["identity"]:
+        raise ValueError("teacher inventory identity mismatch")
 
 
 def validate_finalization_receipt(receipt: Mapping[str, Any]) -> None:
@@ -183,7 +245,11 @@ def validate_finalization_receipt(receipt: Mapping[str, Any]) -> None:
         "materialization_performed",
     }
     if (
-        set(receipt) != required
+        set(receipt) not in (required, required | {"record_type"})
+        or (
+            "record_type" in receipt
+            and receipt["record_type"] != "finalization_receipt"
+        )
         or receipt["schema_version"] != SCHEMA_VERSION
         or receipt["status"] != "finalized"
     ):
@@ -214,7 +280,11 @@ def validate_replay_preflight(result: Mapping[str, Any]) -> None:
         "gpu_requested",
         "fallback",
     }
-    if set(result) != required or result["schema_version"] != SCHEMA_VERSION:
+    if (
+        set(result) not in (required, required | {"record_type"})
+        or ("record_type" in result and result["record_type"] != "replay_preflight")
+        or result["schema_version"] != SCHEMA_VERSION
+    ):
         raise ValueError("replay preflight fields invalid")
     if result["mode"] not in {
         "legacy_padded_monolithic",
@@ -253,7 +323,14 @@ def validate_workload_authority(authority: Mapping[str, Any]) -> None:
         "provenance",
         "counts",
     }
-    if set(authority) != required or authority["schema_version"] != SCHEMA_VERSION:
+    if (
+        set(authority) not in (required, required | {"record_type"})
+        or (
+            "record_type" in authority
+            and authority["record_type"] != "workload_authority"
+        )
+        or authority["schema_version"] != SCHEMA_VERSION
+    ):
         raise ValueError("workload authority fields invalid")
     for key in (
         "workload_identity",
@@ -296,7 +373,14 @@ def validate_checkpoint_manifest(manifest: Mapping[str, Any]) -> None:
         "teacher_identity",
         "corpus_identity",
     }
-    if set(manifest) != required or manifest["schema_version"] != SCHEMA_VERSION:
+    if (
+        set(manifest) not in (required, required | {"record_type"})
+        or (
+            "record_type" in manifest
+            and manifest["record_type"] != "checkpoint_manifest"
+        )
+        or manifest["schema_version"] != SCHEMA_VERSION
+    ):
         raise ValueError("checkpoint manifest fields invalid")
     for key in (
         "inventory_root",

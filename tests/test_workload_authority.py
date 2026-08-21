@@ -1,6 +1,8 @@
 import pytest
 
 from radjax_contract.tome.workload import (
+    decode_workload_record,
+    encode_workload_record,
     inventory_root,
     validate_finalization_receipt,
     validate_relative_path,
@@ -42,6 +44,10 @@ def test_replay_preflight_is_closed_and_fail_closed() -> None:
         "fallback": False,
     }
     validate_replay_preflight(result)
+    encoded = encode_workload_record({**result, "record_type": "replay_preflight"})
+    assert decode_workload_record(encoded)["mode"] == result["mode"]
+    with pytest.raises(ValueError):
+        encode_workload_record({**result, "unknown": 1})
     with pytest.raises(ValueError):
         validate_replay_preflight({**result, "fallback": True})
 
