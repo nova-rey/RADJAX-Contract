@@ -432,8 +432,6 @@ def validate_workload_authority(authority: Mapping[str, Any]) -> None:
         "workload_identity",
         "tome_commit",
         "contract_commit",
-        "tome_commit",
-        "contract_commit",
         "corpus_identity",
         "teacher_identity",
         "selection_identity",
