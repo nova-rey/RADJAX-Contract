@@ -444,6 +444,7 @@ def validate_workload_authority(authority: Mapping[str, Any]) -> None:
         "finalization_identity",
         "provenance",
         "counts",
+        "source_metadata_policy",
     }
     if (
         set(authority) not in (required, required | {"record_type"})
@@ -486,6 +487,15 @@ def validate_workload_authority(authority: Mapping[str, Any]) -> None:
         "underfill_reason": "global_ranked_supply_exhaustion",
     }:
         raise ValueError("workload counts invalid")
+    policy = authority["source_metadata_policy"]
+    if policy != {
+        "absolute_fields": ["source_id", "source_path", "source_root"],
+        "classification": "historical_provenance_only",
+        "runtime_resolution_field": "source_relative_path",
+        "runtime_resolution_root": "source-rows",
+        "absolute_fields_must_not_be_resolved": True,
+    }:
+        raise ValueError("source metadata policy invalid")
 
 
 def validate_checkpoint_manifest(manifest: Mapping[str, Any]) -> None:

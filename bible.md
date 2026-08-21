@@ -1075,3 +1075,4 @@ addition to their content identities.
 
 Closed checkpoint manifests now require both producer commit identities so
 selection evidence cannot be detached from its generating authority.
+# M8G workload source metadata policy is now closed and authority-bound.
