@@ -1065,3 +1065,13 @@ failure, preserving fail-closed authority diagnostics.
 
 Replay preflight now recomputes the mode-bound resume identity and rejects a
 record whose representation mode has been changed without rebinding it.
+
+2026-08-20 — M8G checkpoint producer binding
+
+Checkpoint manifests now bind the Tome and Contract producer authorities in
+addition to their content identities.
+
+2026-08-20 — M8G checkpoint code binding
+
+Closed checkpoint manifests now require both producer commit identities so
+selection evidence cannot be detached from its generating authority.

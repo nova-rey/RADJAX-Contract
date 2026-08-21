@@ -106,6 +106,8 @@ def test_checkpoint_binding_is_closed_and_tamper_evident() -> None:
         "teacher_identity": zero,
         "corpus_identity": zero,
         "workload_identity": zero,
+        "tome_commit": "0" * 40,
+        "contract_commit": "1" * 40,
     }
     validate_checkpoint_manifest(manifest)
     with pytest.raises(ValueError):
