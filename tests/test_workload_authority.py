@@ -8,6 +8,7 @@ from radjax_contract.tome.workload import (
     validate_finalization_receipt,
     validate_relative_path,
     validate_replay_preflight,
+    validate_role_binding,
 )
 
 
@@ -116,3 +117,12 @@ def test_checkpoint_binding_is_closed_and_tamper_evident() -> None:
         )
     with pytest.raises(ValueError):
         validate_checkpoint_manifest({**manifest, "unexpected": True})
+
+
+def test_closed_role_binding_rejects_provenance_workload_swap() -> None:
+    validate_role_binding("teacher_inventory", "teacher_inventory")
+    validate_role_binding("workload_authority", "authority")
+    with pytest.raises(ValueError):
+        validate_role_binding("workload_authority", "provenance")
+    with pytest.raises(ValueError):
+        validate_role_binding("teacher_provenance", "authority")
