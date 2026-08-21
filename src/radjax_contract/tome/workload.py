@@ -131,7 +131,6 @@ def validate_source_row_closure(rows: list[Mapping[str, Any]]) -> None:
     ):
         raise ValueError("source-row closure identity invalid")
     paths: set[str] = set()
-    selected_sources = 0
     selected_coordinates: list[tuple[str, int]] = []
     for row in rows:
         required = {
@@ -145,7 +144,8 @@ def validate_source_row_closure(rows: list[Mapping[str, Any]]) -> None:
             "selected",
             "selected_coordinates",
         }
-        if set(row) != required or not isinstance(row["selected_coordinates"], list):
+        allowed = (required, required | {"selected_source_records"})
+        if set(row) not in allowed or not isinstance(row["selected_coordinates"], list):
             raise ValueError("source-row fields invalid")
         if type(row["row_index"]) is not int or not isinstance(
             row["example_id"], str
@@ -160,8 +160,6 @@ def validate_source_row_closure(rows: list[Mapping[str, Any]]) -> None:
         for key in ("source_file_digest", "row_digest", "corpus_identity"):
             if not isinstance(row[key], str) or not _DIGEST.fullmatch(row[key]):
                 raise ValueError("source-row digest invalid")
-        if row["selected"]:
-            selected_sources += 1
         for coordinate in row["selected_coordinates"]:
             if not isinstance(coordinate, Mapping) or set(coordinate) != {
                 "example_id",
@@ -179,7 +177,18 @@ def validate_source_row_closure(rows: list[Mapping[str, Any]]) -> None:
             )
         if bool(row["selected_coordinates"]) != row["selected"]:
             raise ValueError("selected-source flag mismatch")
-    if selected_sources != 253 or len(selected_coordinates) != 253:
+        occurrences = row.get("selected_source_records", row["selected_coordinates"])
+        if not isinstance(occurrences, list):
+            raise ValueError("selected-source occurrence list invalid")
+        if len(occurrences) != len(row["selected_coordinates"]):
+            raise ValueError("selected-source occurrence count mismatch")
+        for occurrence in occurrences:
+            if not isinstance(occurrence, (str, Mapping)):
+                raise ValueError("selected-source occurrence identity invalid")
+    # selected_sources is the number of unique corpus rows, while source
+    # records and coordinates count selected occurrences.  The latter remains
+    # the frozen 253-record authority even when several records share a row.
+    if len(selected_coordinates) != 253:
         raise ValueError("selected source/coordinate count invalid")
     if len(set(selected_coordinates)) != 253:
         raise ValueError("duplicate selected coordinate")
