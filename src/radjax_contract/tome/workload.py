@@ -529,7 +529,9 @@ def validate_checkpoint_manifest(manifest: Mapping[str, Any]) -> None:
         if not isinstance(manifest[key], str) or not _DIGEST.fullmatch(manifest[key]):
             raise ValueError(f"checkpoint digest invalid: {key}")
     for key in ("tome_commit", "contract_commit"):
-        if not isinstance(manifest[key], str) or not re.fullmatch(r"[0-9a-f]{40}", manifest[key]):
+        if not isinstance(manifest[key], str) or not re.fullmatch(
+            r"[0-9a-f]{40}", manifest[key]
+        ):
             raise ValueError(f"checkpoint commit invalid: {key}")
     if not isinstance(manifest["inventory"], list):
         raise ValueError("checkpoint inventory invalid")
