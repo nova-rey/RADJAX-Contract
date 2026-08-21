@@ -25,6 +25,30 @@ _ROLES = {
     "finalization",
     "replay_preflight",
 }
+# A closed record may only be installed under its declared semantic role.
+_ROLE_RECORD_TYPES = {
+    "source_row": "source_row_closure",
+    "model_member": "teacher_inventory",
+    "teacher_inventory": "teacher_inventory",
+    "provenance": "teacher_provenance",
+    "authority": "workload_authority",
+    "checkpoint": "checkpoint_manifest",
+    "finalization": "finalization_receipt",
+    "replay_preflight": "replay_preflight",
+    "selected_source": "selected_source_inventory",
+    "selected_coordinate": "selected_coordinate_inventory",
+}
+
+
+def validate_role_binding(record_type: object, role: object) -> None:
+    """Reject a closed record installed under an incompatible semantic role."""
+    if not isinstance(record_type, str) or not isinstance(role, str):
+        raise ValueError("workload role binding types invalid")
+    expected = _ROLE_RECORD_TYPES.get(role)
+    if expected is None or record_type != expected:
+        raise ValueError(
+            f"workload record type {record_type!r} is not allowed for role {role!r}"
+        )
 _DIGEST = re.compile(r"^sha256:[0-9a-f]{64}$")
 
 
