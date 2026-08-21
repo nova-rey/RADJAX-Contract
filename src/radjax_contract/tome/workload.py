@@ -24,6 +24,12 @@ _ROLES = {
     "selected_coordinate",
     "finalization",
     "replay_preflight",
+    "teacher_provenance",
+    "runtime_teacher_provenance",
+    "source_identity_provenance",
+    "workload_validation_report",
+    "selection_report",
+    "corpus_report",
 }
 # A closed record may only be installed under its declared semantic role.
 _ROLE_RECORD_TYPES = {
@@ -37,6 +43,11 @@ _ROLE_RECORD_TYPES = {
     "replay_preflight": "replay_preflight",
     "selected_source": "selected_source_inventory",
     "selected_coordinate": "selected_coordinate_inventory",
+    "runtime_teacher_provenance": "runtime_teacher_provenance",
+    "source_identity_provenance": "source_identity_provenance",
+    "workload_validation_report": "workload_validation_report",
+    "selection_report": "selection_report",
+    "corpus_report": "corpus_report",
 }
 
 
