@@ -80,6 +80,13 @@ def inventory_root(entries: list[Mapping[str, Any]]) -> str:
             raise ValueError("inventory digest invalid")
         if entry["role"] not in _ROLES:
             raise ValueError("inventory role invalid")
+        if not isinstance(entry["semantic_identity"], (str, type(None))):
+            raise ValueError("inventory semantic identity invalid")
+        if not isinstance(entry["schema_profile"], (str, type(None))):
+            raise ValueError("inventory schema profile invalid")
+        validate_relative_path(entry["declaring_record"])
+        if not isinstance(entry["reason"], str):
+            raise ValueError("inventory reason invalid")
         normalized.append(dict(entry))
     normalized.sort(key=lambda x: x["path"])
     return digest(normalized)
@@ -237,10 +244,17 @@ def validate_finalization_receipt(receipt: Mapping[str, Any]) -> None:
         "schema_version",
         "status",
         "raw_generation_root_inventory",
+        "original_progress_digest",
+        "validation_report_digest",
+        "selection_checkpoint_digest",
         "checkpoint_manifest_digest",
         "source_row_closure_digest",
         "inventory_root",
         "finalization_identity",
+        "tome_commit",
+        "contract_commit",
+        "configuration_identity",
+        "transaction_identity",
         "benchmark_performed",
         "materialization_performed",
     }
@@ -256,13 +270,26 @@ def validate_finalization_receipt(receipt: Mapping[str, Any]) -> None:
         raise ValueError("finalization receipt fields invalid")
     for key in (
         "raw_generation_root_inventory",
+        "original_progress_digest",
+        "validation_report_digest",
+        "selection_checkpoint_digest",
         "checkpoint_manifest_digest",
         "source_row_closure_digest",
         "inventory_root",
         "finalization_identity",
+        "configuration_identity",
+        "transaction_identity",
     ):
-        if not _DIGEST.fullmatch(receipt[key]):
+        if not isinstance(receipt[key], str) or not _DIGEST.fullmatch(receipt[key]):
             raise ValueError("finalization receipt digest invalid")
+    if not re.fullmatch(r"[0-9a-f]{40}", receipt["tome_commit"]) or not re.fullmatch(
+        r"[0-9a-f]{40}", receipt["contract_commit"]
+    ):
+        raise ValueError("finalization receipt commit invalid")
+    if type(receipt["benchmark_performed"]) is not bool or type(
+        receipt["materialization_performed"]
+    ) is not bool:
+        raise ValueError("finalization receipt flags invalid")
     if receipt["benchmark_performed"] or receipt["materialization_performed"]:
         raise ValueError("finalization receipt records prohibited work")
 
@@ -271,14 +298,22 @@ def validate_replay_preflight(result: Mapping[str, Any]) -> None:
     required = {
         "schema_version",
         "mode",
+        "requested_mode",
+        "executed_mode",
         "status",
         "workload_identity",
+        "selection_identity",
+        "selected_coordinate_identity",
         "selected_sources",
         "selected_coordinates",
         "c1_c5_skipped",
         "full_teacher_pass_count",
         "gpu_requested",
         "fallback",
+        "selected_delivery_status",
+        "materialization_performed",
+        "publication_performed",
+        "resume_identity",
     }
     if (
         set(result) not in (required, required | {"record_type"})
@@ -304,6 +339,32 @@ def validate_replay_preflight(result: Mapping[str, Any]) -> None:
         raise ValueError("replay preflight failed")
     if not _DIGEST.fullmatch(result["workload_identity"]):
         raise ValueError("replay workload identity invalid")
+    if result["requested_mode"] != result["mode"] or result["executed_mode"] != result[
+        "mode"
+    ]:
+        raise ValueError("replay mode mismatch")
+    if result["selected_delivery_status"] != "not_started":
+        raise ValueError("replay selected delivery was executed")
+    if result["materialization_performed"] or result["publication_performed"]:
+        raise ValueError("replay preflight performed prohibited work")
+    if any(
+        type(result[key]) is not bool
+        for key in (
+            "c1_c5_skipped",
+            "gpu_requested",
+            "fallback",
+            "materialization_performed",
+            "publication_performed",
+        )
+    ):
+        raise ValueError("replay preflight flags invalid")
+    for key in (
+        "selection_identity",
+        "selected_coordinate_identity",
+        "resume_identity",
+    ):
+        if not isinstance(result[key], str) or not _DIGEST.fullmatch(result[key]):
+            raise ValueError("replay identity invalid")
 
 
 def validate_workload_authority(authority: Mapping[str, Any]) -> None:
@@ -315,6 +376,8 @@ def validate_workload_authority(authority: Mapping[str, Any]) -> None:
         "corpus_identity",
         "teacher_identity",
         "selection_identity",
+        "selection_policy_identity",
+        "full_width_cap_policy",
         "checkpoint_manifest_digest",
         "source_row_closure_digest",
         "inventory_root",
@@ -337,6 +400,7 @@ def validate_workload_authority(authority: Mapping[str, Any]) -> None:
         "corpus_identity",
         "teacher_identity",
         "selection_identity",
+        "selection_policy_identity",
         "checkpoint_manifest_digest",
         "source_row_closure_digest",
         "inventory_root",
@@ -351,6 +415,8 @@ def validate_workload_authority(authority: Mapping[str, Any]) -> None:
         raise ValueError("workload authority commit invalid")
     if authority["provenance"] != "NEW_DETERMINISTIC_M8G_1K_WORKLOAD":
         raise ValueError("workload provenance invalid")
+    if authority["full_width_cap_policy"] != {"numerator": 1, "denominator": 3}:
+        raise ValueError("full-width cap policy invalid")
     counts = authority["counts"]
     if counts != {
         "sources": 1000,
@@ -369,9 +435,13 @@ def validate_checkpoint_manifest(manifest: Mapping[str, Any]) -> None:
         "inventory",
         "inventory_root",
         "selection_identity",
+        "selection_config_identity",
+        "score_pass_identity",
+        "source_row_closure_digest",
         "checkpoint_identity",
         "teacher_identity",
         "corpus_identity",
+        "workload_identity",
     }
     if (
         set(manifest) not in (required, required | {"record_type"})
@@ -385,9 +455,13 @@ def validate_checkpoint_manifest(manifest: Mapping[str, Any]) -> None:
     for key in (
         "inventory_root",
         "selection_identity",
+        "selection_config_identity",
+        "score_pass_identity",
+        "source_row_closure_digest",
         "checkpoint_identity",
         "teacher_identity",
         "corpus_identity",
+        "workload_identity",
     ):
         if not isinstance(manifest[key], str) or not _DIGEST.fullmatch(manifest[key]):
             raise ValueError(f"checkpoint digest invalid: {key}")
