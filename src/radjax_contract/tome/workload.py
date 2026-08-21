@@ -98,6 +98,9 @@ def encode_workload_record(record: Mapping[str, Any]) -> bytes:
         raise ValueError("workload record_type is required")
     record_type = record["record_type"]
     validators = {
+        "source_row_closure": validate_source_row_closure_record,
+        "selected_source_inventory": validate_selected_source_inventory,
+        "selected_coordinate_inventory": validate_selected_coordinate_inventory,
         "workload_authority": validate_workload_authority,
         "checkpoint_manifest": validate_checkpoint_manifest,
         "teacher_inventory": validate_teacher_inventory,
@@ -118,8 +121,51 @@ def decode_workload_record(payload: bytes) -> dict[str, Any]:
     if "record_type" not in value:
         raise ValueError("workload record_type is required")
     # Reuse the same closed validation and dispatch as encoding.
-    encode_workload_record(value)
+    canonical = encode_workload_record(value)
+    if payload != canonical:
+        raise ValueError("noncanonical workload record encoding")
     return value
+
+
+def _validate_record_envelope(record: Mapping[str, Any], record_type: str) -> list[Any]:
+    required = {"record_type", "schema_version", "records"}
+    if set(record) != required or record["record_type"] != record_type:
+        raise ValueError("workload record envelope invalid")
+    if record["schema_version"] != SCHEMA_VERSION or not isinstance(
+        record["records"], list
+    ):
+        raise ValueError("workload record envelope schema invalid")
+    return record["records"]
+
+
+def validate_source_row_closure_record(record: Mapping[str, Any]) -> None:
+    rows = _validate_record_envelope(record, "source_row_closure")
+    validate_source_row_closure(rows)
+
+
+def validate_selected_source_inventory(record: Mapping[str, Any]) -> None:
+    records = _validate_record_envelope(record, "selected_source_inventory")
+    if len(records) != 253:
+        raise ValueError("selected-source inventory count invalid")
+    for item in records:
+        if not isinstance(item, Mapping) or not isinstance(item.get("source_id"), str):
+            raise ValueError("selected-source inventory record invalid")
+
+
+def validate_selected_coordinate_inventory(record: Mapping[str, Any]) -> None:
+    records = _validate_record_envelope(record, "selected_coordinate_inventory")
+    if len(records) != 253:
+        raise ValueError("selected-coordinate inventory count invalid")
+    identities: set[tuple[str, int]] = set()
+    for item in records:
+        if not isinstance(item, Mapping) or not isinstance(item.get("example_id"), str):
+            raise ValueError("selected-coordinate inventory record invalid")
+        if type(item.get("position")) is not int or item["position"] < 0:
+            raise ValueError("selected-coordinate position invalid")
+        identity = (item["example_id"], item["position"])
+        if identity in identities:
+            raise ValueError("duplicate selected coordinate")
+        identities.add(identity)
 
 
 def validate_source_row_closure(rows: list[Mapping[str, Any]]) -> None:
