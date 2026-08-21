@@ -1055,3 +1055,8 @@ tamper and fail-closed tests.
 Workload record encoding now dispatches through record validators, model roots
 and provenance paths are required to be portable, and replay modes are closed
 to the three approved representation names.
+
+2026-08-20 — M8G receipt diagnostics
+
+Finalization receipt validation now identifies the exact digest field on
+failure, preserving fail-closed authority diagnostics.

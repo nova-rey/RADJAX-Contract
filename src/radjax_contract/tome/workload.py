@@ -290,7 +290,7 @@ def validate_finalization_receipt(receipt: Mapping[str, Any]) -> None:
         "transaction_identity",
     ):
         if not isinstance(receipt[key], str) or not _DIGEST.fullmatch(receipt[key]):
-            raise ValueError("finalization receipt digest invalid")
+            raise ValueError(f"finalization receipt digest invalid: {key}")
     if not re.fullmatch(r"[0-9a-f]{40}", receipt["tome_commit"]) or not re.fullmatch(
         r"[0-9a-f]{40}", receipt["contract_commit"]
     ):
