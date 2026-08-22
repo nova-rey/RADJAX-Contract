@@ -539,7 +539,7 @@ def body_raw_digest(body_bytes: bytes) -> bytes:
     header_crc, payload_crc = struct.unpack("<II", body_bytes[40:48])
     payload = body_bytes[48:]
     if (
-        version != 1
+        version not in (1, 2)
         or manifest_bytes != 0
         or len(body_bytes) != 48 + payload_size
         or zlib.crc32(prefix) & 0xFFFFFFFF != header_crc
