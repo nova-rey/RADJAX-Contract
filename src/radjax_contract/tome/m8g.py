@@ -478,6 +478,57 @@ def encode_compact_body(body: CompactBody) -> bytes:
     return prefix + struct.pack("<II", header_crc, payload_crc) + payload
 
 
+def encode_compact_body_packed(body: CompactBody) -> bytes:
+    """Encode a deterministic packed-array body for new canonical storage."""
+    payload = bytearray()
+    payload.extend(struct.pack("<IIII", body.position_count, body.vocab_size, body.num_buckets, len(body.top_token_ids)))
+    payload.extend(struct.pack(f"<{len(body.top_offsets)}I", *body.top_offsets))
+    payload.extend(struct.pack(f"<{len(body.top_lengths)}I", *body.top_lengths))
+    payload.extend(struct.pack(f"<{len(body.effective_top_k)}I", *body.effective_top_k))
+    payload.extend(struct.pack(f"<{len(body.top_token_ids)}I", *body.top_token_ids))
+    for values in (body.top_probs, body.top_log_probs, body.top_mass, body.tail_mass, body.bucket_masses):
+        payload.extend(struct.pack(f"<{len(values)}f", *values))
+    prefix = struct.pack("<4sHHIIIIQQ", MAGIC, 2, PROFILE_NAMES[body.profile], 1,
+                         body.position_count, body.vocab_size, body.num_buckets, len(payload), 0)
+    return prefix + struct.pack("<II", zlib.crc32(prefix) & 0xFFFFFFFF, zlib.crc32(payload) & 0xFFFFFFFF) + payload
+
+
+def validate_packed_body_bytes(body_bytes: bytes, *, profile: str) -> CompactBody:
+    """Decode and validate the version-2 packed-array body."""
+    if len(body_bytes) < 48 or not body_bytes.startswith(MAGIC):
+        raise M8GError("body_truncated_or_magic_invalid")
+    _, version, profile_code, _, positions, vocab, buckets, payload_size, manifest = struct.unpack("<4sHHIIIIQQ", body_bytes[:40])
+    if version != 2 or PROFILE_CODES.get(profile_code) != profile or manifest != 0:
+        raise M8GError("packed_body_header_invalid")
+    prefix, payload = body_bytes[:40], body_bytes[48:]
+    header_crc, payload_crc = struct.unpack("<II", body_bytes[40:48])
+    if len(payload) != payload_size or zlib.crc32(prefix) & 0xFFFFFFFF != header_crc or zlib.crc32(payload) & 0xFFFFFFFF != payload_crc:
+        raise M8GError("packed_body_crc_invalid")
+    offset = 0
+    def take(fmt: str):
+        nonlocal offset
+        size = struct.calcsize(fmt)
+        if offset + size > len(payload):
+            raise M8GError("packed_body_truncated")
+        value = struct.unpack_from(fmt, payload, offset); offset += size
+        return value
+    _, _, _, active = take("<IIII")
+    offsets = take(f"<{positions + 1}I")
+    lengths = take(f"<{positions}I")
+    effective = take(f"<{positions}I")
+    ids = take(f"<{active}I")
+    def floats(count: int): return take(f"<{count}f")
+    probs, logs = floats(active), floats(active)
+    top_mass, tail_mass = floats(positions), floats(positions)
+    bucket_masses = floats(positions * buckets)
+    if offset != len(payload):
+        raise M8GError("packed_body_trailing_bytes")
+    return CompactBody(profile=profile, vocab_size=vocab, num_buckets=buckets,
+                       top_offsets=offsets, top_lengths=lengths, top_token_ids=ids,
+                       top_probs=probs, top_log_probs=logs, effective_top_k=effective,
+                       top_mass=top_mass, tail_mass=tail_mass, bucket_masses=bucket_masses)
+
+
 def body_raw_digest(body_bytes: bytes) -> bytes:
     if len(body_bytes) < 48 or not body_bytes.startswith(MAGIC):
         raise M8GError("body_magic_invalid")
