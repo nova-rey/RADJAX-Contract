@@ -1081,3 +1081,5 @@ selection evidence cannot be detached from its generating authority.
 
 - M8G v19 review correction: export and consume closed role/path bindings.
 - 2026-08-22: CompactBody mass validation now uses governed top_mass plus tail_mass; binary32 top-probability quantization is not treated as a second authority.
+
+- 2026-08-22: Added version-2 packed compact-body encoding and validation with raw digest compatibility.
