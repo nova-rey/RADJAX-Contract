@@ -271,8 +271,14 @@ class CompactBody:
             probs = self.top_probs[start:end]
             if any(probs[index] < probs[index + 1] for index in range(len(probs) - 1)):
                 raise M8GError("token_order_invalid")
+            # top_mass and tail_mass are the governed CSL mass summaries.
+            # Individual binary32 top probabilities may be independently
+            # quantized, so their sum is not a second authority value.
             if not math.isclose(
-                sum(probs) + self.tail_mass[index], 1.0, rel_tol=2e-5, abs_tol=2e-5
+                self.top_mass[index] + self.tail_mass[index],
+                1.0,
+                rel_tol=2e-5,
+                abs_tol=2e-5,
             ):
                 raise M8GError("mass_inconsistent")
 

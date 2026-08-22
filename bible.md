@@ -1080,3 +1080,4 @@ selection evidence cannot be detached from its generating authority.
 - M8G v19 replay role binding: closed workload records cannot cross semantic destinations.
 
 - M8G v19 review correction: export and consume closed role/path bindings.
+- 2026-08-22: CompactBody mass validation now uses governed top_mass plus tail_mass; binary32 top-probability quantization is not treated as a second authority.
