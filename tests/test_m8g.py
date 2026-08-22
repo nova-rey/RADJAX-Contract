@@ -192,3 +192,23 @@ def test_compact_monolithic_rejects_integer_float_fields() -> None:
             tail_mass=(0.0,),
             bucket_masses=(0.0, 0.0),
         )
+
+
+def test_buffer_native_packed_body_matches_legacy_full_width():
+    import numpy as np
+    from radjax_contract.tome.m8g import compact_body_from_buffers, encode_compact_body_packed_from_buffers
+    k = 262_144
+    ids = np.arange(k, dtype="<u4")
+    probs = np.linspace(0.5, 0.000001, k, dtype="<f4")
+    logs = np.log(probs).astype("<f4")
+    buckets = np.ones(8, dtype="<f4")
+    body = compact_body_from_buffers(profile="producer_evidence", vocab_size=k, num_buckets=8, top_token_ids=ids, top_probs=probs, top_log_probs=logs, effective_top_k=k, top_mass=0.9, tail_mass=0.1, bucket_masses=buckets)
+    encoded = encode_compact_body_packed_from_buffers(body)
+    assert len(encoded) > k * 12
+
+
+def test_buffer_native_rejects_wrong_dtype():
+    import numpy as np
+    from radjax_contract.tome.m8g import compact_body_from_buffers, M8GError
+    with pytest.raises(M8GError):
+        compact_body_from_buffers(profile="producer_evidence", vocab_size=8, num_buckets=1, top_token_ids=np.arange(2, dtype=np.int64), top_probs=np.array([0.9, 0.0], dtype="<f4"), top_log_probs=np.array([0.0, -1.0], dtype="<f4"), effective_top_k=2, top_mass=0.9, tail_mass=0.1, bucket_masses=np.array([1.0], dtype="<f4"))

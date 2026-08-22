@@ -11,6 +11,8 @@ import hashlib
 import math
 import struct
 import zlib
+
+import numpy as np
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from enum import IntEnum
@@ -310,6 +312,81 @@ class CompactBody:
         return _digest(b"RDX-BODY-SEM-1", _m8g_fv3(self.projection()))
 
 
+@dataclass(frozen=True)
+class CompactBodyBuffers:
+    """One-position compact body backed by contiguous typed buffers."""
+
+    profile: str
+    vocab_size: int
+    num_buckets: int
+    top_token_ids: Any
+    top_probs: Any
+    top_log_probs: Any
+    effective_top_k: int
+    top_mass: float
+    tail_mass: float
+    bucket_masses: Any
+
+    def arrays(self) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        def array(value: Any, dtype: str, field: str) -> np.ndarray:
+            try:
+                if hasattr(value, "detach"):
+                    value = value.detach().cpu().numpy()
+                else:
+                    value = np.asarray(value)
+            except Exception as exc:
+                raise M8GError(f"{field}_buffer_invalid") from exc
+            expected = np.dtype(dtype)
+            if value.ndim != 1 or not value.flags.c_contiguous:
+                raise M8GError(f"{field}_buffer_shape_invalid")
+            if value.dtype != expected:
+                raise M8GError(f"{field}_buffer_dtype_invalid")
+            return value
+
+        ids = array(self.top_token_ids, "<u4", "top_token_ids")
+        probs = array(self.top_probs, "<f4", "top_probs")
+        logs = array(self.top_log_probs, "<f4", "top_log_probs")
+        buckets = array(self.bucket_masses, "<f4", "bucket_masses")
+        k = int(self.effective_top_k)
+        if k < 1 or k > int(self.vocab_size) or len(ids) != k:
+            raise M8GError("effective_k_invalid")
+        if len(probs) != k or len(logs) != k:
+            raise M8GError("active_array_length_mismatch")
+        if len(buckets) != int(self.num_buckets):
+            raise M8GError("bucket_length_mismatch")
+        if np.any(ids >= int(self.vocab_size)):
+            raise M8GError("token_id_out_of_range")
+        if not np.isfinite(probs).all() or not np.isfinite(logs).all():
+            raise M8GError("probability_non_finite")
+        if not np.isfinite(buckets).all() or not math.isfinite(float(self.top_mass)) or not math.isfinite(float(self.tail_mass)):
+            raise M8GError("mass_non_finite")
+        if np.any(probs[:-1] < probs[1:]):
+            raise M8GError("token_order_invalid")
+        if not math.isclose(float(self.top_mass) + float(self.tail_mass), 1.0, rel_tol=2e-5, abs_tol=2e-5):
+            raise M8GError("mass_inconsistent")
+        return ids, probs, logs, buckets
+
+    @property
+    def position_count(self) -> int:
+        return 1
+
+
+def compact_body_from_buffers(
+    *, profile: str, vocab_size: int, num_buckets: int, top_token_ids: Any,
+    top_probs: Any, top_log_probs: Any, effective_top_k: int,
+    top_mass: float, tail_mass: float, bucket_masses: Any,
+) -> CompactBodyBuffers:
+    """Construct a validated producer body without scalar expansion."""
+    body = CompactBodyBuffers(
+        profile=profile, vocab_size=int(vocab_size), num_buckets=int(num_buckets),
+        top_token_ids=top_token_ids, top_probs=top_probs, top_log_probs=top_log_probs,
+        effective_top_k=int(effective_top_k), top_mass=float(top_mass),
+        tail_mass=float(tail_mass), bucket_masses=bucket_masses,
+    )
+    body.arrays()
+    return body
+
+
 def compact_monolithic_projection(body: CompactBody) -> dict[str, Any]:
     """Return the closed monolithic compact package record.
 
@@ -490,6 +567,24 @@ def encode_compact_body_packed(body: CompactBody) -> bytes:
         payload.extend(struct.pack(f"<{len(values)}f", *values))
     prefix = struct.pack("<4sHHIIIIQQ", MAGIC, 2, PROFILE_NAMES[body.profile], 1,
                          body.position_count, body.vocab_size, body.num_buckets, len(payload), 0)
+    return prefix + struct.pack("<II", zlib.crc32(prefix) & 0xFFFFFFFF, zlib.crc32(payload) & 0xFFFFFFFF) + payload
+
+
+def encode_compact_body_packed_from_buffers(body: CompactBodyBuffers) -> bytes:
+    """Encode v2 bytes directly from governed contiguous arrays."""
+    ids, probs, logs, buckets = body.arrays()
+    offsets = np.asarray([0, int(body.effective_top_k)], dtype="<u4")
+    lengths = np.asarray([int(body.effective_top_k)], dtype="<u4")
+    effective = lengths
+    payload = bytearray()
+    payload.extend(struct.pack("<IIII", 1, body.vocab_size, body.num_buckets, int(body.effective_top_k)))
+    for values in (offsets, lengths, effective, ids, probs, logs):
+        payload.extend(memoryview(values).cast("B"))
+    scalar = np.asarray([body.top_mass, body.tail_mass], dtype="<f4")
+    payload.extend(memoryview(scalar).cast("B"))
+    payload.extend(memoryview(buckets).cast("B"))
+    prefix = struct.pack("<4sHHIIIIQQ", MAGIC, 2, PROFILE_NAMES[body.profile], 1,
+                         1, body.vocab_size, body.num_buckets, len(payload), 0)
     return prefix + struct.pack("<II", zlib.crc32(prefix) & 0xFFFFFFFF, zlib.crc32(payload) & 0xFFFFFFFF) + payload
 
 
